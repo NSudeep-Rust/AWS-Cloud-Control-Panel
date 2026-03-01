@@ -1,0 +1,2182 @@
+[
+  {
+    "timestamp": "2026-03-01T07:54:21.544586",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "region": "ap-south-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "protocol": "tcp",
+              "port_range": "3389-3389",
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:10:24.805717",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:13:47.959688",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:17:08.319488",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:18:56.312258",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:21:07.023137",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T08:23:10.760282",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T09:39:34.069885",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-07c9f0f624f0ee653",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "80-80",
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-07c9f0f624f0ee653",
+          "region": "ap-south-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-03760193d8b07fdb4",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "80-80",
+          "443-443",
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-03760193d8b07fdb4",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 443,
+              "ToPort": 443,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T14:35:05.575208",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-07c9f0f624f0ee653",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-07c9f0f624f0ee653",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-03760193d8b07fdb4",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "443-443",
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-03760193d8b07fdb4",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T14:36:56.003910",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-07c9f0f624f0ee653",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-07c9f0f624f0ee653",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-03760193d8b07fdb4",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "443-443",
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-03760193d8b07fdb4",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T14:41:23.984330",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-07c9f0f624f0ee653",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-07c9f0f624f0ee653",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-03760193d8b07fdb4",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "443-443",
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-03760193d8b07fdb4",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T14:47:05.765663",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-053c6ca65ef74ae23",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "3389-3389"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-053c6ca65ef74ae23",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-07c9f0f624f0ee653",
+        "resource_name": "ALL TRAFFIC",
+        "region": "ap-south-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-07c9f0f624f0ee653",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "ap-south-1"
+        }
+      },
+      {
+        "resource_id": "sg-03760193d8b07fdb4",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "443-443",
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-03760193d8b07fdb4",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T14:57:36.734957",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-00613381e717bcbd3",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-00613381e717bcbd3",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-0cacd516b37f14231",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "0-65535"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0cacd516b37f14231",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 0,
+              "ToPort": 65535,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:12:03.564012",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "eu-north-1"
+        }
+      },
+      {
+        "resource_id": "sg-00613381e717bcbd3",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "80-80",
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-00613381e717bcbd3",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      },
+      {
+        "resource_id": "sg-0cacd516b37f14231",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "0-65535"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-0cacd516b37f14231",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "us-east-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:18:23.352072",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-00613381e717bcbd3",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-00613381e717bcbd3",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-0cacd516b37f14231",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "0-65535"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0cacd516b37f14231",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 0,
+              "ToPort": 65535,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:31:33.794905",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-00613381e717bcbd3",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-00613381e717bcbd3",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-0cacd516b37f14231",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "0-65535"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0cacd516b37f14231",
+          "region": "us-east-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 0,
+              "ToPort": 65535,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:35:50.526347",
+    "event_type": "public_security_groups",
+    "count": 3,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "9d64fdce-2519-46d7-b7c9-74da61dd66dd",
+          "timestamp": "2026-03-01T16:35:44.852821",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-00613381e717bcbd3",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22",
+          "80-80"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "736ac70a-75b1-46d7-86c5-b831dacdea63",
+          "timestamp": "2026-03-01T16:35:47.887833",
+          "resource_id": "sg-00613381e717bcbd3",
+          "region": "us-east-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 80,
+              "ToPort": 80,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            },
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      },
+      {
+        "resource_id": "sg-0cacd516b37f14231",
+        "resource_name": "ALL TRAFFIC",
+        "region": "us-east-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "0-65535"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "086f60d7-d9a1-4039-8865-c63fb137bb3f",
+          "timestamp": "2026-03-01T16:35:50.524756",
+          "resource_id": "sg-0cacd516b37f14231",
+          "region": "us-east-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 0,
+              "ToPort": 65535,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 0,
+              "ToPort": 65535,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:38:37.168387",
+    "event_type": "public_security_groups",
+    "count": 0,
+    "details": []
+  },
+  {
+    "timestamp": "2026-03-01T16:40:27.908114",
+    "event_type": "public_security_groups",
+    "count": 0,
+    "details": []
+  },
+  {
+    "timestamp": "2026-03-01T16:46:24.832472",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "SKIPPED",
+          "reason": "Already executed earlier",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "region": "eu-north-1"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:51:56.875366",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:54:04.711541",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "9330948c-fd63-458d-bbba-f854ece0a91c",
+          "timestamp": "2026-03-01T16:54:04.710252",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T16:59:14.010582",
+    "event_type": "public_security_groups",
+    "count": 0,
+    "details": []
+  },
+  {
+    "timestamp": "2026-03-01T17:01:20.380031",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:02:56.585093",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "01d9948c-470e-4e08-8ebf-47dc3da36e1d",
+          "timestamp": "2026-03-01T17:02:56.583777",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:13:45.877981",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:15:45.759580",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "EXECUTED",
+          "execution_id": "10a1f8b4-0b06-4340-a3dc-be49ba35d16c",
+          "timestamp": "2026-03-01T17:15:45.758115",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:22:56.044706",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:27:09.264937",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:30:48.961221",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:30:55.356255",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:37:07.046235",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T17:49:53.314871",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T18:03:16.059697",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T18:03:48.378967",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "4e2e4435-29e6-44f9-aa43-a2bb755ad8c0",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ],
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "timestamp": "2026-03-01T18:03:48.378967"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-01T18:25:03.617983",
+    "event_type": "public_security_groups",
+    "count": 1,
+    "details": [
+      {
+        "resource_id": "sg-0dd5ead9a51c5b188",
+        "resource_name": "CSP_TEST_SG",
+        "region": "eu-north-1",
+        "severity": "HIGH",
+        "protocols": [
+          "tcp"
+        ],
+        "ports": [
+          "22-22"
+        ],
+        "description": "Security group allows inbound traffic from 0.0.0.0/0",
+        "remediation": {
+          "action": "RESTRICT_SECURITY_GROUP",
+          "reason": "Inbound access open to 0.0.0.0/0",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "severity": "HIGH"
+        },
+        "execution": {
+          "status": "DRY_RUN",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "resource_id": "sg-0dd5ead9a51c5b188",
+          "region": "eu-north-1",
+          "recommended_fix": "Limit CIDR to trusted IP ranges",
+          "targeted_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

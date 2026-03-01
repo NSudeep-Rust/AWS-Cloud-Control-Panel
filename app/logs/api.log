@@ -1,0 +1,105 @@
+2026-03-01 11:14:56,102 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:14:59,396 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:51,366 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:52,009 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:52,551 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:52,767 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,093 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,284 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,476 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,667 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,824 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:53,996 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:54,168 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:54,338 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:54,503 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:54,667 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:15:54,884 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:16:04,336 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:17:04,343 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:17:07,157 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:17:33,420 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:43,140 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:43,734 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:44,134 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:44,345 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:44,536 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:44,721 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:44,890 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:45,057 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:45,246 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:18:48,461 | INFO | Module=Scanner | Account=123456789013 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:22:23,968 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:22:24,679 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 11:40:25,614 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:07:24,356 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:07:26,837 | ERROR | Threat monitor execution failed: [Errno 2] No such file or directory: 'database/history.json'
+2026-03-01 12:07:29,809 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:07:31,639 | ERROR | Threat monitor execution failed: [Errno 2] No such file or directory: 'database/history.json'
+2026-03-01 12:14:40,696 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:14:42,849 | ERROR | Threat monitor execution failed: [Errno 2] No such file or directory: 'P:\\CloudSecurityPanel\\app\\app\\database\\history.json'
+2026-03-01 12:14:48,247 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:14:50,568 | ERROR | Threat monitor execution failed: [Errno 2] No such file or directory: 'P:\\CloudSecurityPanel\\app\\app\\database\\history.json'
+2026-03-01 12:17:53,592 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:19:14,147 | ERROR | Threat monitor execution failed: 'ProtectionHistory' object has no attribute 'path'
+2026-03-01 12:21:21,366 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:22:27,703 | ERROR | Threat monitor execution failed: 'ProtectionHistory' object has no attribute 'path'
+2026-03-01 12:22:52,024 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:24:00,866 | ERROR | Threat monitor execution failed: 'ProtectionHistory' object has no attribute 'path'
+2026-03-01 12:24:42,591 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:29:56,284 | INFO | Module=Scanner | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:35:08,243 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:46:28,752 | INFO | Module=FirewallPreview | SG=sg-0123456789abcdef0 | Region=ap-south-1 | Mode=DRY_RUN
+2026-03-01 12:46:33,568 | ERROR | Firewall preview failed: An error occurred (InvalidGroupId.Malformed) when calling the DescribeSecurityGroups operation: Invalid id: "sg-0123456789abcdef0"
+2026-03-01 12:54:15,320 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 12:57:08,198 | INFO | Module=FirewallPreview | SG=sg-053c6ca65ef74ae23 | Region=ap-south-1 | Mode=DRY_RUN
+2026-03-01 13:12:40,173 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:19:13,036 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:23:04,012 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:39:12,985 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:42:37,219 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:46:04,255 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 13:47:53,237 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 13:49:54,800 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 13:52:05,234 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 15:05:19,412 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 15:05:21,964 | ERROR | Firewall execution failed: 'ThreatMonitor' object has no attribute 'start'
+2026-03-01 15:08:17,297 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 20:03:30,019 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 20:05:54,208 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 20:10:18,867 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 20:15:59,136 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 20:26:13,458 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 21:40:51,179 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 21:47:17,979 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:00:24,845 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:04:40,195 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:07:36,003 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:09:24,611 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:15:23,318 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:20:57,279 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:23:01,368 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:28:15,467 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:30:17,993 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:31:52,428 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:42:39,261 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:44:45,040 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:51:50,939 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:53:57,267 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:53:59,502 | ERROR | Firewall execution failed: name 'RemediationExecutor' is not defined
+2026-03-01 22:54:12,105 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:56:05,309 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:57:53,329 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 22:57:55,868 | ERROR | Firewall execution failed: name 'RemediationExecutor' is not defined
+2026-03-01 22:59:46,626 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 22:59:55,421 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 23:01:30,830 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 23:01:32,544 | ERROR | Firewall execution failed: 'NoneType' object has no attribute 'has_execution'
+2026-03-01 23:06:02,620 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 23:07:32,605 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 23:18:49,876 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 23:20:32,791 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 23:32:09,169 | INFO | Module=FirewallExecute | Account=default | Mode=DRY_RUN
+2026-03-01 23:33:42,155 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
+2026-03-01 23:50:42,561 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-01 23:51:47,371 | ERROR | Threat monitor execution failed: name 'enriched_findings' is not defined
