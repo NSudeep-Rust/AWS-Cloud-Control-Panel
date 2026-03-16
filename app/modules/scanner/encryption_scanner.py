@@ -1,0 +1,153 @@
+class EncryptionScanner:
+
+    def __init__(self, aws_session):
+        self.aws_session = aws_session
+
+    def scan(self):
+
+        session = self.aws_session.session
+        ec2 = session.client("ec2")
+        s3 = session.client("s3")
+
+        findings = []
+
+        # -------------------------
+        # EBS Default Encryption Disabled
+        # -------------------------
+
+        response = ec2.get_ebs_encryption_by_default()
+
+        if not response.get("EbsEncryptionByDefault"):
+
+            findings.append({
+                "id": "ebs-default-encryption-disabled",
+                "type": "EBS_DEFAULT_ENCRYPTION_DISABLED",
+                "severity": "HIGH",
+                "resource_id": "account",
+                "description": "EBS default encryption is not enabled for the account"
+            })
+
+
+
+        # -------------------------
+        # S3 Bucket Encryption Disabled
+        # -------------------------
+
+        s3 = self.aws_session.session.client("s3")
+
+        buckets = s3.list_buckets()["Buckets"]
+
+        for bucket in buckets:
+
+            bucket_name = bucket["Name"]
+
+            try:
+                response = s3.get_bucket_encryption(Bucket=bucket_name)
+
+                rules = response["ServerSideEncryptionConfiguration"]["Rules"]
+
+                if not rules:
+                    raise Exception("No encryption rules")
+
+            except Exception:
+
+                findings.append({
+                    "id": f"s3-encryption-disabled-{bucket_name}",
+                    "type": "S3_BUCKET_ENCRYPTION_DISABLED",
+                    "severity": "HIGH",
+                    "resource_id": bucket_name,
+                    "description": "S3 bucket does not have default encryption enabled"
+                })
+
+        # -------------------------
+        # KMS Key Rotation Disabled
+        # -------------------------
+
+        kms = session.client("kms")
+
+        try:
+
+            keys = kms.list_keys()["Keys"]
+
+            for key in keys:
+
+                key_id = key["KeyId"]
+
+                try:
+                    meta = kms.describe_key(KeyId=key_id)["KeyMetadata"]
+
+                    # Skip AWS managed keys
+                    if meta["KeyManager"] != "CUSTOMER":
+                        continue
+
+                    rotation = kms.get_key_rotation_status(KeyId=key_id)
+
+                    if not rotation["KeyRotationEnabled"]:
+
+                        findings.append({
+                            "id": f"kms-rotation-disabled-{key_id}",
+                            "type": "KMS_KEY_ROTATION_DISABLED",
+                            "severity": "MEDIUM",
+                            "resource_id": key_id,
+                            "description": "KMS key rotation is not enabled"
+                        })
+
+                except Exception:
+                    pass
+
+        except Exception:
+            pass
+
+        # -------------------------
+        # EBS Snapshot Not Encrypted
+        # -------------------------
+
+        try:
+
+            snapshots = ec2.describe_snapshots(OwnerIds=["self"])["Snapshots"]
+
+            for snapshot in snapshots:
+
+                if not snapshot.get("Encrypted"):
+
+                    snapshot_id = snapshot["SnapshotId"]
+
+                    findings.append({
+                        "id": f"ebs-snapshot-unencrypted-{snapshot_id}",
+                        "type": "EBS_SNAPSHOT_NOT_ENCRYPTED",
+                        "severity": "HIGH",
+                        "resource_id": snapshot_id,
+                        "description": "EBS snapshot is not encrypted"
+                    })
+
+        except Exception:
+            pass
+
+        # -------------------------
+        # RDS Storage Not Encrypted
+        # -------------------------
+
+        rds = session.client("rds")
+
+        try:
+
+            databases = rds.describe_db_instances()["DBInstances"]
+
+            for db in databases:
+
+                if not db.get("StorageEncrypted"):
+
+                    db_id = db["DBInstanceIdentifier"]
+
+                    findings.append({
+                        "id": f"rds-storage-unencrypted-{db_id}",
+                        "type": "RDS_STORAGE_NOT_ENCRYPTED",
+                        "severity": "HIGH",
+                        "resource_id": db_id,
+                        "description": "RDS database storage is not encrypted"
+                    })
+
+        except Exception:
+            pass
+
+        return findings

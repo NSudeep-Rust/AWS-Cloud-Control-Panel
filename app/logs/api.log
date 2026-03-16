@@ -103,3 +103,76 @@
 2026-03-01 23:33:42,155 | INFO | Module=FirewallExecute | Account=default | Mode=LIVE
 2026-03-01 23:50:42,561 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-03-01 23:51:47,371 | ERROR | Threat monitor execution failed: name 'enriched_findings' is not defined
+2026-03-01 23:53:58,638 | INFO | Module=ThreatMonitor | Account=123456789012 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 19:52:26,805 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 19:58:53,544 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 19:59:59,491 | ERROR | Threat monitor execution failed: An error occurred (InvalidGroupId.Malformed) when calling the DescribeSecurityGroups operation: Invalid id: "csp-test-admin" (expecting "sg-...")
+2026-03-11 20:02:55,060 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 20:07:20,489 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 20:24:35,656 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=LIVE | EffectiveMode=LIVE
+2026-03-11 22:10:40,306 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=LIVE | EffectiveMode=LIVE
+2026-03-11 23:05:55,023 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:14:32,808 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:21:24,703 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:27:59,886 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:31:31,518 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:38:38,513 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:39:51,256 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-11 23:44:04,281 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 20:12:09,739 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 20:26:50,324 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 20:36:03,035 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 21:55:52,735 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 21:59:23,583 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 22:03:01,070 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 22:09:21,852 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 22:13:59,813 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-12 22:35:41,826 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 19:43:52,957 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 19:48:58,761 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 19:53:44,715 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 19:59:45,089 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 20:03:42,817 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 20:08:37,799 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 20:10:15,487 | ERROR | Threat monitor execution failed: An error occurred (InvalidGroupId.Malformed) when calling the DescribeSecurityGroups operation: Invalid id: "User1" (expecting "sg-...")
+2026-03-13 20:14:21,479 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 20:27:12,621 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 20:38:28,977 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 22:52:28,742 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:07:07,370 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:16:23,751 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:25:17,079 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:26:51,102 | ERROR | Threat monitor execution failed: cannot access local variable 'key_id' where it is not associated with a value
+2026-03-13 23:28:49,374 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:30:13,376 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:48:40,142 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-13 23:56:18,620 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:01:10,519 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:04:48,364 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:09:07,033 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:14:15,345 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:16:05,614 | ERROR | Threat monitor execution failed: name 'ec2_client' is not defined
+2026-03-14 00:21:07,385 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:24:59,674 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:28:34,292 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:37:20,287 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 00:43:27,413 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 17:55:35,719 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:04:46,478 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:14:36,747 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:20:17,498 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:25:42,194 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:30:18,134 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 18:34:16,788 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 19:52:27,976 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 19:58:26,679 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 20:09:10,964 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 20:21:57,534 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 20:47:25,547 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 22:28:46,134 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 22:33:34,966 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 22:48:24,852 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 22:53:01,002 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 22:58:25,811 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 23:03:53,212 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-14 23:08:33,867 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

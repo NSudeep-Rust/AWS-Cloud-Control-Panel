@@ -1,3 +1,13 @@
+from app.modules.scanner.s3_scanner import S3Scanner
+from app.modules.scanner.iam_scanner import IAMScanner
+from app.modules.scanner.ec2_scanner import EC2Scanner
+from app.modules.scanner.security_group_scanner import SecurityGroupScanner
+from app.modules.scanner.logging_scanner import LoggingScanner
+from app.modules.scanner.encryption_scanner import EncryptionScanner
+from app.modules.scanner.network_scanner import NetworkScanner
+
+
+
 class Scanner:
     """
     Placeholder for security scanning logic.
@@ -6,12 +16,27 @@ class Scanner:
     def __init__(self, aws_session):
         self.aws_session = aws_session
 
+        self.s3_scanner = S3Scanner(aws_session)
+        self.iam_scanner = IAMScanner(aws_session)
+        self.ec2_scanner = EC2Scanner(aws_session)
+        self.security_group_scanner = SecurityGroupScanner(aws_session)
+        self.logging_scanner = LoggingScanner(aws_session)
+        self.encryption_scanner = EncryptionScanner(aws_session)
+        self.network_scanner = NetworkScanner(aws_session)
+
+
     def run(self):
         """
-        Read-only AWS validation: list available regions.
+        Run all scanners.
         """
-        regions = self.get_all_regions()
-        return regions
+
+        findings = []
+
+        # S3 Scanner
+        s3_findings = self.s3_scanner.scan()
+        findings.extend(s3_findings)
+
+        return findings
 
     def get_all_regions(self):
         """

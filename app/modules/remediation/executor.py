@@ -22,6 +22,12 @@ class RemediationExecutor:
 
     def execute(self, finding):
 
+        if finding.get("type") != "PUBLIC_SECURITY_GROUP":
+            return {
+                "status": "SKIPPED",
+                "reason": "No remediation defined"
+            }
+
         remediation = finding.get("remediation")
 
         if not remediation or remediation.get("action") == "NO_ACTION":
@@ -33,6 +39,36 @@ class RemediationExecutor:
         action = remediation.get("action")
         resource_id = finding.get("resource_id")
         region = finding.get("region")
+
+        # -----------------------------------
+        # IAM Remediation Handling
+        # -----------------------------------
+        if action == "DETACH_ADMIN_POLICY":
+
+            if self.execution_mode == "DRY_RUN":
+                return {
+                    "status": "DRY_RUN",
+                    "action": action,
+                    "user_name": finding.get("resource_id"),
+                    "recommended_fix": remediation.get("recommended_fix")
+                }
+
+            iam = self.aws_session.session.client("iam")
+
+            iam.detach_user_policy(
+                UserName=finding.get("resource_id"),
+                PolicyArn="arn:aws:iam::aws:policy/AdministratorAccess"
+            )
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": action,
+                "user_name": finding.get("resource_id")
+            }
+
+
 
         # -----------------------------------
         # LIVE Safety Gate
