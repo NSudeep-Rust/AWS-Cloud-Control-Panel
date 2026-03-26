@@ -4,6 +4,34 @@ from app.core.policy_engine import PolicyEngine
 from app.modules.protection_history.history import ProtectionHistory
 from app.modules.remediation.executor import RemediationExecutor
 from app.core.aws_session import AWSSession
+from uuid import uuid4
+from app.modules.threat_monitor.threat_monitor import ThreatMonitor
+from fastapi import APIRouter
+router = APIRouter(
+    prefix="/api/analytics",
+    tags=["Analytics"]
+)
+
+SCAN_STORAGE = {}
+@router.post("/threat-monitor")
+def threat_monitor():
+    aws_session = AWSSession(profile_name="default")
+    aws_session.initialize()
+
+    monitor = ThreatMonitor(aws_session)
+
+    result = monitor.start()
+    scan_id = str(uuid4())
+
+    SCAN_STORAGE[scan_id] = result
+
+    print("Stored scan:", scan_id)
+
+    return {
+        "status": "success",
+        "scan_id": scan_id,
+        "data": result
+    }
 
 router = APIRouter(
     prefix="/api/analytics",

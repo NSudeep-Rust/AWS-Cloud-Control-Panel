@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 .env
 venv/
-database/history.json
-.vs/
+.env.local
+*.log
+.history/

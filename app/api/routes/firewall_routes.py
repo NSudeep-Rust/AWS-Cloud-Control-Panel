@@ -14,9 +14,10 @@ from app.core.aws_session import AWSSession
 from app.api.schemas import FirewallExecuteRequest
 from app.modules.threat_monitor.threat_monitor import ThreatMonitor
 from app.modules.remediation.rollback import RollbackEngine
-from app.modules.protection_history.history import ProtectionHistory
+from app.modules.remediation.rollback import RollbackEngine
 from app.modules.remediation.executor import RemediationExecutor
 from app.api.schemas import FirewallRollbackRequest
+
 
 
 router = APIRouter(
@@ -228,7 +229,7 @@ def firewall_execute(request: FirewallExecuteRequest):
             # One-time use token
             del EXECUTION_TOKENS[request.execution_token]
 
-            history = ProtectionHistory()
+          
 
             executor = RemediationExecutor(
                 aws_session=aws_session,
@@ -294,12 +295,11 @@ def firewall_rollback(request: FirewallRollbackRequest):
         aws_session = AWSSession(profile_name="default")
         aws_session.initialize()
 
-        history = ProtectionHistory()
+    
+        print(RollbackEngine.__init__.__code__.co_varnames)
 
-        rollback_engine = RollbackEngine(
-            aws_session=aws_session,
-            history=history
-        )
+
+        rollback_engine = RollbackEngine(aws_session)
 
         result = rollback_engine.rollback(request.execution_id)
 

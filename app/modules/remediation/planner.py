@@ -35,15 +35,44 @@ class RemediationPlanner:
         # ---------------------------
         # IAM wildcard inline policy
         # ---------------------------
-        if finding_type == "IAM_WILDCARD_POLICY":
+        if finding_type in ["IAM_WILDCARD_POLICY", "IAM_INLINE_ADMIN_POLICY"]:
             return {
                 "action": "REMOVE_INLINE_POLICY",
-                "reason": "IAM inline policy contains wildcard permissions",
+                "reason": "IAM inline policy contains excessive permissions",
                 "recommended_fix": "Remove or restrict inline policy",
                 "severity": finding["severity"]
+            }  
+
+    
+        # ---------------------------
+        # S3 versioning remediation
+        # ---------------------------
+        if finding_type == "S3_VERSIONING_DISABLED":
+            return {
+                "action": "ENABLE_S3_VERSIONING",
+                "reason": "S3 bucket versioning is disabled",
+                "recommended_fix": "Enable versioning on the bucket",
+                "severity": finding["severity"]
             }
+
+        # ---------------------------
+        # S3 Block Public Access
+        # ---------------------------
+        if finding_type == "S3_BLOCK_PUBLIC_ACCESS_DISABLED":
+            return {
+                "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
+                "reason": "S3 bucket public access block is disabled",
+                "recommended_fix": "Enable block public access settings",
+                "severity": finding["severity"]
+            }
+
+
+
+
+
 
         return {
             "action": "NO_ACTION",
             "reason": "No remediation required"
         }
+        

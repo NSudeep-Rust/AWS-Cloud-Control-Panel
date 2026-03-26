@@ -1,3 +1,4 @@
+from app.config.security_config import SEVERITY_MAP
 class S3Scanner:
 
     def __init__(self, aws_session):
@@ -31,7 +32,7 @@ class S3Scanner:
                         findings.append({
                             "id": f"public-s3-acl-{bucket_name}",
                             "type": "PUBLIC_S3_BUCKET",
-                            "severity": "HIGH",
+                            "severity": SEVERITY_MAP["PUBLIC_S3_BUCKET"],
                             "resource_id": bucket_name,
                             "description": "S3 bucket is publicly accessible via ACL"
                         })
@@ -55,7 +56,7 @@ class S3Scanner:
                     findings.append({
                         "id": f"s3-no-encryption-{bucket_name}",
                         "type": "S3_NO_ENCRYPTION",
-                        "severity": "HIGH",
+                        "severity": SEVERITY_MAP["S3_NO_ENCRYPTION"],
                         "resource_id": bucket_name,
                         "description": "S3 bucket does not have default encryption enabled"
                     })
@@ -73,7 +74,7 @@ class S3Scanner:
                     findings.append({
                         "id": f"s3-versioning-disabled-{bucket_name}",
                         "type": "S3_VERSIONING_DISABLED",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["S3_VERSIONING_DISABLED"],
                         "resource_id": bucket_name,
                         "description": "S3 bucket does not have versioning enabled"
                     })
@@ -92,7 +93,7 @@ class S3Scanner:
                     findings.append({
                         "id": f"s3-logging-disabled-{bucket_name}",
                         "type": "S3_LOGGING_DISABLED",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["S3_LOGGING_DISABLED"],
                         "resource_id": bucket_name,
                         "description": "S3 bucket does not have access logging enabled"
                     })
@@ -113,7 +114,7 @@ class S3Scanner:
                     findings.append({
                         "id": f"s3-public-access-block-disabled-{bucket_name}",
                         "type": "S3_BLOCK_PUBLIC_ACCESS_DISABLED",
-                        "severity": "HIGH",
+                        "severity": SEVERITY_MAP["S3_BLOCK_PUBLIC_ACCESS_DISABLED"],
                         "resource_id": bucket_name,
                         "description": "S3 bucket does not have full block public access enabled"
                     })

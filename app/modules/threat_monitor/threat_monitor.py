@@ -10,6 +10,8 @@ from app.modules.scanner.ec2_scanner import EC2Scanner
 from app.modules.scanner.logging_scanner import LoggingScanner
 from app.modules.scanner.encryption_scanner import EncryptionScanner
 from app.modules.scanner.network_scanner import NetworkScanner
+import uuid
+from app.core.scan_storage import SCAN_STORAGE
 
 
 class ThreatMonitor:
@@ -59,6 +61,7 @@ class ThreatMonitor:
 
                 if key not in grouped:
                     grouped[key] = {
+                        "id": f"sg-{finding['resource_id']}-{str(uuid.uuid4())[:6]}", 
                         "resource_id": finding["resource_id"],
                         "resource_name": finding["resource_name"],
                         "region": finding["region"],
@@ -85,13 +88,22 @@ class ThreatMonitor:
 
             for finding in normalized_findings:
 
+                # ✅ ADD THIS LINE
+                finding["type"] = "PUBLIC_SECURITY_GROUP"
+
                 remediation = self.remediation_planner.plan({
-                    "type": "PUBLIC_SECURITY_GROUP",
+                    "type": finding["type"],
                     "severity": finding["severity"]
                 })
 
                 finding["remediation"] = remediation
-                execution = self.executor.execute(finding)
+
+                execution = {
+                    "status": "PLANNED",
+                    "action": remediation.get("action"),
+                    "message": "Execution deferred"
+                }
+
                 finding["execution"] = execution
 
                 enriched_firewall_findings.append(finding)
@@ -101,11 +113,37 @@ class ThreatMonitor:
             # -------------------------
             s3_findings = self.s3_scanner.scan()
 
+            enriched_s3_findings = []
+
+            for finding in s3_findings:
+
+                remediation = self.remediation_planner.plan({
+                    "type": finding["type"],
+                    "severity": finding["severity"]
+                })
+
+                finding["remediation"] = remediation
+
+                execution = {
+                    "status": "PLANNED",
+                    "action": remediation.get("action"),
+                    "message": "Execution deferred"
+                }
+
+                finding["execution"] = execution
+
+                enriched_s3_findings.append(finding)
+
+
+
+
+
 
             # -------------------------
             # EC2 Scan
             # -------------------------
             ec2_findings = self.ec2_scanner.scan()
+
 
 
             # -------------------------
@@ -137,11 +175,11 @@ class ThreatMonitor:
             # -------------------------
             all_findings = []
 
-            for finding in normalized_findings:
+            for finding in enriched_firewall_findings:
                 finding["type"] = "PUBLIC_SECURITY_GROUP"
                 all_findings.append(finding)
 
-            for finding in s3_findings:
+            for finding in enriched_s3_findings:
                 all_findings.append(finding)
 
             for finding in ec2_findings:
@@ -184,16 +222,16 @@ class ThreatMonitor:
             # Calculate risk score
             # -------------------------
             severity_weights = {
-                "CRITICAL": 40,
-                "HIGH": 25,
-                "MEDIUM": 15,
-                "LOW": 5
+                "CRITICAL": 20,
+                "HIGH": 10,
+                "MEDIUM": 5,
+                "LOW": 1
             }
 
             risk_score = 0
 
             for violation in policy_violations:
-                severity = violation.get("severity", "").strip().upper()
+                severity = violation.get("severity", "LOW").strip().upper()
                 risk_score += severity_weights.get(severity, 0)
 
             security_score = max(0, 100 - risk_score)
@@ -219,7 +257,11 @@ class ThreatMonitor:
                         enforcement = violation["enforcement"]
 
                 if enforcement == "AUTO_FIX":
-                    execution = self.executor.execute(finding)
+                    execution = {
+                        "status": "PLANNED",
+                        "action": remediation.get("action"),
+                        "message": "Execution deferred"
+                    }
                 else:
                     execution = {
                         "status": "BLOCKED_BY_POLICY",
@@ -249,9 +291,9 @@ class ThreatMonitor:
             # -------------------------
             # 6️⃣ Return Result
             # -------------------------
-            return {
+            result = {
                 "public_security_groups": enriched_firewall_findings,
-                "s3_findings": s3_findings,
+                "s3_findings": enriched_s3_findings,
                 "ec2_findings": ec2_findings,
                 "logging_findings": logging_findings,
                 "encryption_findings": encryption_findings,
@@ -263,3 +305,5 @@ class ThreatMonitor:
                     "total_violations": len(policy_violations)
                 }
             }
+
+            return result

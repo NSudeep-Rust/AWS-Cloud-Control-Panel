@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\app",
+    "\\app\\api",
+    "\\app\\api\\routes",
+    "\\app\\config",
+    "\\app\\database",
+    "\\app\\logs",
+    "\\app\\modules",
+    "\\app\\modules\\firewall",
+    "\\app\\modules\\policy_engine",
+    "\\app\\modules\\scanner"
+  ],
+  "PreviewInSolutionExplorer": false
+}

@@ -1,3 +1,5 @@
+﻿
+from app.modules.remediation.safety_guard import RemediationSafetyGuard
 from app.config.security_config import (
     DEFAULT_EXECUTION_MODE,
     LIVE_EXECUTION_ENABLED,
@@ -19,30 +21,43 @@ class RemediationExecutor:
         self.aws_session = aws_session
         self.history = history
         self.execution_mode = execution_mode
+        self.safety_guard = RemediationSafetyGuard(aws_session)
+   
 
     def execute(self, finding):
 
-        if finding.get("type") != "PUBLIC_SECURITY_GROUP":
-            return {
-                "status": "SKIPPED",
-                "reason": "No remediation defined"
-            }
 
         remediation = finding.get("remediation")
-
         if not remediation or remediation.get("action") == "NO_ACTION":
             return {
                 "status": "SKIPPED",
                 "reason": "No remediation defined"
             }
 
-        action = remediation.get("action")
+        action = remediation.get("action") if remediation else None
+        force_execute = finding.get("force_execute", False)
+
+        guard = self.safety_guard.validate(finding, action)
+
+        if not guard["allowed"] and not force_execute:
+            return {
+                "status": guard.get("status", "BLOCKED"),
+                "reason": guard["reason"],
+                "action": action
+            }
+
+      
+
+        
         resource_id = finding.get("resource_id")
         region = finding.get("region")
 
+       
+
         # -----------------------------------
-        # IAM Remediation Handling
+        # ACTION ROUTING (Phase 1)
         # -----------------------------------
+
         if action == "DETACH_ADMIN_POLICY":
 
             if self.execution_mode == "DRY_RUN":
@@ -67,6 +82,180 @@ class RemediationExecutor:
                 "action": action,
                 "user_name": finding.get("resource_id")
             }
+
+
+        # -----------------------------------
+        # S3 Versioning Enable
+        # -----------------------------------
+        if action == "ENABLE_S3_VERSIONING":
+
+            bucket_name = finding.get("resource_id")
+
+            if self.execution_mode == "DRY_RUN":
+                return {
+                    "status": "DRY_RUN",
+                    "action": action,
+                    "bucket_name": bucket_name,
+                    "recommended_fix": remediation.get("recommended_fix")
+                }
+
+            s3 = self.aws_session.session.client("s3")
+
+            # 🔥 STEP 1: GET CURRENT STATE
+            current = s3.get_bucket_versioning(Bucket=bucket_name)
+
+            previous_status = current.get("Status", "Disabled")
+
+            # 🔥 STEP 2: APPLY FIX
+            s3.put_bucket_versioning(
+                Bucket=bucket_name,
+                VersioningConfiguration={"Status": "Enabled"}
+            )
+
+            # 🔥 STEP 3: RETURN WITH METADATA
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": action,
+                "bucket_name": bucket_name,
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "previous_versioning_status": previous_status
+                }
+            }
+
+
+        # -----------------------------------
+        # S3 Block Public Access
+        # -----------------------------------
+        if action == "ENABLE_BLOCK_PUBLIC_ACCESS":
+
+            bucket_name = finding.get("resource_id")
+
+            s3 = self.aws_session.session.client("s3")
+
+            # 🔥 STEP 1 — GET CURRENT STATE (IMPORTANT)
+            try:
+                current_config = s3.get_public_access_block(Bucket=bucket_name)
+                previous_config = current_config.get("PublicAccessBlockConfiguration", {})
+            except Exception:
+                # If not set, treat as all False
+                previous_config = {
+                    "BlockPublicAcls": False,
+                    "IgnorePublicAcls": False,
+                    "BlockPublicPolicy": False,
+                    "RestrictPublicBuckets": False
+                }
+
+            if self.execution_mode == "DRY_RUN":
+                return {
+                    "status": "DRY_RUN",
+                    "action": action,
+                    "bucket_name": bucket_name,
+                    "recommended_fix": remediation.get("recommended_fix"),
+                    "metadata": {
+                        "bucket_name": bucket_name,
+                        "previous_public_access_block": previous_config
+                    }
+                }
+
+            # 🔥 APPLY FIX
+            s3.put_public_access_block(
+                Bucket=bucket_name,
+                PublicAccessBlockConfiguration={
+                    "BlockPublicAcls": True,
+                    "IgnorePublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "RestrictPublicBuckets": True
+                }
+            )
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": action,
+                "bucket_name": bucket_name,
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "previous_public_access_block": previous_config
+                }
+            }
+
+        # -----------------------------------
+        # REMOVE INLINE POLICY (IAM)
+        # -----------------------------------
+        if action == "REMOVE_INLINE_POLICY":
+
+            user_name = finding.get("resource_id")
+
+            if self.execution_mode == "DRY_RUN":
+                return {
+                    "status": "DRY_RUN",
+                    "action": action,
+                    "user_name": user_name,
+                    "recommended_fix": remediation.get("recommended_fix")
+                }
+
+            iam = self.aws_session.session.client("iam")
+
+            try:
+                # get inline policies
+                policies = iam.list_user_policies(UserName=user_name)
+
+                backup_policies = []
+
+                for policy_name in policies.get("PolicyNames", []):
+
+                    policy_doc = iam.get_user_policy(
+                        UserName=user_name,
+                        PolicyName=policy_name
+                    )
+
+                    backup_policies.append({
+                        "policy_name": policy_name,
+                        "document": policy_doc["PolicyDocument"]
+                    })
+
+                    iam.delete_user_policy(
+                        UserName=user_name,
+                        PolicyName=policy_name
+                    )
+
+                return {
+                    "status": "EXECUTED",
+                    "execution_id": str(uuid.uuid4()),
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "action": action,
+                    "user_name": user_name,
+
+                    # 🔥 ADD THIS
+                    "metadata": {
+                        "user_name": user_name,
+                        "policies": backup_policies
+                    }
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "action": action,
+                    "reason": str(e)
+                }
+
+
+
+
+        # -----------------------------------
+        # ONLY allow SG logic for SG action
+        # -----------------------------------
+        if action != "RESTRICT_SECURITY_GROUP":
+           return {
+               "status": "SKIPPED",
+               "reason": f"No executor defined for action {action}"
+           }
+            
 
 
 
@@ -196,5 +385,12 @@ class RemediationExecutor:
             "region": region,
             "action": action,
             "revoked_rules": revoked_rules,
-            "snapshot_before": snapshot_before
+            "snapshot_before": snapshot_before,
+
+            # 🔥 ADD THIS BLOCK (THIS IS YOUR TASK)
+            "metadata": {
+                "security_group_id": resource_id,
+                "region": region,
+                "revoked_rules": revoked_rules
+            }
         }

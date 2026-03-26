@@ -1,103 +1,62 @@
 ﻿from datetime import datetime
-
-
+from app.database.db import get_connection
+import json
+from app.core.aws_session import AWSSession
 class RollbackEngine:
-    """
-    Restores previously executed remediation actions.
-    Supports firewall and IAM rollback.
-    """
 
-    def __init__(self, aws_session, history):
+    def __init__(self, aws_session):
         self.aws_session = aws_session
-        self.history = history
 
     def rollback(self, execution_id):
 
-        history_data = self.history.read_history()
-
-        target_execution = None
+        conn = get_connection()
+        cursor = conn.cursor()
 
         # -----------------------------------
-        # Locate execution in history
+        # 1. Fetch execution from DB
         # -----------------------------------
-        for event in history_data:
-            for detail in event.get("details", []):
-                execution = detail.get("execution")
+        cursor.execute("""
+            SELECT * FROM executions WHERE execution_id = ?
+        """, (execution_id,))
 
-                if not execution:
-                    continue
+        row = cursor.fetchone()
+        conn.close()
 
-                if execution.get("execution_id") == execution_id:
-                    target_execution = execution
-                    break
-
-        if not target_execution:
+        if not row:
             return {
                 "status": "FAILED",
-                "reason": "Execution ID not found"
+                "reason": "Execution ID not found in DB"
             }
 
-        action = target_execution.get("action")
+        action = row["action"]
+        metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+
+        resource_id = (
+            metadata.get("user_name") or
+            metadata.get("bucket_name") or
+            metadata.get("resource_id") or
+            row["resource_name"]
+        )
 
         # =====================================================
-        # FIREWALL ROLLBACK
-        # =====================================================
-        if action == "RESTRICT_SECURITY_GROUP":
-
-            revoked_rules = target_execution.get("revoked_rules")
-            resource_id = target_execution.get("resource_id")
-            region = target_execution.get("region")
-
-            if not revoked_rules:
-                return {
-                    "status": "FAILED",
-                    "reason": "No revoked rules found for this execution"
-                }
-
-            try:
-                ec2 = self.aws_session.session.client("ec2", region_name=region)
-
-                ec2.authorize_security_group_ingress(
-                    GroupId=resource_id,
-                    IpPermissions=revoked_rules
-                )
-
-                return {
-                    "status": "ROLLBACK_SUCCESS",
-                    "rollback_timestamp": datetime.utcnow().isoformat(),
-                    "execution_id": execution_id,
-                    "resource_id": resource_id,
-                    "region": region,
-                    "restored_rules": revoked_rules
-                }
-
-            except Exception as e:
-                return {
-                    "status": "FAILED",
-                    "reason": str(e)
-                }
-
-        # =====================================================
-        # IAM ROLLBACK
+        # IAM ROLLBACK (ADMIN POLICY)
         # =====================================================
         if action == "DETACH_ADMIN_POLICY":
-
-            user_name = target_execution.get("user_name")
 
             try:
                 iam = self.aws_session.session.client("iam")
 
                 iam.attach_user_policy(
-                    UserName=user_name,
+                    UserName=resource_id,
                     PolicyArn="arn:aws:iam::aws:policy/AdministratorAccess"
                 )
 
                 return {
                     "status": "ROLLBACK_SUCCESS",
-                    "rollback_timestamp": datetime.utcnow().isoformat(),
                     "execution_id": execution_id,
-                    "resource_id": user_name,
-                    "restored_policy": "AdministratorAccess"
+                    "action": action,
+                    "resource_id": resource_id,
+                    "timestamp": datetime.utcnow().isoformat()
                 }
 
             except Exception as e:
@@ -107,7 +66,145 @@ class RollbackEngine:
                 }
 
         # =====================================================
-        # UNKNOWN ACTION
+        # INLINE POLICY ROLLBACK (NOT POSSIBLE)
+        # =====================================================
+        if action == "REMOVE_INLINE_POLICY":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            user_name = inner.get("user_name")
+            policies = inner.get("policies", [])
+
+            if not user_name or not policies:
+                return {
+                    "status": "FAILED",
+                    "reason": "No backup policies found"
+                }
+
+            iam = self.aws_session.session.client("iam")
+
+            for policy in policies:
+                iam.put_user_policy(
+                    UserName=user_name,
+                    PolicyName=policy["policy_name"],
+                    PolicyDocument=json.dumps(policy["document"])
+                )
+
+            return {
+                "status": "ROLLBACK_SUCCESS",
+                "execution_id": execution_id,
+                "restored_policies": len(policies)
+            }
+
+        # =====================================================
+        # SECURITY GROUP ROLLBACK
+        # =====================================================
+        if action == "RESTRICT_SECURITY_GROUP":
+
+            metadata = json.loads(row["metadata"])
+
+            revoked_rules = metadata.get("revoked_rules")
+            resource_id = metadata.get("resource_id")
+            region = metadata.get("region")
+
+            if not revoked_rules:
+                return {
+                    "status": "FAILED",
+                    "reason": "No revoked rules stored"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            ec2.authorize_security_group_ingress(
+                GroupId=resource_id,
+                IpPermissions=revoked_rules
+            )
+
+            return {
+                "status": "ROLLBACK_SUCCESS",
+                "execution_id": execution_id
+            }
+        
+        # -----------------------------------
+        # S3 VERSIONING ROLLBACK
+        # -----------------------------------
+        if action == "ENABLE_S3_VERSIONING":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+
+            # 🔥 SAFE EXTRACTION (handles all nesting cases)
+            inner = metadata.get("metadata") or metadata
+
+            bucket_name = inner.get("bucket_name")
+            previous_status = inner.get("previous_versioning_status")
+
+            print("EXTRACTED:", bucket_name, previous_status)
+
+            if not bucket_name:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing bucket_name in metadata"
+                }
+
+            s3 = self.aws_session.session.client("s3")
+
+            if previous_status in ["Enabled", "Suspended"]:
+                s3.put_bucket_versioning(
+                    Bucket=bucket_name,
+                    VersioningConfiguration={"Status": previous_status}
+                )
+            else:
+                s3.put_bucket_versioning(
+                    Bucket=bucket_name,
+                    VersioningConfiguration={"Status": "Suspended"}
+                )
+
+            return {
+                "status": "ROLLBACK_SUCCESS",
+                "execution_id": execution_id,
+                "bucket_name": bucket_name,
+                "restored_to": previous_status
+            }
+
+
+        # -----------------------------------
+        # S3 BLOCK PUBLIC ACCESS ROLLBACK
+        # -----------------------------------
+        if action == "ENABLE_BLOCK_PUBLIC_ACCESS":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            bucket_name = inner.get("bucket_name")
+            previous_config = inner.get("previous_public_access_block")
+
+            if not bucket_name or not previous_config:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing metadata for rollback"
+                }
+
+            s3 = self.aws_session.session.client("s3")
+
+            s3.put_public_access_block(
+                Bucket=bucket_name,
+                PublicAccessBlockConfiguration=previous_config
+            )
+
+            return {
+                "status": "ROLLBACK_SUCCESS",
+                "execution_id": execution_id,
+                "bucket_name": bucket_name,
+                "restored_config": previous_config
+            }
+
+
+
+
+
+        # =====================================================
+        # UNKNOWN
         # =====================================================
         return {
             "status": "FAILED",
