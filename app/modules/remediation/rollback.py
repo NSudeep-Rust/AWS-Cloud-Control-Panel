@@ -1,4 +1,5 @@
 ﻿from datetime import datetime
+from botocore.exceptions import ClientError
 from app.database.db import get_connection
 import json
 from app.core.aws_session import AWSSession
@@ -482,9 +483,7 @@ class RollbackEngine:
                     "reason": str(e)
                 }
 
-        # -----------------------------------
-        # VPC FLOW
-        # -----------------------------------
+    
 
         # -----------------------------------
         # VPC FLOW LOGS ROLLBACK
@@ -520,6 +519,276 @@ class RollbackEngine:
                     "status": "FAILED",
                     "reason": str(e)
                 }
+
+        # -----------------------------------
+        # DELETE UNUSED SG ROLLBACK
+        # -----------------------------------
+
+        if action == "DELETE_UNUSED_SECURITY_GROUP":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+
+            inner = metadata.get("metadata") or metadata
+
+            sg = inner.get("security_group")
+
+            # 🔥 FIX: region fallback (critical)
+            region = (
+                metadata.get("region") or
+                inner.get("region") or
+                row["region"] or
+                row["resource_region"]
+            )
+
+            print("ROLLBACK DEBUG → REGION:", region)
+            print("ROLLBACK DEBUG → VPC:", sg.get("VpcId") if sg else None)
+
+            if not region:
+                return {
+                    "status": "FAILED",
+                    "reason": "Region missing in rollback metadata"
+                }
+
+            if not sg:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing security group snapshot"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            try:
+                # recreate SG
+                response = ec2.create_security_group(
+                    GroupName=sg["GroupName"],
+                    Description=sg["Description"],
+                    VpcId=sg["VpcId"]
+                )
+
+                new_sg_id = response["GroupId"]
+
+                # ----------------------------
+                # ✅ INGRESS
+                # ----------------------------
+                if sg.get("IpPermissions"):
+                    try:
+                        ec2.authorize_security_group_ingress(
+                            GroupId=new_sg_id,
+                            IpPermissions=sg["IpPermissions"]
+                        )
+                    except ClientError as e:
+                        if "InvalidPermission.Duplicate" not in str(e):
+                            raise
+
+                # ----------------------------
+                # ✅ EGRESS
+                # ----------------------------
+                if sg.get("IpPermissionsEgress"):
+                    try:
+                        ec2.revoke_security_group_egress(
+                            GroupId=new_sg_id,
+                            IpPermissions=[{
+                                "IpProtocol": "-1",
+                                "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+                            }]
+                        )
+                    except ClientError:
+                        pass
+
+                    try:
+                        ec2.authorize_security_group_egress(
+                            GroupId=new_sg_id,
+                            IpPermissions=sg["IpPermissionsEgress"]
+                        )
+                    except ClientError as e:
+                        if "InvalidPermission.Duplicate" not in str(e):
+                            raise
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "new_security_group_id": new_sg_id
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        # -----------------------------------
+        # INLINE WILDCARD POLICY ROLLBACK
+        # -----------------------------------
+        if action == "REMOVE_INLINE_WILDCARD_POLICY":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            user_name = inner.get("user_name")
+            policy_name = inner.get("policy_name")
+            original_policy = inner.get("original_policy")
+
+            if not user_name or not policy_name or not original_policy:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing rollback metadata"
+                }
+
+            iam = self.aws_session.session.client("iam")
+
+            try:
+                iam.put_user_policy(
+                    UserName=user_name,
+                    PolicyName=policy_name,
+                    PolicyDocument=json.dumps(original_policy)
+                )
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "user_name": user_name,
+                    "policy_name": policy_name
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        if action == "RESTRICT_NACL_INBOUND":
+
+            metadata = json.loads(row["metadata"])
+            inner = metadata.get("metadata") or metadata
+
+            nacl_id = inner.get("nacl_id")
+            region = inner.get("region")
+            removed_rules = inner.get("removed_rules", [])
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            for rule in removed_rules:
+
+                params = {
+                    "NetworkAclId": nacl_id,
+                    "RuleNumber": rule["RuleNumber"],
+                    "Protocol": rule["Protocol"],
+                    "RuleAction": rule["RuleAction"],
+                    "Egress": False,
+                    "CidrBlock": rule.get("CidrBlock"),
+                }
+
+                # ✅ FIX for your error
+                if rule.get("PortRange"):
+                    params["PortRange"] = rule["PortRange"]
+
+                ec2.create_network_acl_entry(**params)
+
+            return {"status": "ROLLBACK_SUCCESS"}
+
+        if action == "RESTRICT_NACL_OUTBOUND":
+
+            metadata = json.loads(row["metadata"])
+            inner = metadata.get("metadata") or metadata
+
+            nacl_id = inner.get("nacl_id")
+            region = inner.get("region")
+            removed_rules = inner.get("removed_rules", [])
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            for rule in removed_rules:
+
+                params = {
+                    "NetworkAclId": nacl_id,
+                    "RuleNumber": rule["RuleNumber"],
+                    "Protocol": rule["Protocol"],
+                    "RuleAction": rule["RuleAction"],
+                    "Egress": True,
+                    "CidrBlock": rule.get("CidrBlock"),
+                }
+
+                # ✅ FIX for your error
+                if rule.get("PortRange"):
+                    params["PortRange"] = rule["PortRange"]
+
+                ec2.create_network_acl_entry(**params)
+
+            return {"status": "ROLLBACK_SUCCESS"}
+
+        if action == "REMOVE_PUBLIC_ROUTE":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            route_table_id = inner.get("route_table_id")
+            region = inner.get("region")
+            route = inner.get("deleted_route")
+
+            if not route:
+                return {
+                    "status": "FAILED",
+                    "reason": "No route data found"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            ec2.create_route(
+                RouteTableId=route_table_id,
+                DestinationCidrBlock=route.get("DestinationCidrBlock"),
+                GatewayId=route.get("GatewayId")
+            )
+
+            return {
+                "status": "ROLLBACK_SUCCESS",
+                "route_table_id": route_table_id
+            }
+
+        # -----------------------------------
+        # IAM ROLE TRUST ROLLBACK
+        # -----------------------------------
+        if action == "RESTRICT_ROLE_EXTERNAL_TRUST":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            role_name = (
+                inner.get("role_name") or
+                metadata.get("role_name") or
+                row["resource_name"]
+            )
+
+            previous_policy = (
+                inner.get("previous_policy") or
+                metadata.get("previous_policy")
+            )
+
+            if not role_name or not previous_policy:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing role_name or previous_policy"
+                }
+
+            iam = self.aws_session.session.client("iam")
+
+            try:
+                iam.update_assume_role_policy(
+                    RoleName=role_name,
+                    PolicyDocument=json.dumps(previous_policy)
+                )
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "role_name": role_name
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
 
         # =====================================================
         # UNKNOWN

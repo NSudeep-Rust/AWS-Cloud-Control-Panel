@@ -314,3 +314,57 @@
 2026-03-28 00:38:19,726 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-03-28 00:58:30,667 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-03-28 01:13:16,564 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 13:10:14,368 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 13:22:15,179 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 13:32:16,905 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 13:49:37,333 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 14:43:50,774 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 15:31:22,972 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 15:31:27,334 | ERROR | Threat monitor execution failed: name 'SecurityGroupScanner' is not defined
+2026-03-29 15:44:17,086 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 15:44:21,012 | ERROR | Threat monitor execution failed: name 'SecurityGroupScanner' is not defined
+2026-03-29 15:45:43,736 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 15:48:18,899 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 15:50:56,010 | ERROR | Threat monitor execution failed: name 'region' is not defined
+2026-03-29 16:05:33,837 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 16:23:54,620 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 17:01:51,110 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 17:07:48,899 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 17:07:51,985 | ERROR | Threat monitor execution failed: 'list' object is not callable
+2026-03-29 17:12:47,909 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 17:32:06,119 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 17:48:55,831 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 18:02:16,503 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 18:04:11,308 | ERROR | Threat monitor execution failed: name 'username' is not defined
+2026-03-29 18:07:14,031 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 18:09:00,901 | ERROR | Threat monitor execution failed: name 'finding' is not defined
+2026-03-29 18:13:49,293 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 18:31:26,547 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 18:53:48,798 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 19:16:27,051 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 19:25:54,474 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 19:40:02,845 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 19:42:10,570 | ERROR | Threat monitor execution failed: cannot access local variable 'policy_violations' where it is not associated with a value
+2026-03-29 21:00:06,092 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 21:32:33,486 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 21:40:45,461 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 21:46:21,788 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 21:55:32,249 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 22:06:02,170 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 22:29:17,556 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 22:38:34,628 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 22:46:15,260 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 22:57:37,664 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 23:22:13,620 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 23:39:04,578 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-29 23:49:11,937 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 00:10:22,407 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 00:17:44,059 | ERROR | Rollback failed: Parameter validation failed:
+Invalid type for parameter PortRange, value: None, type: <class 'NoneType'>, valid types: <class 'dict'>
+2026-03-30 00:26:38,107 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 00:28:11,585 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 00:34:22,717 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 00:50:46,568 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 01:15:51,779 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 01:29:03,476 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-03-30 01:43:49,141 | INFO | Module=ThreatMonitor | Account=default | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

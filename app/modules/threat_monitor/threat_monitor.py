@@ -1,4 +1,5 @@
-﻿from app.modules.scanner.scanner import Scanner
+﻿# (imports unchanged)
+from app.modules.scanner.scanner import Scanner
 from app.modules.remediation.planner import RemediationPlanner
 from app.modules.protection_history.history import ProtectionHistory
 from app.modules.remediation.executor import RemediationExecutor
@@ -15,12 +16,10 @@ from app.core.scan_storage import SCAN_STORAGE
 
 
 class ThreatMonitor:
-    """
-    Coordinates security checks over time.
-    """
 
     def __init__(self, aws_session, execution_mode="DRY_RUN", live_approved=False):
         self.aws_session = aws_session
+        self.regions = aws_session.get_all_regions()
         self.scanner = Scanner(aws_session)
         self.remediation_planner = RemediationPlanner()
         self.history = ProtectionHistory()
@@ -38,321 +37,227 @@ class ThreatMonitor:
         self.encryption_scanner = EncryptionScanner(aws_session)
         self.network_scanner = NetworkScanner(aws_session)
 
-
-
-
     def start(self):
-            """
-            Full monitoring lifecycle:
-            """
 
-            # -------------------------
-            # 1️⃣ Scan Firewall
-            # -------------------------
-            raw_findings = self.scanner.find_public_security_groups()
+        raw_findings = self.scanner.find_public_security_groups()
 
-            # -------------------------
-            # 2️⃣ Normalize Firewall Findings
-            # -------------------------
-            grouped = {}
+        grouped = {}
+        for finding in raw_findings:
+            key = (finding["resource_id"], finding["region"])
 
-            for finding in raw_findings:
-                key = (finding["resource_id"], finding["region"])
-
-                if key not in grouped:
-                    grouped[key] = {
-                        "id": f"sg-{finding['resource_id']}-{str(uuid.uuid4())[:6]}", 
-                        "resource_id": finding["resource_id"],
-                        "resource_name": finding["resource_name"],
-                        "region": finding["region"],
-                        "severity": finding["severity"],
-                        "protocols": set(),
-                        "ports": set(),
-                        "description": finding["description"],
-                    }
-
-                grouped[key]["protocols"].add(finding["protocol"])
-                grouped[key]["ports"].add(finding["port_range"])
-
-            normalized_findings = []
-
-            for item in grouped.values():
-                item["protocols"] = list(item["protocols"])
-                item["ports"] = list(item["ports"])
-                normalized_findings.append(item)
-
-            # -------------------------
-            # 3️⃣ Firewall Remediation
-            # -------------------------
-            enriched_firewall_findings = []
-
-            for finding in normalized_findings:
-
-                # ✅ ADD THIS LINE
-                finding["type"] = "PUBLIC_SECURITY_GROUP"
-
-                remediation = self.remediation_planner.plan({
-                    "type": finding["type"],
-                    "severity": finding["severity"]
-                })
-
-                finding["remediation"] = remediation
-
-                execution = {
-                    "status": "PLANNED",
-                    "action": remediation.get("action"),
-                    "message": "Execution deferred"
+            if key not in grouped:
+                grouped[key] = {
+                    "id": f"PUBLIC_SECURITY_GROUP-{finding['resource_id']}-{finding['region']}",
+                    "resource_id": finding["resource_id"],
+                    "resource_name": finding["resource_name"],
+                    "region": finding["region"],
+                    "severity": finding["severity"],
+                    "protocols": set(),
+                    "ports": set(),
+                    "description": finding["description"],
                 }
 
-                finding["execution"] = execution
+            grouped[key]["protocols"].add(finding["protocol"])
+            grouped[key]["ports"].add(finding["port_range"])
 
-                enriched_firewall_findings.append(finding)
+        normalized_findings = []
+        for item in grouped.values():
+            item["protocols"] = list(item["protocols"])
+            item["ports"] = list(item["ports"])
+            normalized_findings.append(item)
 
-            # -------------------------
-            #  S3 Scan
-            # -------------------------
-            s3_findings = self.s3_scanner.scan()
+        enriched_firewall_findings = []
+        for finding in normalized_findings:
+            finding["type"] = "PUBLIC_SECURITY_GROUP"
 
-            enriched_s3_findings = []
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
 
-            for finding in s3_findings:
-
-                remediation = self.remediation_planner.plan({
-                    "type": finding["type"],
-                    "severity": finding["severity"]
-                })
-
-                finding["remediation"] = remediation
-
-                execution = {
-                    "status": "PLANNED",
-                    "action": remediation.get("action"),
-                    "message": "Execution deferred"
-                }
-
-                finding["execution"] = execution
-
-                enriched_s3_findings.append(finding)
-
-
-
-
-
-
-            # -------------------------
-            # EC2 Scan
-            # -------------------------
-            ec2_findings = self.ec2_scanner.scan()
-
-
-
-            # -------------------------
-            # Logging Scan
-            # -------------------------
-            logging_findings_raw = self.logging_scanner.scan()
-
-            enriched_logging_findings = []
-
-            for finding in logging_findings_raw:
-
-                remediation = self.remediation_planner.plan({
-                    "type": finding["type"],
-                    "severity": finding["severity"]
-                })
-
-                finding["remediation"] = remediation
-
-                execution = {
-                    "status": "PLANNED",
-                    "action": remediation.get("action"),
-                    "message": "Execution deferred"
-                }
-
-                finding["execution"] = execution
-
-                enriched_logging_findings.append(finding)
-
-
-            # -------------------------
-            # encryption findings
-            # -------------------------
-
-            encryption_findings = self.encryption_scanner.scan()
-            # -------------------------
-            # Encryption Remediation (KMS FIX)
-            # -------------------------
-            enriched_encryption_findings = []
-
-            for finding in encryption_findings:
-
-                remediation = self.remediation_planner.plan({
-                    "type": finding["type"],
-                    "severity": finding["severity"]
-                })
-
-                finding["remediation"] = remediation
-
-                execution = {
-                    "status": "PLANNED",
-                    "action": remediation.get("action"),
-                    "message": "Execution deferred"
-                }
-
-                finding["execution"] = execution
-
-                enriched_encryption_findings.append(finding)
-
-            # -------------------------
-            # network findings
-            # -------------------------
-
-            network_findings = self.network_scanner.scan()
-
-
-            # -------------------------
-            # 4️⃣ IAM Audit + Remediation
-            # -------------------------
-            raw_iam_findings = self.iam_manager.audit()
-
-            # -------------------------
-            # Combine all findings for policy evaluation
-            # -------------------------
-            all_findings = []
-
-            for finding in enriched_firewall_findings:
-                finding["type"] = "PUBLIC_SECURITY_GROUP"
-                all_findings.append(finding)
-
-            for finding in enriched_s3_findings:
-                all_findings.append(finding)
-
-            for finding in ec2_findings:
-                all_findings.append(finding)
-
-            for finding in enriched_logging_findings:
-                all_findings.append(finding)
-
-            for finding in enriched_encryption_findings:
-                all_findings.append(finding)
-
-            for finding in network_findings:
-                all_findings.append(finding)
-
-
-
-            for finding in raw_iam_findings:
-                all_findings.append(finding)
-
-            
-
-
-          
-
-            # -------------------------
-            #  Policy Engine Evaluation
-            # -------------------------
-            policy_results = self.policy_engine.evaluate(all_findings)
-            print("Policy violations detected:", policy_results)
-            # -------------------------
-            # Build policy violation report
-            # -------------------------
-            policy_violations = []
-
-            for violation in policy_results:
-                policy_violations.append({
-                    "policy_id": violation["policy_id"],
-                    "policy_name": violation["policy_name"],
-                    "severity": violation["severity"],
-                    "enforcement": violation["enforcement"],
-                    "resource_id": violation["resource_id"]
-                })
-
-            # -------------------------
-            # Calculate risk score
-            # -------------------------
-            severity_weights = {
-                "CRITICAL": 20,
-                "HIGH": 10,
-                "MEDIUM": 5,
-                "LOW": 1
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
             }
 
-            risk_score = 0
-
-            for violation in policy_violations:
-                severity = violation.get("severity", "LOW").strip().upper()
-                risk_score += severity_weights.get(severity, 0)
-
-            security_score = max(0, 100 - risk_score)
+            enriched_firewall_findings.append(finding)
 
 
 
-            enriched_iam_findings = []
+        # S3
+        s3_findings = self.s3_scanner.scan()
+        enriched_s3_findings = []
+        for finding in s3_findings:
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
+            }
+            enriched_s3_findings.append(finding)
 
-            for finding in raw_iam_findings:
+        # EC2
+        ec2_findings = self.ec2_scanner.scan()
 
-                remediation = self.remediation_planner.plan({
-                    "type": finding["type"],
-                    "severity": finding["severity"]
-                })
+        # Logging
+        logging_findings_raw = self.logging_scanner.scan()
+        enriched_logging_findings = []
+        for finding in logging_findings_raw:
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
+            }
+            enriched_logging_findings.append(finding)
 
-                finding["remediation"] = remediation
+        # Encryption
+        encryption_findings = self.encryption_scanner.scan()
+        enriched_encryption_findings = []
+        for finding in encryption_findings:
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
+            }
+            enriched_encryption_findings.append(finding)
 
-                # Check policy enforcement
-                enforcement = "AUTO_FIX"
+        # Network
+        network_findings_raw = []
+        for region in self.regions:
+            findings = self.network_scanner.scan(region=region)
+            for f in findings:
+                f["region"] = region
+            network_findings_raw.extend(findings)
 
-                for violation in policy_results:
-                    if violation["resource_id"] == finding["resource_id"]:
-                        enforcement = violation["enforcement"]
+        enriched_network_findings = []
+        for finding in network_findings_raw:
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
+            }
+            enriched_network_findings.append(finding)
 
-                if enforcement == "AUTO_FIX":
-                    execution = {
-                        "status": "PLANNED",
-                        "action": remediation.get("action"),
-                        "message": "Execution deferred"
-                    }
-                else:
-                    execution = {
-                        "status": "BLOCKED_BY_POLICY",
-                        "reason": f"Policy requires {enforcement}",
-                        "action": remediation.get("action")
-                    }
+        raw_iam_findings = self.iam_manager.audit()
 
-                finding["execution"] = execution
+        # ✅ ADD THIS BLOCK (IAM ENRICHMENT FIX)
+        enriched_iam_findings = []
 
-                enriched_iam_findings.append(finding)
+        for finding in raw_iam_findings:
+            remediation = self.remediation_planner.plan({
+                "type": finding.get("type"),
+                "severity": finding.get("severity")
+            })
 
-            # -------------------------
-            # 5️⃣ Persist History
-            # -------------------------
-            if enriched_firewall_findings:
-                self.history.record_event(
-                    event_type="public_security_groups",
-                    findings=enriched_firewall_findings
-                )
-
-            if enriched_iam_findings:
-                self.history.record_event(
-                    event_type="iam_findings",
-                    findings=enriched_iam_findings
-                )
-
-            # -------------------------
-            # 6️⃣ Return Result
-            # -------------------------
-            result = {
-                "public_security_groups": enriched_firewall_findings,
-                "s3_findings": enriched_s3_findings,
-                "ec2_findings": ec2_findings,
-                "logging_findings": enriched_logging_findings,
-                "encryption_findings": encryption_findings,
-                "iam_findings": enriched_iam_findings,
-                "network_findings": network_findings,
-                "policy_violations": policy_violations,
-                "risk_summary": {
-                    "security_score": security_score,
-                    "total_violations": len(policy_violations)
-                }
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
             }
 
-            return result
+            enriched_iam_findings.append(finding)
+
+        # Combine
+        all_findings = (
+            enriched_firewall_findings +
+            enriched_s3_findings +
+            ec2_findings +
+            enriched_logging_findings +
+            enriched_encryption_findings +
+            enriched_network_findings +
+            enriched_iam_findings
+        )
+
+        # Dedup
+        seen = set()
+        deduped = []
+        for f in all_findings:
+            if f["id"] not in seen:
+                seen.add(f["id"])
+                deduped.append(f)
+        all_findings = deduped
+
+        for f in all_findings:
+            if not f.get("region"):
+                f["region"] = "global"
+
+        # 🔥 Conflict resolution
+        resource_map = {}
+        for f in all_findings:
+            key = f"{f['resource_id']}:{f['region']}"
+            resource_map.setdefault(key, []).append(f)
+
+        final_findings = []
+        for findings in resource_map.values():
+            delete_finding = next(
+                (f for f in findings if f.get("remediation", {}).get("action") == "DELETE_UNUSED_SECURITY_GROUP"),
+                None
+            )
+            if delete_finding:
+                final_findings.append(delete_finding)
+            else:
+                final_findings.extend(findings)
+
+        # ✅ FIXED: evaluate FINAL findings
+        policy_results = self.policy_engine.evaluate(final_findings)
+
+        # Policy violations
+        policy_violations = []
+        for v in policy_results:
+            policy_violations.append({
+                "policy_id": v["policy_id"],
+                "policy_name": v["policy_name"],
+                "severity": v["severity"],
+                "enforcement": v["enforcement"],
+                "resource_id": v["resource_id"]
+            })
+
+        # Risk score
+        weights = {"CRITICAL": 20, "HIGH": 10, "MEDIUM": 5, "LOW": 1}
+        risk_score = sum(weights.get(v["severity"], 0) for v in policy_violations)
+        security_score = max(0, 100 - risk_score)
+
+        # -------------------------
+        # ✅ FINAL RETURN (CORRECT)
+        # -------------------------
+        def filter_by_types(findings, types):
+            return [f for f in findings if f.get("type") in types]
+
+        result = {
+            "public_security_groups": filter_by_types(final_findings, ["PUBLIC_SECURITY_GROUP"]),
+            "s3_findings": filter_by_types(final_findings, ["S3_PUBLIC_ACL","S3_NO_ENCRYPTION","S3_VERSIONING_DISABLED","S3_ACCESS_LOGGING_DISABLED","S3_BLOCK_PUBLIC_ACCESS_DISABLED"]),
+            "ec2_findings": filter_by_types(final_findings, ["PUBLIC_EC2_INSTANCE","EC2_WITHOUT_IAM_ROLE","EC2_DEFAULT_SECURITY_GROUP","EC2_TERMINATION_PROTECTION_DISABLED","EBS_UNENCRYPTED_VOLUME","EC2_PUBLIC_ELASTIC_IP"]),
+            "logging_findings": filter_by_types(final_findings, ["CLOUDTRAIL_DISABLED","CLOUDTRAIL_NOT_LOGGING","VPC_FLOW_LOGS_DISABLED"]),
+            "encryption_findings": filter_by_types(final_findings, ["EBS_DEFAULT_ENCRYPTION_DISABLED","S3_BUCKET_ENCRYPTION_DISABLED","KMS_KEY_ROTATION_DISABLED","EBS_SNAPSHOT_NOT_ENCRYPTED","RDS_STORAGE_NOT_ENCRYPTED"]),
+            "iam_findings": filter_by_types(final_findings, ["IAM_PASSWORD_NEVER_EXPIRES","IAM_PASSWORD_POLICY_MISSING","IAM_ADMIN_USER","IAM_POLICY_FULL_ADMIN","IAM_USER_WITHOUT_MFA","IAM_ACCESS_KEY_UNUSED","IAM_MULTIPLE_ACCESS_KEYS","IAM_UNUSED_USER","IAM_INLINE_ADMIN_POLICY","IAM_WILDCARD_POLICY","IAM_ROLE_ADMIN_POLICY","IAM_ROLE_EXTERNAL_TRUST"]),
+            "network_findings": filter_by_types(final_findings, ["UNUSED_SECURITY_GROUP","PUBLIC_SUBNET_DETECTED","ROUTE_TABLE_PUBLIC_ROUTE","NACL_ALLOW_ALL_INBOUND","NACL_ALLOW_ALL_OUTBOUND","INTERNET_GATEWAY_ATTACHED","VPC_WITHOUT_NAT_GATEWAY"]),
+            "policy_violations": policy_violations,
+            "risk_summary": {
+                "security_score": security_score,
+                "total_violations": len(policy_violations)
+            }
+        }
+
+        return result

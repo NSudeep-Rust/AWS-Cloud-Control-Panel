@@ -1,6 +1,5 @@
 ﻿from app.modules.scanner.s3_scanner import S3Scanner
 from app.modules.scanner.ec2_scanner import EC2Scanner
-from app.modules.scanner.security_group_scanner import SecurityGroupScanner
 from app.modules.scanner.logging_scanner import LoggingScanner
 from app.modules.scanner.encryption_scanner import EncryptionScanner
 from app.modules.scanner.network_scanner import NetworkScanner
@@ -20,31 +19,26 @@ class Scanner:
         # Individual scanners
         self.s3_scanner = S3Scanner(aws_session)
         self.ec2_scanner = EC2Scanner(aws_session)
-        self.security_group_scanner = SecurityGroupScanner(aws_session)
         self.logging_scanner = LoggingScanner(aws_session)
         self.encryption_scanner = EncryptionScanner(aws_session)
         self.network_scanner = NetworkScanner(aws_session)
+        self.regions = self.get_all_regions()
 
         # IAM handled separately (IMPORTANT)
         self.iam_manager = IAMManager(aws_session)
 
     def get_all_regions(self):
         """
-        Fetch all AWS regions.
+        Use centralized region control from AWSSession.
         """
-        session = self.aws_session.session
-        ec2 = session.client("ec2", region_name="us-east-1")
-
-        response = ec2.describe_regions(AllRegions=True)
-
-        return [region["RegionName"] for region in response["Regions"]]
+        return self.aws_session.get_all_regions()
 
     def find_public_security_groups(self):
         """
         Detect public security groups.
         """
         session = self.aws_session.session
-        regions = self.get_all_regions()
+        regions = self.regions
         findings = []
 
         for region in regions:
@@ -73,7 +67,7 @@ class Scanner:
                             )
 
                             findings.append({
-                                "id": f"sg-{sg['GroupId']}-{str(uuid.uuid4())[:6]}",
+                                "id": f"PUBLIC_SECURITY_GROUP-{sg['GroupId']}-{region}",
                                 "type": "PUBLIC_SECURITY_GROUP",
                                 "severity": SEVERITY_MAP["PUBLIC_SECURITY_GROUP"],
                                 "region": region,
@@ -86,7 +80,7 @@ class Scanner:
 
         return findings
 
-    def scan(self):
+    def scan(self, region=None):
         """
         Run FULL AWS security scan (all modules).
         """
@@ -95,11 +89,28 @@ class Scanner:
         # Run all scanners
         # -------------------------
         s3_findings = self.s3_scanner.scan()
+        # ✅ enforce global region
+        for f in s3_findings:
+            f["region"] = "global"
         iam_findings = self.iam_manager.audit()   # ✅ FIXED
         ec2_findings = self.ec2_scanner.scan()
         logging_findings = self.logging_scanner.scan()
         encryption_findings = self.encryption_scanner.scan()
-        network_findings = self.network_scanner.scan()
+        network_findings = []
+
+        for region in self.regions:
+
+            try:
+                regional_findings = self.network_scanner.scan(region=region)
+
+                # attach region if missing
+                for f in regional_findings:
+                    f["region"] = region
+
+                network_findings.extend(regional_findings)
+
+            except Exception as e:
+                print(f"[ERROR] Network scan failed in {region}: {e}")
         firewall_findings = self.find_public_security_groups()
 
         # -------------------------
@@ -115,4 +126,15 @@ class Scanner:
         all_findings.extend(network_findings)
         all_findings.extend(firewall_findings)
 
-        return all_findings
+        # ✅ fix null regions
+        for f in all_findings:
+            if not f.get("region"):
+                f["region"] = "global"
+
+        unique = {}
+
+        for f in all_findings:
+            key = (f.get("type"), f.get("resource_id"), f.get("region"))
+            unique[key] = f
+
+        return list(unique.values())

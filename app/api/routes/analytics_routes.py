@@ -15,6 +15,7 @@ router = APIRouter(
 SCAN_STORAGE = {}
 @router.post("/threat-monitor")
 def threat_monitor():
+    print("🔥 HIT NEW THREAT MONITOR ROUTE")
     aws_session = AWSSession(profile_name="default")
     aws_session.initialize()
 
@@ -59,14 +60,15 @@ def threat_monitor():
         execution_mode="DRY_RUN"
     )
 
-    for finding in all_findings:
+    for key in result:
+        if isinstance(result[key], list):
+            for finding in result[key]:
 
-        # Skip policy blocked
-        if finding.get("execution", {}).get("status") == "BLOCKED_BY_POLICY":
-            continue
+                if finding.get("execution", {}).get("status") == "BLOCKED_BY_POLICY":
+                    continue
 
-        exec_result = executor.execute(finding)
-        finding["execution"] = exec_result
+                exec_result = executor.execute(finding)
+                finding["execution"] = exec_result
 
     # -----------------------------------
     # STORE UPDATED RESULT

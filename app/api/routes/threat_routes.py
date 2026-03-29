@@ -99,20 +99,16 @@ def run_threat_monitor(request: ScanRequest):
             print("FETCH TEST:", SCAN_STORAGE[key][:2])
 
         # 🔥 STEP 4: Return scan_id + data
-        return format_response(
-            module="threat_monitor",
-            mode=effective_mode,
-            data={
-                "scan_id": scan_id,
-                "findings": all_findings
-            }
-        )
+        return {
+            "status": "success",
+            "scan_id": scan_id,
+            "findings": all_findings
+        }
 
     except Exception as e:
         logger.error(f"Threat monitor execution failed: {str(e)}")
 
-        return format_response(
-            module="threat_monitor",
-            mode=effective_mode,
-            errors=[str(e)]
-        )
+        return {
+            "status": "error",
+            "error": str(e)
+        }

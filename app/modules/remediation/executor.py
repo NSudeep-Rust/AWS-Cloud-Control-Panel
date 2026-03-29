@@ -1,6 +1,7 @@
 ﻿from app.modules.remediation.safety_guard import RemediationSafetyGuard
 from botocore.exceptions import ClientError
-import json  # if not already at top
+import json  
+import copy
   
 
 #from app.config.security_config import S3_LOGGING_BUCKET
@@ -41,6 +42,12 @@ class RemediationExecutor:
             "DELETE_ACCESS_KEY": self._handle_delete_access_key,
             "ENABLE_KMS_KEY_ROTATION": self._handle_enable_kms_rotation,
             "ENABLE_VPC_FLOW_LOGS": self._handle_enable_vpc_flow_logs,
+            "DELETE_UNUSED_SECURITY_GROUP": self._handle_delete_unused_security_group,
+            "REMOVE_INLINE_WILDCARD_POLICY": self._handle_remove_inline_wildcard_policy,
+            "RESTRICT_NACL_INBOUND": self._handle_restrict_nacl_inbound,
+            "RESTRICT_NACL_OUTBOUND": self._handle_restrict_nacl_outbound,
+            "REMOVE_PUBLIC_ROUTE": self._handle_remove_public_route,
+            "RESTRICT_ROLE_EXTERNAL_TRUST": self._handle_restrict_role_external_trust,
            
         }
 
@@ -976,6 +983,445 @@ class RemediationExecutor:
             }
         }
 
+    def _handle_delete_unused_security_group(self, finding, remediation):
+
+        sg_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -----------------------------------
+        # STEP 1 — Re-validate (CRITICAL)
+        # -----------------------------------
+        try:
+            sg = ec2.describe_security_groups(GroupIds=[sg_id])["SecurityGroups"][0]
+        except Exception:
+            return {
+                "status": "FAILED",
+                "reason": "Security group not found",
+                "resource_id": sg_id
+            }
+
+        # ❌ Do not delete default SG
+        if sg.get("GroupName") == "default":
+            return {
+                "status": "SKIPPED",
+                "reason": "Cannot delete default security group",
+                "resource_id": sg_id
+            }
+
+        # -----------------------------------
+        # Check if SG is still unused
+        # -----------------------------------
+        enis = ec2.describe_network_interfaces()["NetworkInterfaces"]
+
+        for eni in enis:
+            for group in eni.get("Groups", []):
+                if group["GroupId"] == sg_id:
+                    return {
+                        "status": "SKIPPED",
+                        "reason": "Security group is now in use",
+                        "resource_id": sg_id
+                    }
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DELETE_UNUSED_SECURITY_GROUP",
+                "resource_id": sg_id,
+                "region": region,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        # -----------------------------------
+        # LIVE EXECUTION
+        # -----------------------------------
+        execution_id = str(uuid.uuid4())
+
+        try:
+            ec2.delete_security_group(GroupId=sg_id)
+
+            # -----------------------------------
+            # SAVE HISTORY (IMPORTANT)
+            # -----------------------------------
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "DELETE_UNUSED_SECURITY_GROUP",
+                    "resource_id": sg_id,
+                    "region": region,
+                    "snapshot_before": sg,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "resource_id": sg_id,
+                "region": region,
+                "action": "DELETE_UNUSED_SECURITY_GROUP",
+                "metadata": {
+                    "security_group": sg,
+                    "region": region
+                }
+            }
+
+        except ClientError as e:
+
+            # Common AWS failure (dependency exists)
+            return {
+                "status": "FAILED",
+                "action": "DELETE_UNUSED_SECURITY_GROUP",
+                "resource_id": sg_id,
+                "reason": e.response["Error"]["Message"]
+            }
+
+    def _handle_remove_inline_wildcard_policy(self, finding, remediation):
+
+        user_name = finding.get("resource_id")
+        policy_name = finding.get("policy_name")
+
+        if not user_name or not policy_name:
+            return {
+                "status": "FAILED",
+                "reason": "Missing user_name or policy_name"
+            }
+
+        iam = self.aws_session.session.client("iam")
+
+        # -----------------------------------
+        # FETCH CURRENT POLICY
+        # -----------------------------------
+        try:
+            policy_doc = iam.get_user_policy(
+                UserName=user_name,
+                PolicyName=policy_name
+            )["PolicyDocument"]
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "reason": f"Failed to fetch policy: {str(e)}"
+            }
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REMOVE_INLINE_WILDCARD_POLICY",
+                "user_name": user_name,
+                "policy_name": policy_name,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        # -----------------------------------
+        # TRANSFORM POLICY
+        # -----------------------------------
+        transformed_policy = json.loads(json.dumps(policy_doc))  # deep copy
+
+        for stmt in transformed_policy.get("Statement", []):
+
+            actions = stmt.get("Action")
+
+            if actions == "*" or actions == ["*"]:
+                # 🔥 Replace wildcard with safe minimal actions
+                stmt["Action"] = [
+                    "s3:GetObject",
+                    "ec2:DescribeInstances"
+                ]
+
+        # -----------------------------------
+        # APPLY TRANSFORMED POLICY
+        # -----------------------------------
+        try:
+            iam.put_user_policy(
+                UserName=user_name,
+                PolicyName=policy_name,
+                PolicyDocument=json.dumps(transformed_policy)
+            )
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "REMOVE_INLINE_WILDCARD_POLICY",
+                "user_name": user_name,
+                "metadata": {
+                    "user_name": user_name,
+                    "policy_name": policy_name,
+                    "original_policy": policy_doc  # 🔥 CRITICAL FOR ROLLBACK
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REMOVE_INLINE_WILDCARD_POLICY",
+                "reason": str(e)
+            }
+
+    def _handle_restrict_nacl_inbound(self, finding, remediation):
+
+        nacl_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        nacl = ec2.describe_network_acls(NetworkAclIds=[nacl_id])["NetworkAcls"][0]
+
+        targeted_rules = []
+
+        for entry in nacl.get("Entries", []):
+            if (
+                entry.get("Egress") is False and
+                entry.get("RuleAction") == "allow" and
+                entry.get("CidrBlock") == "0.0.0.0/0"
+            ):
+                targeted_rules.append(entry)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "RESTRICT_NACL_INBOUND",
+                "nacl_id": nacl_id,
+                "region": region,
+                "targeted_rules": targeted_rules
+            }
+
+        execution_id = str(uuid.uuid4())
+        removed_rules = []
+
+        for rule in targeted_rules:
+            ec2.delete_network_acl_entry(
+                NetworkAclId=nacl_id,
+                RuleNumber=rule["RuleNumber"],
+                Egress=False
+            )
+            removed_rules.append(rule)
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "RESTRICT_NACL_INBOUND",
+                "resource_id": nacl_id,
+                "region": region,
+                "removed_rules": removed_rules
+            })
+
+        return {
+            "status": "EXECUTED",
+            "execution_id": execution_id,
+            "action": "RESTRICT_NACL_INBOUND",
+            "metadata": {
+                "nacl_id": nacl_id,
+                "region": region,
+                "removed_rules": removed_rules
+            }
+        }
+
+    def _handle_restrict_nacl_outbound(self, finding, remediation):
+
+        nacl_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        nacl = ec2.describe_network_acls(NetworkAclIds=[nacl_id])["NetworkAcls"][0]
+
+        targeted_rules = []
+
+        for entry in nacl.get("Entries", []):
+            if (
+                entry.get("Egress") is True and
+                entry.get("RuleAction") == "allow" and
+                entry.get("CidrBlock") == "0.0.0.0/0"
+            ):
+                targeted_rules.append(entry)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "RESTRICT_NACL_OUTBOUND",
+                "nacl_id": nacl_id,
+                "region": region,
+                "targeted_rules": targeted_rules
+            }
+
+        execution_id = str(uuid.uuid4())
+        removed_rules = []
+
+        for rule in targeted_rules:
+            ec2.delete_network_acl_entry(
+                NetworkAclId=nacl_id,
+                RuleNumber=rule["RuleNumber"],
+                Egress=True
+            )
+            removed_rules.append(rule)
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "RESTRICT_NACL_OUTBOUND",
+                "resource_id": nacl_id,
+                "region": region,
+                "removed_rules": removed_rules
+            })
+
+        return {
+            "status": "EXECUTED",
+            "execution_id": execution_id,
+            "action": "RESTRICT_NACL_OUTBOUND",
+            "metadata": {
+                "nacl_id": nacl_id,
+                "region": region,
+                "removed_rules": removed_rules
+            }
+        }
+
+
+    def _handle_remove_public_route(self, finding, remediation):
+
+        route_table_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        rt = ec2.describe_route_tables(RouteTableIds=[route_table_id])["RouteTables"][0]
+
+        target_route = None
+
+        for route in rt.get("Routes", []):
+            if (
+                route.get("DestinationCidrBlock") == "0.0.0.0/0" and
+                str(route.get("GatewayId", "")).startswith("igw")
+            ):
+                target_route = route
+                break
+
+        # ---------------- DRY RUN ----------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REMOVE_PUBLIC_ROUTE",
+                "route_table_id": route_table_id,
+                "region": region,
+                "target_route": target_route
+            }
+
+        if not target_route:
+            return {
+                "status": "SKIPPED",
+                "reason": "No public route found",
+                "route_table_id": route_table_id
+            }
+
+        execution_id = str(uuid.uuid4())
+
+        ec2.delete_route(
+            RouteTableId=route_table_id,
+            DestinationCidrBlock="0.0.0.0/0"
+        )
+
+        # SAVE HISTORY
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "REMOVE_PUBLIC_ROUTE",
+                "resource_id": route_table_id,
+                "region": region,
+                "deleted_route": target_route
+            })
+
+        return {
+            "status": "EXECUTED",
+            "execution_id": execution_id,
+            "action": "REMOVE_PUBLIC_ROUTE",
+            "metadata": {
+                "route_table_id": route_table_id,
+                "region": region,
+                "deleted_route": target_route
+            }
+        }
+
+    def _handle_restrict_role_external_trust(self, finding, remediation):
+
+        role_name = finding.get("resource_id")
+
+        iam = self.aws_session.session.client("iam")
+
+        # -----------------------------------
+        # GET CURRENT TRUST POLICY
+        # -----------------------------------
+        try:
+            role = iam.get_role(RoleName=role_name)["Role"]
+            current_policy = role["AssumeRolePolicyDocument"]
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "reason": f"Failed to fetch role: {str(e)}"
+            }
+
+        account_id = self.aws_session.get_account_id()
+
+        # -----------------------------------
+        # BUILD NEW TRUST POLICY
+        # -----------------------------------
+     
+        new_policy = copy.deepcopy(current_policy)
+
+        for stmt in new_policy.get("Statement", []):
+            principal = stmt.get("Principal", {})
+
+            if "AWS" in principal:
+                principal["AWS"] = f"arn:aws:iam::{account_id}:root"
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
+                "role_name": role_name,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "previous_policy": current_policy
+                }
+            }
+
+        # -----------------------------------
+        # LIVE EXECUTION
+        # -----------------------------------
+        try:
+            iam.update_assume_role_policy(
+                RoleName=role_name,
+                PolicyDocument=json.dumps(new_policy)
+            )
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
+                "role_name": role_name,
+                "metadata": {
+                    "role_name": role_name,
+                    "previous_policy": current_policy
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
+                "reason": str(e)
+            }
+
     def execute(self, finding):
 
         remediation = finding.get("remediation")
@@ -1014,6 +1460,49 @@ class RemediationExecutor:
 
         resource_id = finding.get("resource_id")
         region = finding.get("region")
+        if self.history:
+
+            previously_executed = self.history.has_execution(
+                resource_id=resource_id,
+                action=action,
+                region=region
+            )
+            if previously_executed:
+
+                # ✅ Only apply re-check logic for SG restriction
+                if action == "RESTRICT_SECURITY_GROUP":
+
+                    ec2 = self.aws_session.session.client("ec2", region_name=region)
+                    response = ec2.describe_security_groups(GroupIds=[resource_id])
+                    sg = response["SecurityGroups"][0]
+
+                    still_public = False
+
+                    for permission in sg.get("IpPermissions", []):
+                        for ip_range in permission.get("IpRanges", []):
+                            if ip_range.get("CidrIp") == "0.0.0.0/0":
+                                still_public = True
+                                break
+
+                    if not still_public:
+                        return {
+                            "status": "SKIPPED",
+                            "reason": "Already executed and no public exposure detected",
+                            "resource_id": resource_id,
+                            "action": action,
+                            "region": region
+                        }
+
+                # ✅ For all other actions → simple skip
+                else:
+                    return {
+                        "status": "SKIPPED",
+                        "reason": "Already executed",
+                        "resource_id": resource_id,
+                        "action": action,
+                        "region": region
+                    }
+        
 
         if self.execution_mode == "LIVE":
 
@@ -1042,45 +1531,19 @@ class RemediationExecutor:
         handler = self.action_handlers.get(action)
         if handler:
             return handler(finding, remediation)
-
-
-
-        
-
-        
-
-        if self.history:
-
-            previously_executed = self.history.has_execution(resource_id, action)
-
-            if previously_executed:
-
-                ec2 = self.aws_session.session.client("ec2", region_name=region)
-                response = ec2.describe_security_groups(GroupIds=[resource_id])
-                sg = response["SecurityGroups"][0]
-
-                still_public = False
-
-                for permission in sg.get("IpPermissions", []):
-                    for ip_range in permission.get("IpRanges", []):
-                        if ip_range.get("CidrIp") == "0.0.0.0/0":
-                            still_public = True
-                            break
-
-                if not still_public:
-                    return {
-                        "status": "SKIPPED",
-                        "reason": "Already executed and no public exposure detected",
-                        "resource_id": resource_id,
-                        "action": action,
-                        "region": region
-                    }
-
         return {
             "status": "FAILED",
             "reason": f"No handler implemented for action: {action}",
             "action": action
         }
+
+
+
+        
+
+        
+
+       
                     
 
 

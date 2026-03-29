@@ -1,5 +1,4 @@
-from app.config.security_config import SEVERITY_MAP
-import boto3
+﻿from app.config.security_config import SEVERITY_MAP
 
 
 class LoggingScanner:
@@ -7,80 +6,87 @@ class LoggingScanner:
     def __init__(self, aws_session):
         self.aws_session = aws_session
 
-    def scan(self):
+    def scan(self, region=None):
 
         session = self.aws_session.session
 
-        cloudtrail = session.client("cloudtrail")
-        ec2 = session.client("ec2")
-        s3 = session.client("s3")
+        cloudtrail = session.client("cloudtrail", region_name=region)
+        ec2 = session.client("ec2", region_name=region)
 
         findings = []
+        seen_ids = set()
 
         # -------------------------
-        # CloudTrail Disabled
+        # CloudTrail Disabled / Not Logging
         # -------------------------
+        try:
+            trails = cloudtrail.describe_trails()["trailList"]
 
-        trails = cloudtrail.describe_trails()["trailList"]
+            if len(trails) == 0:
+                finding_id = "cloudtrail-disabled"
 
-        if len(trails) == 0:
+                if finding_id not in seen_ids:
+                    seen_ids.add(finding_id)
+                    findings.append({
+                        "id": finding_id,
+                        "type": "CLOUDTRAIL_DISABLED",
+                        "severity": SEVERITY_MAP["CLOUDTRAIL_DISABLED"],
+                        "resource_id": "account",
+                        "region": region,
+                        "description": "CloudTrail is not enabled for the AWS account"
+                    })
 
-            findings.append({
-                "id": "cloudtrail-disabled",
-                "type": "CLOUDTRAIL_DISABLED",
-                "severity": SEVERITY_MAP["CLOUDTRAIL_DISABLED"],
-                "resource_id": "account",
-                "description": "CloudTrail is not enabled for the AWS account"
-            })
+            else:
+                # 🔥 Check if logging is actually enabled
+                status = cloudtrail.get_trail_status(Name=trails[0]["Name"])
+
+                if not status.get("IsLogging", False):
+                    finding_id = "cloudtrail-not-logging"
+
+                    if finding_id not in seen_ids:
+                        seen_ids.add(finding_id)
+                        findings.append({
+                            "id": finding_id,
+                            "type": "CLOUDTRAIL_NOT_LOGGING",
+                            "severity": SEVERITY_MAP.get("CLOUDTRAIL_DISABLED"),
+                            "resource_id": "account",
+                            "region": region,
+                            "description": "CloudTrail exists but is not actively logging"
+                        })
+
+        except Exception as e:
+            print("CloudTrail error:", str(e))
 
         # -------------------------
         # VPC Flow Logs Disabled
         # -------------------------
+        try:
+            vpcs = ec2.describe_vpcs()["Vpcs"]
+            flow_logs = ec2.describe_flow_logs()["FlowLogs"]
 
-        vpcs = ec2.describe_vpcs()["Vpcs"]
+            vpc_flow_log_map = {}
 
-        flow_logs = ec2.describe_flow_logs()["FlowLogs"]
+            for log in flow_logs:
+                vpc_flow_log_map[log["ResourceId"]] = True
 
-        vpc_flow_log_map = {}
+            for vpc in vpcs:
+                vpc_id = vpc["VpcId"]
 
-        for log in flow_logs:
-            vpc_flow_log_map[log["ResourceId"]] = True
+                if vpc_id not in vpc_flow_log_map:
+                    finding_id = f"vpc-flowlogs-disabled-{vpc_id}"
 
-        for vpc in vpcs:
+                    if finding_id not in seen_ids:
+                        seen_ids.add(finding_id)
+                        findings.append({
+                            "id": finding_id,
+                            "type": "VPC_FLOW_LOGS_DISABLED",
+                            "severity": SEVERITY_MAP["VPC_FLOW_LOGS_DISABLED"],
+                            "resource_id": vpc_id,
+                            "region": region,
+                            "description": "VPC does not have flow logs enabled"
+                        })
 
-            vpc_id = vpc["VpcId"]
-
-            if vpc_id not in vpc_flow_log_map:
-
-                findings.append({
-                    "id": f"vpc-flowlogs-disabled-{vpc_id}",
-                    "type": "VPC_FLOW_LOGS_DISABLED",
-                    "severity": SEVERITY_MAP["VPC_FLOW_LOGS_DISABLED"],
-                    "resource_id": vpc_id,
-                    "region": session.region_name,
-                    "description": "VPC does not have flow logs enabled"
-                })
-
-        # -------------------------
-        # S3 Access Logging Disabled
-        # -------------------------
-
-        buckets = s3.list_buckets()["Buckets"]
-
-        for bucket in buckets:
-
-            bucket_name = bucket["Name"]
-
-            logging = s3.get_bucket_logging(Bucket=bucket_name)
-
-            if "LoggingEnabled" not in logging:
-
-                findings.append({
-                    "id": f"s3-access-logging-disabled-{bucket_name}",
-                    "type": "S3_ACCESS_LOGGING_DISABLED",
-                    "severity": SEVERITY_MAP["S3_ACCESS_LOGGING_DISABLED"],
-                    "resource_id": bucket_name,
-                    "description": "S3 bucket does not have access logging enabled"
-                })
+        except Exception as e:
+            print("VPC Flow Logs error:", str(e))
 
         return findings

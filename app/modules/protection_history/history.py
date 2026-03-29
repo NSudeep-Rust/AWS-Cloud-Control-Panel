@@ -47,7 +47,7 @@ class ProtectionHistory:
         with open(self.file_path, "r") as f:
             return json.load(f)
 
-    def has_execution(self, resource_id, action):
+    def has_execution(self, resource_id, action, region):
         """
         Check if a remediation action was already EXECUTED (not DRY_RUN)
         for a given resource.
@@ -61,6 +61,7 @@ class ProtectionHistory:
                 if (
                     execution.get("resource_id") == resource_id
                     and execution.get("action") == action
+                    and execution.get("region") == region 
                     and execution.get("status") == "EXECUTED"
                 ):
                     return True

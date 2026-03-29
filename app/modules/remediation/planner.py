@@ -33,16 +33,26 @@ class RemediationPlanner:
             }
 
         # ---------------------------
-        # IAM wildcard inline policy
+        # IAM wildcard inline policy (TRANSFORM, NOT DELETE)
         # ---------------------------
-        if finding_type in ["IAM_WILDCARD_POLICY", "IAM_INLINE_ADMIN_POLICY"]:
+        if finding_type == "IAM_WILDCARD_POLICY":
+            return {
+                "action": "REMOVE_INLINE_WILDCARD_POLICY",
+                "reason": "IAM inline policy contains wildcard permissions",
+                "recommended_fix": "Replace wildcard actions with least privilege actions",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # IAM inline admin (still DELETE)
+        # ---------------------------
+        if finding_type == "IAM_INLINE_ADMIN_POLICY":
             return {
                 "action": "REMOVE_INLINE_POLICY",
-                "reason": "IAM inline policy contains excessive permissions",
-                "recommended_fix": "Remove or restrict inline policy",
+                "reason": "IAM inline policy has full admin access",
+                "recommended_fix": "Remove inline admin policy",
                 "severity": finding["severity"]
-            }  
-
+            }
      
         # ---------------------------
         # S3 versioning remediation
@@ -159,6 +169,60 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
+        # ---------------------------
+        # UNUSED SECURITY GROUP
+        # ---------------------------
+        if finding_type == "UNUSED_SECURITY_GROUP":
+            return {
+                "action": "DELETE_UNUSED_SECURITY_GROUP",
+                "reason": "Security group is not attached to any resource",
+                "recommended_fix": "Delete unused security group to reduce attack surface",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # NACL INBOUND
+        # ---------------------------
+        if finding_type == "NACL_ALLOW_ALL_INBOUND":
+            return {
+                "action": "RESTRICT_NACL_INBOUND",
+                "reason": "NACL allows unrestricted inbound access (0.0.0.0/0)",
+                "recommended_fix": "Restrict inbound CIDR or remove allow rule",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # NACL OUTBOUND
+        # ---------------------------
+        if finding_type == "NACL_ALLOW_ALL_OUTBOUND":
+            return {
+                "action": "RESTRICT_NACL_OUTBOUND",
+                "reason": "NACL allows unrestricted outbound access (0.0.0.0/0)",
+                "recommended_fix": "Restrict outbound CIDR or remove allow rule",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # ROUTE TABLE PUBLIC ROUTE
+        # ---------------------------
+        if finding_type == "ROUTE_TABLE_PUBLIC_ROUTE":
+            return {
+                "action": "REMOVE_PUBLIC_ROUTE",
+                "reason": "Route table exposes subnet to internet via IGW",
+                "recommended_fix": "Remove 0.0.0.0/0 route to Internet Gateway",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # IAM ROLE EXTERNAL TRUST
+        # ---------------------------
+        if finding_type == "IAM_ROLE_EXTERNAL_TRUST":
+            return {
+                "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
+                "reason": "IAM role trust policy allows external account access",
+                "recommended_fix": "Restrict trust policy to current AWS account only",
+                "severity": finding["severity"]
+            }
 
 
         return {
