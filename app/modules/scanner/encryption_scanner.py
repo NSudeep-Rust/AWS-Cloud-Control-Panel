@@ -1,3 +1,4 @@
+﻿from app.config.security_config import SEVERITY_MAP
 class EncryptionScanner:
 
     def __init__(self, aws_session):
@@ -22,7 +23,7 @@ class EncryptionScanner:
             findings.append({
                 "id": "ebs-default-encryption-disabled",
                 "type": "EBS_DEFAULT_ENCRYPTION_DISABLED",
-                "severity": "HIGH",
+                "severity": SEVERITY_MAP["EBS_DEFAULT_ENCRYPTION_DISABLED"],
                 "resource_id": "account",
                 "description": "EBS default encryption is not enabled for the account"
             })
@@ -54,7 +55,7 @@ class EncryptionScanner:
                 findings.append({
                     "id": f"s3-encryption-disabled-{bucket_name}",
                     "type": "S3_BUCKET_ENCRYPTION_DISABLED",
-                    "severity": "HIGH",
+                    "severity": SEVERITY_MAP["S3_BUCKET_ENCRYPTION_DISABLED"],
                     "resource_id": bucket_name,
                     "description": "S3 bucket does not have default encryption enabled"
                 })
@@ -64,6 +65,15 @@ class EncryptionScanner:
         # -------------------------
 
         kms = session.client("kms")
+        # 🔥 Fetch aliases once
+        alias_map = {}
+        try:
+            aliases = kms.list_aliases()["Aliases"]
+            for a in aliases:
+                if "TargetKeyId" in a:
+                    alias_map[a["TargetKeyId"]] = a["AliasName"]
+        except Exception:
+            pass
 
         try:
 
@@ -84,12 +94,15 @@ class EncryptionScanner:
 
                     if not rotation["KeyRotationEnabled"]:
 
+                        alias = alias_map.get(key_id)
+
                         findings.append({
                             "id": f"kms-rotation-disabled-{key_id}",
                             "type": "KMS_KEY_ROTATION_DISABLED",
-                            "severity": "MEDIUM",
+                            "severity": SEVERITY_MAP["KMS_KEY_ROTATION_DISABLED"],
                             "resource_id": key_id,
-                            "description": "KMS key rotation is not enabled"
+                            "resource_name": alias or f"kms-key-{key_id[:8]}",
+                            "description": f"KMS key rotation is not enabled ({alias if alias else key_id})"
                         })
 
                 except Exception:
@@ -115,7 +128,7 @@ class EncryptionScanner:
                     findings.append({
                         "id": f"ebs-snapshot-unencrypted-{snapshot_id}",
                         "type": "EBS_SNAPSHOT_NOT_ENCRYPTED",
-                        "severity": "HIGH",
+                        "severity": SEVERITY_MAP["EBS_SNAPSHOT_NOT_ENCRYPTED"],
                         "resource_id": snapshot_id,
                         "description": "EBS snapshot is not encrypted"
                     })
@@ -142,7 +155,7 @@ class EncryptionScanner:
                     findings.append({
                         "id": f"rds-storage-unencrypted-{db_id}",
                         "type": "RDS_STORAGE_NOT_ENCRYPTED",
-                        "severity": "HIGH",
+                        "severity": SEVERITY_MAP["RDS_STORAGE_NOT_ENCRYPTED"],
                         "resource_id": db_id,
                         "description": "RDS database storage is not encrypted"
                     })

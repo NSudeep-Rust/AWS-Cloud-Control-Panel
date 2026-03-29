@@ -1,4 +1,6 @@
-﻿from datetime import datetime
+﻿from app.config.security_config import SEVERITY_MAP
+from datetime import datetime, timezone
+
 class IAMManager:
     """
     IAM auditing and remediation detection logic.
@@ -24,7 +26,7 @@ class IAMManager:
                 findings.append({
                     "id": "iam-password-never-expires",
                     "type": "IAM_PASSWORD_NEVER_EXPIRES",
-                    "severity": "MEDIUM",
+                    "severity": SEVERITY_MAP["IAM_PASSWORD_NEVER_EXPIRES"],
                     "resource_id": "account",
                     "description": "IAM password policy does not enforce password expiration"
                 })
@@ -33,7 +35,7 @@ class IAMManager:
             findings.append({
                 "id": "iam-password-policy-missing",
                 "type": "IAM_PASSWORD_POLICY_MISSING",
-                "severity": "HIGH",
+                "severity": SEVERITY_MAP["IAM_PASSWORD_POLICY_MISSING"],
                 "resource_id": "account",
                 "description": "IAM account does not have a password policy configured"
             })
@@ -57,7 +59,7 @@ class IAMManager:
                     findings.append({
                         "id": f"iam-admin-{user_name}",
                         "type": "IAM_ADMIN_USER",
-                        "severity": "CRITICAL",
+                        "severity": SEVERITY_MAP["IAM_ADMIN_USER"],
                         "resource_id": user_name,
                         "policy_arn": policy["PolicyArn"],
                         "description": "IAM user has AdministratorAccess policy attached",
@@ -92,7 +94,7 @@ class IAMManager:
                         findings.append({
                             "id": f"iam-full-admin-policy-{user_name}",
                             "type": "IAM_POLICY_FULL_ADMIN",
-                            "severity": "CRITICAL",
+                            "severity": SEVERITY_MAP["IAM_POLICY_FULL_ADMIN"],
                             "resource_id": user_name,
                             "description": "IAM policy grants full administrative access (Action:* Resource:*)"
                         })
@@ -108,9 +110,13 @@ class IAMManager:
                 findings.append({
                     "id": f"iam-no-mfa-{user_name}",
                     "type": "IAM_USER_WITHOUT_MFA",
-                    "severity": "HIGH",
+                    "severity": SEVERITY_MAP["IAM_USER_WITHOUT_MFA"],
                     "resource_id": user_name,
-                    "description": "IAM user does not have MFA enabled"
+                    "description": "IAM user does not have MFA enabled",
+                    "remediation": {
+                        "action": "ENABLE_MFA",
+                        "recommended_fix": "Enable MFA for this IAM user via AWS Console or CLI"
+                    }
                 })
 
 
@@ -124,18 +130,49 @@ class IAMManager:
 
                 create_date = key["CreateDate"]
                 key_id = key["AccessKeyId"]
+                status = key["Status"]
 
-                age_days = (datetime.utcnow() - create_date.replace(tzinfo=None)).days
+                now = datetime.now(timezone.utc)
+                age_days = (now - create_date).days
+                print("DEBUG KEY:", user_name, key_id, status, age_days)
 
-                if age_days > 90:
+                # -----------------------------------
+                # 🔥 NEW: DELETE OLD INACTIVE KEYS
+                # -----------------------------------
+                # 🔥 DELETE ONLY OLD + INACTIVE KEYS (CONTROLLED)
+                if status == "Inactive" and age_days >=0:
 
                     findings.append({
-                        "id": f"iam-old-access-key-{user_name}",
-                        "type": "IAM_ACCESS_KEY_OLD",
-                        "severity": "HIGH",
+                        "id": f"iam-old-inactive-key-{user_name}-{key_id}",
+                        "type": "IAM_ACCESS_KEY_OLD_INACTIVE",
+                        "severity": SEVERITY_MAP["IAM_ACCESS_KEY_OLD_INACTIVE"],
                         "resource_id": user_name,
+                        "access_key_id": key_id,
+                        "description": f"Inactive access keys",
+                        "remediation": {
+                            "action": "DELETE_ACCESS_KEY",
+                            "reason": "Old inactive access key should be removed",
+                            "recommended_fix": "Delete unused inactive access key",
+                            "severity": "MEDIUM"
+                        },
+                        "execution": {
+                            "status": "PLANNED",
+                            "action": "DELETE_ACCESS_KEY",
+                            "message": "Execution deferred"
+                        }
+                    })
+
+                if age_days > 90:
+                    findings.append({
+                        "id": f"iam-old-access-key-{user_name}-{key_id}",
+                        "type": "IAM_ACCESS_KEY_OLD",
+                        "severity": SEVERITY_MAP["IAM_ACCESS_KEY_OLD"],
+                        "resource_id": user_name,
+                        "access_key_id": key_id,   # ✅ ADD THIS
                         "description": f"Access key {key_id} is older than 90 days"
                     })
+
+
 
 
                 # -------------------------
@@ -153,8 +190,9 @@ class IAMManager:
                     findings.append({
                         "id": f"iam-unused-access-key-{user_name}",
                         "type": "IAM_ACCESS_KEY_UNUSED",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["IAM_UNUSED_USER"],
                         "resource_id": user_name,
+                        "access_key_id": key_id, 
                         "description": f"Access key {key_id} has never been used"
                     })
 
@@ -167,8 +205,9 @@ class IAMManager:
                         findings.append({
                             "id": f"iam-unused-access-key-{user_name}",
                             "type": "IAM_ACCESS_KEY_UNUSED",
-                            "severity": "MEDIUM",
+                            "severity": SEVERITY_MAP["IAM_MULTIPLE_ACCESS_KEYS"],
                             "resource_id": user_name,
+                            "access_key_id": key_id, 
                             "description": f"Access key {key_id} has not been used for {days_unused} days"
                         })
 
@@ -186,7 +225,7 @@ class IAMManager:
                 findings.append({
                     "id": f"iam-multiple-keys-{user_name}",
                     "type": "IAM_MULTIPLE_ACCESS_KEYS",
-                    "severity": "HIGH",
+                    "severity": SEVERITY_MAP["IAM_MULTIPLE_ACCESS_KEYS"],
                     "resource_id": user_name,
                     "description": "IAM user has multiple active access keys"
                 })
@@ -206,7 +245,7 @@ class IAMManager:
                     findings.append({
                         "id": f"iam-unused-user-{user_name}",
                         "type": "IAM_UNUSED_USER",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["IAM_UNUSED_USER"],
                         "resource_id": user_name,
                         "description": f"IAM user has not logged in for {days_unused} days"
                     })
@@ -233,7 +272,7 @@ class IAMManager:
                         findings.append({
                             "id": f"iam-inline-admin-{user_name}",
                             "type": "IAM_INLINE_ADMIN_POLICY",
-                            "severity": "CRITICAL",
+                            "severity": SEVERITY_MAP["IAM_INLINE_ADMIN_POLICY"],
                             "resource_id": user_name,
                             "description": "IAM user has inline policy with full administrative permissions"
                         })
@@ -264,7 +303,7 @@ class IAMManager:
                         findings.append({
                             "id": f"iam-wildcard-{user_name}",
                             "type": "IAM_WILDCARD_POLICY",
-                            "severity": "HIGH",
+                            "severity": SEVERITY_MAP["IAM_WILDCARD_POLICY"],
                             "resource_id": user_name,
                             "policy_name": policy_name,
                             "description": "Inline policy contains wildcard permissions",
@@ -297,7 +336,7 @@ class IAMManager:
                     findings.append({
                         "id": f"iam-role-admin-policy-{role_name}",
                         "type": "IAM_ROLE_ADMIN_POLICY",
-                        "severity": "CRITICAL",
+                        "severity": SEVERITY_MAP["IAM_ROLE_ADMIN_POLICY"],
                         "resource_id": role_name,
                         "description": "IAM role has AdministratorAccess policy attached"
                     })
@@ -325,7 +364,7 @@ class IAMManager:
                             findings.append({
                                 "id": f"iam-external-trust-{role_name}",
                                 "type": "IAM_ROLE_EXTERNAL_TRUST",
-                                "severity": "CRITICAL",
+                                "severity": SEVERITY_MAP["IAM_ROLE_EXTERNAL_TRUST"],
                                 "resource_id": role_name,
                                 "description": "IAM role trust policy allows external AWS account to assume this role"
                             })

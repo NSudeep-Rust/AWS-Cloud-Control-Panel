@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 from app.api.schemas import ScanRequest
 from app.config import security_config
 from app.api.response_formatter import format_response
@@ -30,12 +30,20 @@ def run_scan(request: ScanRequest):
     )
 
     try:
+        # ✅ Initialize AWS session
         aws_session = AWSSession(profile_name="default")
         aws_session.initialize()
 
+        # ✅ Create scanner
         scanner = Scanner(aws_session)
 
-        findings = scanner.find_public_security_groups()
+        # 🔥 FIX: use FULL scan (NOT just firewall)
+        findings = scanner.scan()
+
+        # ✅ Debug logs (VERY IMPORTANT)
+        print("SCAN API HIT")
+        print("Total findings:", len(findings))
+        print("Findings structure:", findings[:2])
 
         return format_response(
             module="scanner",
@@ -54,3 +62,5 @@ def run_scan(request: ScanRequest):
             mode=effective_mode,
             errors=[str(e)]
         )
+
+        

@@ -1,0 +1,46 @@
+﻿EXECUTION_POLICY = {
+
+    # -----------------------------
+    # Action-level control
+    # -----------------------------
+    "actions": {
+        "RESTRICT_SECURITY_GROUP": {
+            "allowed": True,
+            "severities": ["HIGH", "CRITICAL"]
+        },
+        "ENABLE_S3_VERSIONING": {
+            "allowed": True,
+            "severities": ["MEDIUM", "HIGH", "CRITICAL"]
+        },
+        # 🔥 ADD THIS
+        "ENABLE_BLOCK_PUBLIC_ACCESS": {
+            "allowed": True,
+            "severities": ["HIGH", "CRITICAL"]
+        },
+
+        "DETACH_ADMIN_POLICY": {
+            "allowed": True,
+            "require_approval": True
+        },
+        "REMOVE_INLINE_POLICY": {
+            "allowed": False   # explicitly blocked for now
+        }
+    },
+
+    # -----------------------------
+    # Resource scoping
+    # -----------------------------
+    "resource_control": {
+        "mode": "ALLOW_ALL",  # or "RESTRICTED"
+        "allowed_ids": [
+            # "test-autofix-rust"
+        ]
+    },
+
+    # -----------------------------
+    # Global fallback (optional)
+    # -----------------------------
+    "default": {
+        "allowed": False
+    }
+}

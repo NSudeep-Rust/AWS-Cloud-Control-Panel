@@ -4,6 +4,81 @@ from app.core.policy_engine import PolicyEngine
 from app.modules.protection_history.history import ProtectionHistory
 from app.modules.remediation.executor import RemediationExecutor
 from app.core.aws_session import AWSSession
+from uuid import uuid4
+from app.modules.threat_monitor.threat_monitor import ThreatMonitor
+from fastapi import APIRouter
+router = APIRouter(
+    prefix="/api/analytics",
+    tags=["Analytics"]
+)
+
+SCAN_STORAGE = {}
+@router.post("/threat-monitor")
+def threat_monitor():
+    aws_session = AWSSession(profile_name="default")
+    aws_session.initialize()
+
+    monitor = ThreatMonitor(aws_session)
+
+    result = monitor.start()
+
+    # -----------------------------------
+    # 🔥 FLATTEN FINDINGS
+    # -----------------------------------
+    all_findings = []
+
+    for key in result:
+        if isinstance(result[key], list):
+            all_findings.extend(result[key])
+
+    # -----------------------------------
+    # 🔥 PRIORITY SORT
+    # -----------------------------------
+    PRIORITY = {
+        "S3_PUBLIC_ACL": 1,
+        "PUBLIC_SECURITY_GROUP": 1,
+        "IAM_ADMIN_USER": 1,
+        "IAM_INLINE_ADMIN_POLICY": 1,
+        "IAM_WILDCARD_POLICY": 1,
+
+        "S3_BLOCK_PUBLIC_ACCESS_DISABLED": 2,
+        "S3_VERSIONING_DISABLED": 3
+    }
+
+    all_findings = sorted(
+        all_findings,
+        key=lambda f: PRIORITY.get(f.get("type"), 100)
+    )
+
+    # -----------------------------------
+    # 🔥 EXECUTION LOOP
+    # -----------------------------------
+    executor = RemediationExecutor(
+        aws_session=aws_session,
+        history=ProtectionHistory(),
+        execution_mode="DRY_RUN"
+    )
+
+    for finding in all_findings:
+
+        # Skip policy blocked
+        if finding.get("execution", {}).get("status") == "BLOCKED_BY_POLICY":
+            continue
+
+        exec_result = executor.execute(finding)
+        finding["execution"] = exec_result
+
+    # -----------------------------------
+    # STORE UPDATED RESULT
+    # -----------------------------------
+    scan_id = str(uuid4())
+    SCAN_STORAGE[scan_id] = result
+
+    return {
+        "status": "success",
+        "scan_id": scan_id,
+        "data": result
+    }
 
 router = APIRouter(
     prefix="/api/analytics",

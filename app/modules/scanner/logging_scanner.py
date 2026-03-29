@@ -1,3 +1,4 @@
+from app.config.security_config import SEVERITY_MAP
 import boto3
 
 
@@ -27,7 +28,7 @@ class LoggingScanner:
             findings.append({
                 "id": "cloudtrail-disabled",
                 "type": "CLOUDTRAIL_DISABLED",
-                "severity": "HIGH",
+                "severity": SEVERITY_MAP["CLOUDTRAIL_DISABLED"],
                 "resource_id": "account",
                 "description": "CloudTrail is not enabled for the AWS account"
             })
@@ -54,8 +55,9 @@ class LoggingScanner:
                 findings.append({
                     "id": f"vpc-flowlogs-disabled-{vpc_id}",
                     "type": "VPC_FLOW_LOGS_DISABLED",
-                    "severity": "MEDIUM",
+                    "severity": SEVERITY_MAP["VPC_FLOW_LOGS_DISABLED"],
                     "resource_id": vpc_id,
+                    "region": session.region_name,
                     "description": "VPC does not have flow logs enabled"
                 })
 
@@ -76,7 +78,7 @@ class LoggingScanner:
                 findings.append({
                     "id": f"s3-access-logging-disabled-{bucket_name}",
                     "type": "S3_ACCESS_LOGGING_DISABLED",
-                    "severity": "MEDIUM",
+                    "severity": SEVERITY_MAP["S3_ACCESS_LOGGING_DISABLED"],
                     "resource_id": bucket_name,
                     "description": "S3 bucket does not have access logging enabled"
                 })

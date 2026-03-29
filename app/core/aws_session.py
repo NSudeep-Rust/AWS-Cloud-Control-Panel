@@ -85,3 +85,14 @@ class AWSSession:
             "user_id": identity.get("UserId")
         }
 
+    def get_account_id(self):
+        """
+        Returns AWS account ID for the current session.
+        """
+        if not self.session:
+            raise RuntimeError("AWS session not initialized")
+
+        sts = self.session.client("sts")
+        identity = sts.get_caller_identity()
+
+        return identity.get("Account")

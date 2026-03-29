@@ -19,6 +19,13 @@ class FirewallExecuteRequest(BaseModel):
     confirm: bool = Field(default=False, example=True)
     execution_token: str | None = Field(default=None, example="abc123xyz")
 
+class ExecuteRequest(BaseModel):
+    scan_id: str
+    finding_ids: List[str]
+    mode: str = "DRY_RUN"
+    approval_token: str | None = None
+    confirm: bool = False
+
 
 class FirewallRollbackRequest(BaseModel):
     execution_id: str

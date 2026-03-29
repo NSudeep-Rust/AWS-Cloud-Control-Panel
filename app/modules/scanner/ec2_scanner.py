@@ -1,3 +1,4 @@
+from app.config.security_config import SEVERITY_MAP
 import boto3
 
 
@@ -29,7 +30,7 @@ class EC2Scanner:
                     findings.append({
                         "id": f"ec2-public-instance-{instance_id}",
                         "type": "PUBLIC_EC2_INSTANCE",
-                        "severity": "HIGH",
+                        "severity": SEVERITY_MAP["PUBLIC_EC2_INSTANCE"],
                         "resource_id": instance_id,
                         "public_ip": public_ip,
                         "description": "EC2 instance has a public IP address"
@@ -43,7 +44,7 @@ class EC2Scanner:
                     findings.append({
                         "id": f"ec2-no-iam-role-{instance_id}",
                         "type": "EC2_WITHOUT_IAM_ROLE",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["EC2_WITHOUT_IAM_ROLE"],
                         "resource_id": instance_id,
                         "description": "EC2 instance does not have an IAM role attached"
                     })
@@ -59,7 +60,7 @@ class EC2Scanner:
                         findings.append({
                             "id": f"ec2-default-sg-{instance_id}",
                             "type": "EC2_DEFAULT_SECURITY_GROUP",
-                            "severity": "MEDIUM",
+                            "severity": SEVERITY_MAP["EC2_DEFAULT_SECURITY_GROUP"],
                             "resource_id": instance_id,
                             "security_group": sg.get("GroupId"),
                             "description": "EC2 instance is using the default security group"
@@ -82,7 +83,7 @@ class EC2Scanner:
                     findings.append({
                         "id": f"ec2-termination-protection-disabled-{instance_id}",
                         "type": "EC2_TERMINATION_PROTECTION_DISABLED",
-                        "severity": "MEDIUM",
+                        "severity": SEVERITY_MAP["EC2_TERMINATION_PROTECTION_DISABLED"],
                         "resource_id": instance_id,
                         "description": "EC2 termination protection is disabled"
                     })
@@ -109,7 +110,7 @@ class EC2Scanner:
                         findings.append({
                             "id": f"ebs-unencrypted-{volume_id}",
                             "type": "EBS_UNENCRYPTED_VOLUME",
-                            "severity": "HIGH",
+                            "severity": SEVERITY_MAP["EBS_UNENCRYPTED_VOLUME"],
                             "resource_id": volume_id,
                             "instance_id": instance_id,
                             "description": "EBS volume attached to EC2 instance is not encrypted"
@@ -125,7 +126,7 @@ class EC2Scanner:
                         findings.append({
                             "id": f"ec2-elastic-ip-{instance_id}",
                             "type": "EC2_PUBLIC_ELASTIC_IP",
-                            "severity": "HIGH",
+                            "severity": SEVERITY_MAP["EC2_PUBLIC_ELASTIC_IP"],
                             "resource_id": instance_id,
                             "elastic_ip": address.get("PublicIp"),
                             "description": "EC2 instance has an Elastic IP attached"

@@ -1,3 +1,4 @@
+from app.config.security_config import SEVERITY_MAP
 class NetworkScanner:
 
     def __init__(self, aws_session):
@@ -37,7 +38,7 @@ class NetworkScanner:
                                     findings.append({
                                         "id": f"public-subnet-{subnet_id}",
                                         "type": "PUBLIC_SUBNET_DETECTED",
-                                        "severity": "MEDIUM",
+                                        "severity": SEVERITY_MAP["PUBLIC_SUBNET_DETECTED"],
                                         "resource_id": subnet_id,
                                         "description": "Subnet routes traffic to an Internet Gateway"
                                     })
@@ -67,7 +68,7 @@ class NetworkScanner:
                             findings.append({
                                 "id": f"route-table-public-{route_table_id}",
                                 "type": "ROUTE_TABLE_PUBLIC_ROUTE",
-                                "severity": "MEDIUM",
+                                "severity": SEVERITY_MAP["ROUTE_TABLE_PUBLIC_ROUTE"],
                                 "resource_id": route_table_id,
                                 "description": "Route table sends internet traffic to an Internet Gateway"
                             })
@@ -100,7 +101,7 @@ class NetworkScanner:
                                 findings.append({
                                     "id": f"nacl-allow-all-inbound-{nacl_id}",
                                     "type": "NACL_ALLOW_ALL_INBOUND",
-                                    "severity": "HIGH",
+                                    "severity": SEVERITY_MAP["NACL_ALLOW_ALL_INBOUND"],
                                     "resource_id": nacl_id,
                                     "description": "Network ACL allows inbound traffic from 0.0.0.0/0"
                                 })
@@ -135,7 +136,7 @@ class NetworkScanner:
                                 findings.append({
                                     "id": f"nacl-allow-all-outbound-{nacl_id}",
                                     "type": "NACL_ALLOW_ALL_OUTBOUND",
-                                    "severity": "MEDIUM",
+                                    "severity": SEVERITY_MAP["NACL_ALLOW_ALL_OUTBOUND"],
                                     "resource_id": nacl_id,
                                     "description": "Network ACL allows outbound traffic to 0.0.0.0/0"
                                 })
@@ -164,7 +165,7 @@ class NetworkScanner:
                         findings.append({
                             "id": f"internet-gateway-attached-{igw_id}",
                             "type": "INTERNET_GATEWAY_ATTACHED",
-                            "severity": "LOW",
+                            "severity": SEVERITY_MAP["INTERNET_GATEWAY_ATTACHED"],
                             "resource_id": igw_id,
                             "description": f"Internet Gateway attached to VPC {vpc_id}"
                         })
@@ -197,7 +198,7 @@ class NetworkScanner:
                     findings.append({
                         "id": f"unused-security-group-{sg_id}",
                         "type": "UNUSED_SECURITY_GROUP",
-                        "severity": "LOW",
+                        "severity": SEVERITY_MAP["UNUSED_SECURITY_GROUP"],
                         "resource_id": sg_id,
                         "description": "Security group is not attached to any resource"
                     })
@@ -229,7 +230,7 @@ class NetworkScanner:
                     findings.append({
                         "id": f"vpc-without-nat-{vpc_id}",
                         "type": "VPC_WITHOUT_NAT_GATEWAY",
-                        "severity": "LOW",
+                        "severity": SEVERITY_MAP["VPC_WITHOUT_NAT_GATEWAY"],
                         "resource_id": vpc_id,
                         "description": "VPC does not have a NAT Gateway configured"
                     })
