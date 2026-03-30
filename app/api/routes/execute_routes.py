@@ -3,6 +3,7 @@ from app.api.schemas import ExecuteRequest
 from app.api.response_formatter import format_response
 from app.core.aws_session import AWSSession
 from app.modules.remediation.executor import RemediationExecutor
+from app.modules.remediation.planner import RemediationPlanner
 from app.modules.protection_history.history import ProtectionHistory
 from app.core.approval_storage import APPROVAL_STORAGE
 from app.database.db import get_connection
@@ -84,6 +85,7 @@ def process_execution(request: ExecuteRequest):
             history=history,
             execution_mode=request.mode
         )
+        planner = RemediationPlanner()
 
         force_execute = False
 
@@ -119,7 +121,10 @@ def process_execution(request: ExecuteRequest):
         for finding in selected_findings:
             execution_id = str(uuid.uuid4())
 
+
             print("\n➡️ Executing:", finding.get("id"))
+            remediation = planner.plan(finding)
+            finding["remediation"] = remediation
 
             if force_execute:
                 result = executor.execute({

@@ -37,22 +37,32 @@ class LoggingScanner:
                     })
 
             else:
-                # 🔥 Check if logging is actually enabled
-                status = cloudtrail.get_trail_status(Name=trails[0]["Name"])
+                for trail in trails:
 
-                if not status.get("IsLogging", False):
-                    finding_id = "cloudtrail-not-logging"
+                    trail_name = trail["Name"]
 
-                    if finding_id not in seen_ids:
-                        seen_ids.add(finding_id)
-                        findings.append({
-                            "id": finding_id,
-                            "type": "CLOUDTRAIL_NOT_LOGGING",
-                            "severity": SEVERITY_MAP.get("CLOUDTRAIL_DISABLED"),
-                            "resource_id": "account",
-                            "region": region,
-                            "description": "CloudTrail exists but is not actively logging"
-                        })
+                    try:
+                        status = cloudtrail.get_trail_status(Name=trail_name)
+
+                        if not status.get("IsLogging", False):
+
+                            finding_id = f"cloudtrail-not-logging-{trail_name}"
+
+                            if finding_id not in seen_ids:
+                                seen_ids.add(finding_id)
+
+                                findings.append({
+                                    "id": finding_id,
+                                    "type": "CLOUDTRAIL_NOT_LOGGING",
+                                    "severity": SEVERITY_MAP["CLOUDTRAIL_DISABLED"],  # you can later split severity if needed
+                                    "resource_id": "account",
+                                    "trail_name": trail_name,   # 🔥 IMPORTANT
+                                    "region": region,
+                                    "description": f"CloudTrail '{trail_name}' is not actively logging"
+                                })
+
+                    except Exception as e:
+                        print(f"Error checking trail {trail_name}:", str(e))
 
         except Exception as e:
             print("CloudTrail error:", str(e))
@@ -80,7 +90,7 @@ class LoggingScanner:
                         findings.append({
                             "id": finding_id,
                             "type": "VPC_FLOW_LOGS_DISABLED",
-                            "severity": SEVERITY_MAP["VPC_FLOW_LOGS_DISABLED"],
+                            "severity": SEVERITY_MAP["CLOUDTRAIL_NOT_LOGGING"],
                             "resource_id": vpc_id,
                             "region": region,
                             "description": "VPC does not have flow logs enabled"

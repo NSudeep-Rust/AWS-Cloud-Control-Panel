@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\app",
+    "\\app\\config",
+    "\\app\\modules",
+    "\\app\\modules\\firewall",
+    "\\app\\modules\\iam_manager",
+    "\\app\\modules\\protection_history",
+    "\\app\\modules\\remediation",
+    "\\app\\modules\\scanner",
+    "\\app\\modules\\threat_monitor"
+  ],
+  "SelectedNode": "\\app\\modules\\iam_manager\\iam_manager.py",
+  "PreviewInSolutionExplorer": false
+}

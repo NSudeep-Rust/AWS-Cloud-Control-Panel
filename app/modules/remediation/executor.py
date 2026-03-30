@@ -2,7 +2,8 @@
 from botocore.exceptions import ClientError
 import json  
 import copy
-  
+import time
+
 
 #from app.config.security_config import S3_LOGGING_BUCKET
 from app.config.security_config import (
@@ -48,7 +49,14 @@ class RemediationExecutor:
             "RESTRICT_NACL_OUTBOUND": self._handle_restrict_nacl_outbound,
             "REMOVE_PUBLIC_ROUTE": self._handle_remove_public_route,
             "RESTRICT_ROLE_EXTERNAL_TRUST": self._handle_restrict_role_external_trust,
-           
+            "ENABLE_CLOUDTRAIL": self._handle_enable_cloudtrail,
+            "START_CLOUDTRAIL_LOGGING": self._handle_start_cloudtrail_logging,
+            "ENABLE_TERMINATION_PROTECTION": self._handle_enable_termination_protection,
+            "ENCRYPT_EBS_VOLUME": self._handle_encrypt_ebs_volume,
+            "ATTACH_IAM_ROLE_TO_INSTANCE": self._handle_attach_iam_role,
+            "REPLACE_SECURITY_GROUP": self._handle_replace_security_group,
+            "REMOVE_ELASTIC_IP": self._handle_remove_elastic_ip,
+                     
         }
 
 
@@ -1421,6 +1429,700 @@ class RemediationExecutor:
                 "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
                 "reason": str(e)
             }
+
+    def _handle_enable_cloudtrail(self, finding, remediation):
+
+        region = finding.get("region")
+
+        if not region or region == "global":
+            region = self.aws_session.session.region_name or "us-east-1"
+
+        cloudtrail = self.aws_session.session.client("cloudtrail", region_name=region)
+        s3 = self.aws_session.session.client("s3", region_name=region)
+
+        account_id = self.aws_session.get_account_id()
+
+        trail_name = "cloudsecure-trail"
+        bucket_name = f"cloudsecure-trail-{account_id}"
+
+        
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENABLE_CLOUDTRAIL",
+                "trail_name": trail_name,
+                "bucket_name": bucket_name,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        # -----------------------------------
+        # CHECK EXISTING TRAIL
+        # -----------------------------------
+        existing_trails = cloudtrail.describe_trails()["trailList"]
+
+        for t in existing_trails:
+            if t["Name"] == trail_name:
+                return {
+                    "status": "SKIPPED",
+                    "reason": "CloudTrail already exists",
+                    "trail_name": trail_name
+                }
+
+        # -----------------------------------
+        # CREATE S3 BUCKET (if not exists)
+        # -----------------------------------
+        bucket_created = False
+
+        try:
+            s3.head_bucket(Bucket=bucket_name)
+        except:
+            if region == "us-east-1":
+                s3.create_bucket(Bucket=bucket_name)
+            else:
+                s3.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": region}
+                )
+            bucket_created = True
+
+
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AWSCloudTrailAclCheck",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "cloudtrail.amazonaws.com"},
+                    "Action": "s3:GetBucketAcl",
+                    "Resource": f"arn:aws:s3:::{bucket_name}"
+                },
+                {
+                    "Sid": "AWSCloudTrailWrite",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "cloudtrail.amazonaws.com"},
+                    "Action": "s3:PutObject",
+                    "Resource": f"arn:aws:s3:::{bucket_name}/AWSLogs/{account_id}/*",
+                    "Condition": {
+                        "StringEquals": {
+                            "s3:x-amz-acl": "bucket-owner-full-control"
+                        }
+                    }
+                }
+            ]
+        }
+
+        s3.put_bucket_policy(
+            Bucket=bucket_name,
+            Policy=json.dumps(policy)
+        )
+
+        # -----------------------------------
+        # CREATE TRAIL
+        # -----------------------------------
+        cloudtrail.create_trail(
+            Name=trail_name,
+            S3BucketName=bucket_name,
+            IsMultiRegionTrail=True,
+            IncludeGlobalServiceEvents=True
+        )
+
+        cloudtrail.start_logging(Name=trail_name)
+
+        execution_id = str(uuid.uuid4())
+
+        # -----------------------------------
+        # SAVE HISTORY
+        # -----------------------------------
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "ENABLE_CLOUDTRAIL",
+                "trail_name": trail_name,
+                "bucket_name": bucket_name,
+                "bucket_created": bucket_created,
+                "region": region,
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
+        return {
+            "status": "EXECUTED",
+            "execution_id": execution_id,
+            "action": "ENABLE_CLOUDTRAIL",
+            "trail_name": trail_name,
+            "bucket_name": bucket_name,
+            "metadata": {
+                "trail_name": trail_name,
+                "bucket_name": bucket_name,
+                "bucket_created": bucket_created,
+                "region": region
+            }
+        }
+
+    def _handle_start_cloudtrail_logging(self, finding, remediation):
+
+        region = finding.get("region")
+
+        if not region or region == "global":
+            region = self.aws_session.session.region_name or "us-east-1"
+
+        cloudtrail = self.aws_session.session.client("cloudtrail", region_name=region)
+
+        trail_name = finding.get("trail_name") or "cloudsecure-trail"
+
+        # -------------------------
+        # DRY RUN
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "START_CLOUDTRAIL_LOGGING",
+                "trail_name": trail_name,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        try:
+            cloudtrail.start_logging(Name=trail_name)
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "START_CLOUDTRAIL_LOGGING",
+                "trail_name": trail_name,
+                "metadata": {
+                    "trail_name": trail_name,
+                    "region": region
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "START_CLOUDTRAIL_LOGGING",
+                "reason": str(e)
+            }
+
+    def _handle_enable_termination_protection(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+        if not region or region == "global":
+            region = self.aws_session.session.region_name   
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -----------------------------------
+        # GET CURRENT STATE (for rollback)
+        # -----------------------------------
+        try:
+            attr = ec2.describe_instance_attribute(
+                InstanceId=instance_id,
+                Attribute="disableApiTermination"
+            )
+            previous_state = attr["DisableApiTermination"]["Value"]
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "reason": f"Failed to fetch termination protection: {str(e)}"
+            }
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENABLE_TERMINATION_PROTECTION",
+                "instance_id": instance_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "previous_state": previous_state
+                }
+            }
+
+        # -----------------------------------
+        # LIVE EXECUTION
+        # -----------------------------------
+        try:
+            ec2.modify_instance_attribute(
+                InstanceId=instance_id,
+                DisableApiTermination={"Value": True}
+            )
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ENABLE_TERMINATION_PROTECTION",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "previous_state": previous_state
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ENABLE_TERMINATION_PROTECTION",
+                "reason": str(e)
+            }
+
+    def _handle_encrypt_ebs_volume(self, finding, remediation):
+
+        volume_id = finding.get("resource_id")
+        region = finding.get("region")
+        instance_id = finding.get("instance_id")
+
+        # 🔥 FIX region
+        if not region or region == "global":
+            region = self.aws_session.session.region_name
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -------------------------
+        # DRY RUN
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENCRYPT_EBS_VOLUME",
+                "volume_id": volume_id,
+                "instance_id": instance_id,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        try:
+            # -------------------------
+            # STEP 1 — Create snapshot
+            # -------------------------
+            snapshot = ec2.create_snapshot(
+                VolumeId=volume_id,
+                Description="Snapshot for encryption"
+            )
+            snapshot_id = snapshot["SnapshotId"]
+
+            waiter = ec2.get_waiter("snapshot_completed")
+            waiter.wait(SnapshotIds=[snapshot_id])
+
+            # -------------------------
+            # STEP 2 — Copy snapshot with encryption
+            # -------------------------
+            encrypted_snapshot = ec2.copy_snapshot(
+                SourceSnapshotId=snapshot_id,
+                SourceRegion=region,
+                Encrypted=True
+            )
+            encrypted_snapshot_id = encrypted_snapshot["SnapshotId"]
+
+            waiter.wait(SnapshotIds=[encrypted_snapshot_id])
+
+            # -------------------------
+            # STEP 3 — Create encrypted volume
+            # -------------------------
+            original_volume = ec2.describe_volumes(VolumeIds=[volume_id])["Volumes"][0]
+
+            new_volume = ec2.create_volume(
+                SnapshotId=encrypted_snapshot_id,
+                AvailabilityZone=original_volume["AvailabilityZone"],
+                VolumeType=original_volume["VolumeType"]
+            )
+            new_volume_id = new_volume["VolumeId"]
+
+            vol_waiter = ec2.get_waiter("volume_available")
+            vol_waiter.wait(VolumeIds=[new_volume_id])
+
+            # -------------------------
+            # STEP 4 — STOP INSTANCE (REQUIRED)
+            # -------------------------
+            ec2.stop_instances(InstanceIds=[instance_id])
+
+            waiter = ec2.get_waiter("instance_stopped")
+            waiter.wait(InstanceIds=[instance_id])
+
+            # -------------------------
+            # STEP 5 — DETACH old volume
+            # -------------------------
+            attachments = original_volume.get("Attachments", [])
+
+            device_name = None
+            if attachments:
+                device_name = attachments[0]["Device"]
+
+                ec2.detach_volume(
+                    VolumeId=volume_id,
+                    InstanceId=instance_id,
+                    Device=device_name,
+                    Force=True
+                )
+
+                vol_waiter.wait(VolumeIds=[volume_id])
+
+            # -------------------------
+            # STEP 5 — ATTACH new volume
+            # -------------------------
+            if device_name:
+                ec2.attach_volume(
+                    VolumeId=new_volume_id,
+                    InstanceId=instance_id,
+                    Device=device_name
+                )
+
+            # -------------------------
+            # STEP 6 — START INSTANCE
+            # -------------------------
+            ec2.start_instances(InstanceIds=[instance_id])
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ENCRYPT_EBS_VOLUME",
+                "volume_id": volume_id,
+                "metadata": {
+                    "original_volume_id": volume_id,
+                    "new_volume_id": new_volume_id,
+                    "snapshot_id": snapshot_id,
+                    "encrypted_snapshot_id": encrypted_snapshot_id,
+                    "instance_id": instance_id,
+                    "device": device_name,
+                    "region": region
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ENCRYPT_EBS_VOLUME",
+                "reason": str(e)
+            }
+
+    def _handle_attach_iam_role(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        if not region or region == "global":
+            region = self.aws_session.session.region_name
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+        iam = self.aws_session.session.client("iam")
+
+        role_name = "CloudSecure-EC2-Role"
+        profile_name = "CloudSecure-EC2-InstanceProfile"
+
+        # -------------------------
+        # DRY RUN
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
+                "instance_id": instance_id,
+                "role": role_name
+            }
+
+        try:
+            # -------------------------
+            # STEP 1 — Create Role (if not exists)
+            # -------------------------
+            try:
+                iam.get_role(RoleName=role_name)
+            except iam.exceptions.NoSuchEntityException:
+
+                assume_policy = {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {"Service": "ec2.amazonaws.com"},
+                        "Action": "sts:AssumeRole"
+                    }]
+                }
+
+                iam.create_role(
+                    RoleName=role_name,
+                    AssumeRolePolicyDocument=json.dumps(assume_policy)
+                )
+
+            # wait until profile exists
+            for _ in range(10):
+                try:
+                    iam.get_instance_profile(InstanceProfileName=profile_name)
+                    break
+                except iam.exceptions.NoSuchEntityException:
+                    time.sleep(2)
+
+            # -------------------------
+            # STEP 2 — Create Instance Profile
+            # -------------------------
+            try:
+                iam.get_instance_profile(InstanceProfileName=profile_name)
+            except iam.exceptions.NoSuchEntityException:
+                iam.create_instance_profile(InstanceProfileName=profile_name)
+
+            # -------------------------
+            # STEP 3 — Add role to profile
+            # -------------------------
+            try:
+                iam.add_role_to_instance_profile(
+                    InstanceProfileName=profile_name,
+                    RoleName=role_name
+                )
+            except Exception:
+                pass  # already attached
+
+            time.sleep(10)  # 🔥 REQUIRED (IAM propagation delay)
+
+            # -------------------------
+            # STEP 4 — Attach to EC2
+            # -------------------------
+            response = ec2.describe_iam_instance_profile_associations(
+                Filters=[{"Name": "instance-id", "Values": [instance_id]}]
+            )
+
+            if response["IamInstanceProfileAssociations"]:
+                return {
+                    "status": "SKIPPED",
+                    "reason": "Instance already has IAM role",
+                    "instance_id": instance_id
+                }
+
+            assoc = ec2.associate_iam_instance_profile(
+                InstanceId=instance_id,
+                IamInstanceProfile={"Name": profile_name}
+            )
+
+            association_id = assoc["IamInstanceProfileAssociation"]["AssociationId"]
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "role_name": role_name,
+                    "profile_name": profile_name,
+                    "association_id": association_id,
+                    "region": region
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
+                "reason": str(e)
+            }
+
+    def _handle_replace_security_group(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        # 🔥 FIX (MANDATORY)
+        if not region or region == "global":
+            region = self.aws_session.session.region_name or "us-east-1"
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -----------------------------------
+        # GET CURRENT SGs
+        # -----------------------------------
+        response = ec2.describe_instances(InstanceIds=[instance_id])
+        instance = response["Reservations"][0]["Instances"][0]
+
+        current_sgs = instance.get("SecurityGroups", [])
+        current_sg_ids = [sg["GroupId"] for sg in current_sgs]
+
+        # find default SG
+        default_sg = next((sg for sg in current_sgs if sg["GroupName"] == "default"), None)
+
+        if not default_sg:
+            return {
+                "status": "SKIPPED",
+                "reason": "Default security group not attached",
+                "instance_id": instance_id
+            }
+
+        default_sg_id = default_sg["GroupId"]
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REPLACE_SECURITY_GROUP",
+                "instance_id": instance_id,
+                "region": region,
+                "default_sg": default_sg_id,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        try:
+            # -----------------------------------
+            # STEP 1 — Create new secure SG
+            # -----------------------------------
+            vpc_id = instance["VpcId"]
+
+            sg_response = ec2.create_security_group(
+                GroupName=f"cloudsecure-sg-{instance_id}",
+                Description="Restricted security group created by CloudSecure",
+                VpcId=vpc_id
+            )
+
+            new_sg_id = sg_response["GroupId"]
+
+            # -----------------------------------
+            # STEP 2 — Add minimal rule (allow SSH only)
+            # -----------------------------------
+            ec2.authorize_security_group_ingress(
+                GroupId=new_sg_id,
+                IpPermissions=[{
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+                }]
+            )
+
+            # -----------------------------------
+            # STEP 3 — Replace SG
+            # -----------------------------------
+            updated_sgs = [sg for sg in current_sg_ids if sg != default_sg_id]
+            updated_sgs.append(new_sg_id)
+
+            ec2.modify_instance_attribute(
+                InstanceId=instance_id,
+                Groups=updated_sgs
+            )
+
+            # -----------------------------------
+            # SAVE HISTORY
+            # -----------------------------------
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": str(uuid.uuid4()),
+                    "action": "REPLACE_SECURITY_GROUP",
+                    "resource_id": instance_id,
+                    "region": region,
+                    "previous_sgs": current_sg_ids,
+                    "new_sg": new_sg_id,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "action": "REPLACE_SECURITY_GROUP",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "previous_sgs": current_sg_ids,
+                    "new_sg": new_sg_id
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REPLACE_SECURITY_GROUP",
+                "reason": str(e)
+            }
+
+    def _handle_remove_elastic_ip(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        if not region or region == "global":
+            region = self.aws_session.session.region_name or "us-east-1"
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -----------------------------------
+        # FIND ELASTIC IP
+        # -----------------------------------
+        addresses = ec2.describe_addresses()["Addresses"]
+
+        target_eip = None
+
+        for addr in addresses:
+            if addr.get("InstanceId") == instance_id:
+                target_eip = addr
+                break
+
+        if not target_eip:
+            return {
+                "status": "SKIPPED",
+                "reason": "No Elastic IP attached (auto public IP or none)",
+                "instance_id": instance_id
+            }
+
+        allocation_id = target_eip.get("AllocationId")
+        association_id = target_eip.get("AssociationId")
+        public_ip = target_eip.get("PublicIp")
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REMOVE_ELASTIC_IP",
+                "instance_id": instance_id,
+                "public_ip": public_ip,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        try:
+            # -----------------------------------
+            # DISASSOCIATE
+            # -----------------------------------
+            ec2.disassociate_address(AssociationId=association_id)
+
+            # -----------------------------------
+            # RELEASE
+            # -----------------------------------
+            ec2.release_address(AllocationId=allocation_id)
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": str(uuid.uuid4()),
+                    "action": "REMOVE_ELASTIC_IP",
+                    "resource_id": instance_id,
+                    "region": region,
+                    "public_ip": public_ip,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "action": "REMOVE_ELASTIC_IP",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "public_ip": public_ip
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REMOVE_ELASTIC_IP",
+                "reason": str(e)
+            }
+
 
     def execute(self, finding):
 

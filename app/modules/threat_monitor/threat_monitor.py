@@ -102,8 +102,26 @@ class ThreatMonitor:
             }
             enriched_s3_findings.append(finding)
 
+     
         # EC2
-        ec2_findings = self.ec2_scanner.scan()
+        ec2_findings_raw = self.ec2_scanner.scan()
+
+        enriched_ec2_findings = []
+
+        for finding in ec2_findings_raw:
+            remediation = self.remediation_planner.plan({
+                "type": finding["type"],
+                "severity": finding["severity"]
+            })
+
+            finding["remediation"] = remediation
+            finding["execution"] = {
+                "status": "PLANNED",
+                "action": remediation.get("action"),
+                "message": "Execution deferred"
+            }
+
+            enriched_ec2_findings.append(finding)
 
         # Logging
         logging_findings_raw = self.logging_scanner.scan()
@@ -125,16 +143,32 @@ class ThreatMonitor:
         encryption_findings = self.encryption_scanner.scan()
         enriched_encryption_findings = []
         for finding in encryption_findings:
+
+            # ❌ Skip remediation for these types
+            if finding["type"] in [
+                "EBS_DEFAULT_ENCRYPTION_DISABLED",
+                "EBS_SNAPSHOT_NOT_ENCRYPTED"
+            ]:
+                finding["execution"] = {
+                    "status": "INFO",
+                    "message": "Manual review required"
+                }
+                enriched_encryption_findings.append(finding)
+                continue
+
+            # ✅ Normal flow for others
             remediation = self.remediation_planner.plan({
                 "type": finding["type"],
                 "severity": finding["severity"]
             })
+
             finding["remediation"] = remediation
             finding["execution"] = {
                 "status": "PLANNED",
                 "action": remediation.get("action"),
                 "message": "Execution deferred"
             }
+
             enriched_encryption_findings.append(finding)
 
         # Network
@@ -147,16 +181,35 @@ class ThreatMonitor:
 
         enriched_network_findings = []
         for finding in network_findings_raw:
+
+            # ❌ SKIP AUTOFIX (manual only)
+            if finding["type"] in [
+                "PUBLIC_SUBNET_DETECTED",
+                "INTERNET_GATEWAY_ATTACHED",
+                "VPC_WITHOUT_NAT_GATEWAY"
+            ]:
+                finding["execution"] = {
+                    "status": "INFO",
+                    "message": "Manual review required"
+                }
+
+                # 🚫 DO NOT add remediation
+                enriched_network_findings.append(finding)
+                continue
+
+            # ✅ NORMAL FLOW (autofix-enabled)
             remediation = self.remediation_planner.plan({
                 "type": finding["type"],
                 "severity": finding["severity"]
             })
+
             finding["remediation"] = remediation
             finding["execution"] = {
                 "status": "PLANNED",
                 "action": remediation.get("action"),
                 "message": "Execution deferred"
             }
+
             enriched_network_findings.append(finding)
 
         raw_iam_findings = self.iam_manager.audit()
@@ -165,6 +218,26 @@ class ThreatMonitor:
         enriched_iam_findings = []
 
         for finding in raw_iam_findings:
+
+            # ❌ SKIP AUTOFIX (manual only)
+            if finding["type"] in [
+                "IAM_PASSWORD_NEVER_EXPIRES",
+                "IAM_PASSWORD_POLICY_MISSING",
+                "IAM_POLICY_FULL_ADMIN",
+                "IAM_USER_WITHOUT_MFA",
+                "IAM_MULTIPLE_ACCESS_KEYS",
+                "IAM_UNUSED_USER",
+                "IAM_ROLE_ADMIN_POLICY"
+            ]:
+                finding["execution"] = {
+                    "status": "INFO",
+                    "message": "Manual review required"
+                }
+
+                enriched_iam_findings.append(finding)
+                continue
+
+            # ✅ NORMAL AUTOFIX FLOW
             remediation = self.remediation_planner.plan({
                 "type": finding.get("type"),
                 "severity": finding.get("severity")
@@ -183,7 +256,7 @@ class ThreatMonitor:
         all_findings = (
             enriched_firewall_findings +
             enriched_s3_findings +
-            ec2_findings +
+            enriched_ec2_findings +
             enriched_logging_findings +
             enriched_encryption_findings +
             enriched_network_findings +

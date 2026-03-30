@@ -56564,5 +56564,119 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-03-30T06:43:25.466133",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "4a62f366-135f-4b4f-9223-05976650c116",
+          "resource_id": null,
+          "region": "eu-north-1",
+          "action": "ENABLE_CLOUDTRAIL",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T06:43:25.466133"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-30T06:55:52.554146",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "6742bd68-f86d-4dad-93a5-cb607beaff57",
+          "resource_id": null,
+          "region": "eu-north-1",
+          "action": "ENABLE_CLOUDTRAIL",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T06:55:52.554146"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-30T07:15:17.330288",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "76c513b8-ff27-407a-9caa-d8b49d293e17",
+          "resource_id": null,
+          "region": "eu-north-1",
+          "action": "ENABLE_CLOUDTRAIL",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T07:15:17.330288"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-30T07:41:30.126521",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "fa9d03e2-6977-4d90-af3e-bad6a3822332",
+          "resource_id": null,
+          "region": "eu-north-1",
+          "action": "ENABLE_CLOUDTRAIL",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T07:41:30.126521"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-30T12:38:27.645415",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "dad6028a-1684-4b88-bc66-26df033ce7f2",
+          "resource_id": "i-065fbb4fd8cbf1474",
+          "region": "eu-north-1",
+          "action": "REPLACE_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T12:38:27.645415"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-03-30T12:56:32.938843",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "d1e41a3a-98d2-4217-a579-6f0e10e4452a",
+          "resource_id": "i-065fbb4fd8cbf1474",
+          "region": "eu-north-1",
+          "action": "REMOVE_ELASTIC_IP",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-03-30T12:56:32.938843"
+        }
+      }
+    ]
   }
 ]

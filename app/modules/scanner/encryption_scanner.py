@@ -36,40 +36,7 @@ class EncryptionScanner:
         except Exception as e:
             print("EBS default encryption error:", str(e))
 
-        # -------------------------
-        # S3 Bucket Encryption Disabled
-        # -------------------------
-        try:
-            s3 = session.client("s3")  # ✅ correct (no region)
-
-            buckets = s3.list_buckets()["Buckets"]
-
-            for bucket in buckets:
-                bucket_name = bucket["Name"]
-
-                try:
-                    response = s3.get_bucket_encryption(Bucket=bucket_name)
-                    rules = response["ServerSideEncryptionConfiguration"]["Rules"]
-
-                    if not rules:
-                        raise Exception("No encryption rules")
-
-                except Exception:
-                    finding_id = f"s3-encryption-disabled-{bucket_name}"
-
-                    if finding_id not in seen_ids:
-                        seen_ids.add(finding_id)
-                        findings.append({
-                            "id": finding_id,
-                            "type": "S3_BUCKET_ENCRYPTION_DISABLED",
-                            "severity": SEVERITY_MAP["S3_BUCKET_ENCRYPTION_DISABLED"],
-                            "resource_id": bucket_name,
-                            "region": region,
-                            "description": "S3 bucket does not have default encryption enabled"
-                        })
-
-        except Exception as e:
-            print("S3 encryption error:", str(e))
+        
 
         # -------------------------
         # KMS Key Rotation Disabled

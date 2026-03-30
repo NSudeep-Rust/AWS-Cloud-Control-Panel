@@ -7,7 +7,7 @@ from app.api.routes import analytics_routes
 from app.api.routes import execute_routes
 
 
-app = FastAPI(title="Cloud Security Panel API")
+app = FastAPI(title="AWS Cloud Security Panel API")
 
 app.include_router(scan_routes.router)
 app.include_router(threat_routes.router)

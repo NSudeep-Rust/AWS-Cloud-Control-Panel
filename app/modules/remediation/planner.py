@@ -224,6 +224,99 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
+        # ---------------------------
+        #   CLOUDTRAIL_DISABLED
+        # ---------------------------
+
+        if finding_type == "CLOUDTRAIL_DISABLED":
+            return {
+                "action": "ENABLE_CLOUDTRAIL",
+                "reason": "CloudTrail is not enabled",
+                "recommended_fix": "Enable CloudTrail with multi-region logging",
+                "severity": finding["severity"]
+            }
+
+        if finding_type == "CLOUDTRAIL_NOT_LOGGING":
+            return {
+                "action": "START_CLOUDTRAIL_LOGGING",
+                "reason": "CloudTrail exists but logging is disabled",
+                "recommended_fix": "Enable logging for existing CloudTrail",
+                "severity": finding["severity"]
+            }
+
+        if finding_type == "EC2_TERMINATION_PROTECTION_DISABLED":
+            return {
+                "action": "ENABLE_TERMINATION_PROTECTION",
+                "reason": "EC2 termination protection is disabled",
+                "recommended_fix": "Enable termination protection to prevent accidental deletion",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EBS UNENCRYPTED VOLUME
+        # ---------------------------
+        if finding_type == "EBS_UNENCRYPTED_VOLUME":
+            return {
+                "action": "ENCRYPT_EBS_VOLUME",
+                "reason": "EBS volume is not encrypted",
+                "recommended_fix": "Create encrypted copy of the volume and replace it",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EC2 WITHOUT IAM ROLE
+        # ---------------------------
+        if finding_type == "EC2_WITHOUT_IAM_ROLE":
+            return {
+                "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
+                "reason": "EC2 instance does not have an IAM role attached",
+                "recommended_fix": "Attach IAM role using instance profile",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EC2 DEFAULT SECURITY GROUP
+        # ---------------------------
+        if finding_type == "EC2_DEFAULT_SECURITY_GROUP":
+            return {
+                "action": "REPLACE_SECURITY_GROUP",
+                "reason": "Instance is using default security group",
+                "recommended_fix": "Attach a restricted security group and remove default",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EC2 ELASTIC IP (PUBLIC)
+        # ---------------------------
+        if finding_type == "EC2_PUBLIC_ELASTIC_IP":
+            return {
+                "action": "REMOVE_ELASTIC_IP",
+                "reason": "EC2 instance has an Elastic IP attached",
+                "recommended_fix": "Disassociate and release Elastic IP",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EC2 PUBLIC INSTANCE
+        # ---------------------------
+        if finding_type == "PUBLIC_EC2_INSTANCE":
+            return {
+                "action": "REMOVE_ELASTIC_IP",
+                "reason": "EC2 instance is publicly exposed",
+                "recommended_fix": "Remove Elastic IP to prevent public exposure",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # RDS STORAGE NOT ENCRYPTED
+        # ---------------------------
+        if finding_type == "RDS_STORAGE_NOT_ENCRYPTED":
+            return {
+                "action": "ENCRYPT_RDS_INSTANCE",
+                "reason": "RDS instance storage is not encrypted",
+                "recommended_fix": "Create encrypted snapshot and restore new DB instance",
+                "severity": finding["severity"]
+            }
 
         return {
             "action": "NO_ACTION",

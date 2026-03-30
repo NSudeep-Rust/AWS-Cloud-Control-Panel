@@ -789,7 +789,429 @@ class RollbackEngine:
                     "reason": str(e)
                 }
 
+        if action == "ENABLE_CLOUDTRAIL":
 
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            # ✅ FIX 1: Robust extraction
+            trail_name = (
+                inner.get("trail_name")
+                or metadata.get("trail_name")
+            )
+
+            bucket_name = (
+                inner.get("bucket_name")
+                or metadata.get("bucket_name")
+            )
+
+            bucket_created = (
+                inner.get("bucket_created")
+                if "bucket_created" in inner
+                else metadata.get("bucket_created", False)
+            )
+
+            region = inner.get("region") or metadata.get("region")
+
+            # ✅ FIX 2: Region fallback
+            if not region or region == "global":
+                region = self.aws_session.session.region_name or "us-east-1"
+
+            # ✅ FIX 3: Defensive validation (VERY IMPORTANT)
+            if not trail_name:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing trail_name in rollback metadata"
+                }
+
+            cloudtrail = self.aws_session.session.client("cloudtrail", region_name=region)
+            s3 = self.aws_session.session.client("s3")
+
+            try:
+                # stop logging
+                cloudtrail.stop_logging(Name=trail_name)
+
+                # delete trail
+                cloudtrail.delete_trail(Name=trail_name)
+
+                # ✅ delete bucket ONLY if WE created it
+                if bucket_created and bucket_name:
+
+                    paginator = s3.get_paginator("list_objects_v2")
+
+                    for page in paginator.paginate(Bucket=bucket_name):
+                        if "Contents" in page:
+                            delete_keys = [{"Key": obj["Key"]} for obj in page["Contents"]]
+
+                            s3.delete_objects(
+                                Bucket=bucket_name,
+                                Delete={"Objects": delete_keys}
+                            )
+
+                    # now delete bucket
+                    s3.delete_bucket(Bucket=bucket_name)
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "trail_name": trail_name
+                }
+
+            except Exception as e:
+                # ✅ FIX 4: Correct error message
+                return {
+                    "status": "FAILED",
+                    "reason": f"CloudTrail rollback failed: {str(e)}"
+                }
+
+        if action == "START_CLOUDTRAIL_LOGGING":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            trail_name = inner.get("trail_name")
+            region = inner.get("region")
+
+            if not region or region == "global":
+                region = self.aws_session.session.region_name or "us-east-1"
+
+            if not trail_name:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing trail_name in rollback metadata"
+                }
+
+            cloudtrail = self.aws_session.session.client("cloudtrail", region_name=region)
+
+            try:
+                cloudtrail.stop_logging(Name=trail_name)
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "trail_name": trail_name
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        if action == "ENABLE_TERMINATION_PROTECTION":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            instance_id = inner.get("instance_id")
+            previous_state = inner.get("previous_state")
+
+            if instance_id is None or previous_state is None:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing rollback metadata"
+                }
+
+            ec2 = self.aws_session.session.client("ec2")
+
+            try:
+                ec2.modify_instance_attribute(
+                    InstanceId=instance_id,
+                    DisableApiTermination={"Value": previous_state}
+                )
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "instance_id": instance_id,
+                    "restored_state": previous_state
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }  
+        # -----------------------------------
+        # EBS ENCRYPTION ROLLBACK
+        # -----------------------------------
+        if action == "ENCRYPT_EBS_VOLUME":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            original_volume_id = inner.get("original_volume_id")
+            new_volume_id = inner.get("new_volume_id")
+            instance_id = inner.get("instance_id")
+            device = inner.get("device")
+            region = inner.get("region")
+
+            if not original_volume_id or not new_volume_id:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing metadata for rollback"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            try:
+                # -------------------------
+                # STEP 1 — STOP INSTANCE
+                # -------------------------
+                ec2.stop_instances(InstanceIds=[instance_id])
+
+                waiter = ec2.get_waiter("instance_stopped")
+                waiter.wait(InstanceIds=[instance_id])
+
+                # -------------------------
+                # STEP 2 — DETACH NEW (encrypted) volume
+                # -------------------------
+                ec2.detach_volume(
+                    VolumeId=new_volume_id,
+                    InstanceId=instance_id,
+                    Device=device,
+                    Force=True
+                )
+
+                vol_waiter = ec2.get_waiter("volume_available")
+                vol_waiter.wait(VolumeIds=[new_volume_id])
+
+                # -------------------------
+                # STEP 3 — ATTACH ORIGINAL volume
+                # -------------------------
+                ec2.attach_volume(
+                    VolumeId=original_volume_id,
+                    InstanceId=instance_id,
+                    Device=device
+                )
+
+                # -------------------------
+                # STEP 4 — START INSTANCE
+                # -------------------------
+                ec2.start_instances(InstanceIds=[instance_id])
+
+                # -------------------------
+                # STEP 5 — DELETE new volume (optional cleanup)
+                # -------------------------
+                try:
+                    ec2.delete_volume(VolumeId=new_volume_id)
+                except:
+                    pass
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "restored_volume": original_volume_id
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        # -----------------------------------
+        # EC2 IAM ROLE ROLLBACK
+        # -----------------------------------
+        if action == "ATTACH_IAM_ROLE_TO_INSTANCE":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            association_id = inner.get("association_id")
+            region = inner.get("region")
+
+            if not association_id:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing association_id"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            try:
+                ec2.disassociate_iam_instance_profile(
+                    AssociationId=association_id
+                )
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        # -----------------------------------
+        # REPLACE SECURITY GROUP ROLLBACK
+        # -----------------------------------
+        if action == "REPLACE_SECURITY_GROUP":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            instance_id = inner.get("instance_id")
+            region = inner.get("region")
+            previous_sgs = inner.get("previous_sgs", [])
+            new_sg = inner.get("new_sg")
+
+            if not instance_id or not previous_sgs:
+                return {
+                    "status": "FAILED",
+                    "reason": "Missing rollback metadata"
+                }
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            try:
+                # restore old SGs
+                ec2.modify_instance_attribute(
+                    InstanceId=instance_id,
+                    Groups=previous_sgs
+                )
+
+                # delete newly created SG
+                if new_sg:
+                    try:
+                        ec2.delete_security_group(GroupId=new_sg)
+                    except Exception:
+                        pass
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "instance_id": instance_id
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        if action == "REMOVE_ELASTIC_IP":
+
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            inner = metadata.get("metadata") or metadata
+
+            instance_id = inner.get("instance_id")
+            region = inner.get("region")
+
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            try:
+                # allocate new IP
+                alloc = ec2.allocate_address(Domain="vpc")
+
+                ec2.associate_address(
+                    InstanceId=instance_id,
+                    AllocationId=alloc["AllocationId"]
+                )
+
+                return {
+                    "status": "ROLLBACK_SUCCESS",
+                    "execution_id": execution_id,
+                    "note": "New Elastic IP assigned (original cannot be restored)"
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "reason": str(e)
+                }
+
+        def _handle_encrypt_rds_instance(self, finding, remediation):
+
+            db_id = finding.get("resource_id")
+            region = finding.get("region")
+
+            if not region or region == "global":
+                region = self.aws_session.session.region_name or "us-east-1"
+
+            rds = self.aws_session.session.client("rds", region_name=region)
+
+            snapshot_id = f"{db_id}-unencrypted-snapshot"
+            encrypted_snapshot_id = f"{db_id}-encrypted-snapshot"
+            new_db_id = f"{db_id}-encrypted"
+
+            # -------------------------
+            # DRY RUN
+            # -------------------------
+            if self.execution_mode == "DRY_RUN":
+                return {
+                    "status": "DRY_RUN",
+                    "action": "ENCRYPT_RDS_INSTANCE",
+                    "db_id": db_id,
+                    "recommended_fix": remediation.get("recommended_fix")
+                }
+
+            try:
+                # -------------------------
+                # STEP 1 — Create snapshot
+                # -------------------------
+                rds.create_db_snapshot(
+                    DBInstanceIdentifier=db_id,
+                    DBSnapshotIdentifier=snapshot_id
+                )
+
+                # wait snapshot
+                waiter = rds.get_waiter('db_snapshot_available')
+                waiter.wait(DBSnapshotIdentifier=snapshot_id)
+
+                # -------------------------
+                # STEP 2 — Copy with encryption
+                # -------------------------
+                rds.copy_db_snapshot(
+                    SourceDBSnapshotIdentifier=snapshot_id,
+                    TargetDBSnapshotIdentifier=encrypted_snapshot_id,
+                    KmsKeyId="alias/aws/rds",
+                    CopyTags=True
+                )
+
+                waiter.wait(DBSnapshotIdentifier=encrypted_snapshot_id)
+
+                # -------------------------
+                # STEP 3 — Restore new DB
+                # -------------------------
+                rds.restore_db_instance_from_db_snapshot(
+                    DBInstanceIdentifier=new_db_id,
+                    DBSnapshotIdentifier=encrypted_snapshot_id
+                )
+
+                if self.history:
+                    self.history.record_execution({
+                        "execution_id": str(uuid.uuid4()),
+                        "action": "ENCRYPT_RDS_INSTANCE",
+                        "resource_id": db_id,
+                        "region": region,
+                        "snapshot_id": snapshot_id,
+                        "encrypted_snapshot_id": encrypted_snapshot_id,
+                        "new_db_id": new_db_id,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+
+                return {
+                    "status": "EXECUTED",
+                    "execution_id": str(uuid.uuid4()),
+                    "action": "ENCRYPT_RDS_INSTANCE",
+                    "db_id": db_id,
+                    "metadata": {
+                        "db_id": db_id,
+                        "new_db_id": new_db_id,
+                        "snapshot_id": snapshot_id,
+                        "encrypted_snapshot_id": encrypted_snapshot_id
+                    }
+                }
+
+            except Exception as e:
+                return {
+                    "status": "FAILED",
+                    "action": "ENCRYPT_RDS_INSTANCE",
+                    "reason": str(e)
+                }
         # =====================================================
         # UNKNOWN
         # =====================================================
