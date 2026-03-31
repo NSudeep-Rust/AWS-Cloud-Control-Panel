@@ -151,6 +151,7 @@ class ThreatMonitor:
             ]:
                 finding["execution"] = {
                     "status": "INFO",
+                    "action": "MANUAL_REVIEW_REQUIRED",
                     "message": "Manual review required"
                 }
                 enriched_encryption_findings.append(finding)
@@ -190,6 +191,7 @@ class ThreatMonitor:
             ]:
                 finding["execution"] = {
                     "status": "INFO",
+                    "action": "MANUAL_REVIEW_REQUIRED",
                     "message": "Manual review required"
                 }
 
@@ -231,6 +233,7 @@ class ThreatMonitor:
             ]:
                 finding["execution"] = {
                     "status": "INFO",
+                    "action": "MANUAL_REVIEW_REQUIRED",
                     "message": "Manual review required"
                 }
 

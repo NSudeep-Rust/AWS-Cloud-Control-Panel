@@ -75,10 +75,7 @@ class IAMManager:
                         "region": "global",
                         "policy_arn": policy["PolicyArn"],
                         "description": "IAM user has AdministratorAccess policy attached",
-                        "remediation": {
-                            "action": "DETACH_ADMIN_POLICY",
-                            "recommended_fix": "Detach AdministratorAccess from user"
-                        }
+                      
                     })
 
             # -------------------------
@@ -125,10 +122,6 @@ class IAMManager:
                     "resource_id": user_name,
                     "region": "global",
                     "description": "IAM user does not have MFA enabled",
-                    "remediation": {
-                        "action": "ENABLE_MFA",
-                        "recommended_fix": "Enable MFA for this IAM user via AWS Console or CLI"
-                    }
                 })
 
             # -------------------------
@@ -156,17 +149,7 @@ class IAMManager:
                         "region": "global",
                         "access_key_id": key_id,
                         "description": f"Inactive access keys",
-                        "remediation": {
-                            "action": "DELETE_ACCESS_KEY",
-                            "reason": "Old inactive access key should be removed",
-                            "recommended_fix": "Delete unused inactive access key",
-                            "severity": "MEDIUM"
-                        },
-                        "execution": {
-                            "status": "PLANNED",
-                            "action": "DELETE_ACCESS_KEY",
-                            "message": "Execution deferred"
-                        }
+
                     })
 
                 if age_days > 90:

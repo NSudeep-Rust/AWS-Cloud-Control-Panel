@@ -2,15 +2,15 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\config",
+    "\\app\\api",
+    "\\app\\api\\routes",
     "\\app\\modules",
-    "\\app\\modules\\firewall",
     "\\app\\modules\\iam_manager",
-    "\\app\\modules\\protection_history",
-    "\\app\\modules\\remediation",
-    "\\app\\modules\\scanner",
-    "\\app\\modules\\threat_monitor"
+    "\\app\\modules\\policy_engine",
+    "\\app\\scripts",
+    "\\app\\ui",
+    "\\static"
   ],
-  "SelectedNode": "\\app\\modules\\iam_manager\\iam_manager.py",
+  "SelectedNode": "\\app\\modules\\scanner\\logging_scanner.py",
   "PreviewInSolutionExplorer": false
 }

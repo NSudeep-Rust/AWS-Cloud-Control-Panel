@@ -5,6 +5,12 @@ from app.api.response_formatter import format_response
 from app.api.logger import logger
 from app.core.aws_session import AWSSession
 from app.modules.scanner.scanner import Scanner
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from app.database.db import get_db
+from app.database.models import Scan, Finding
+from app.database.models import Account
+import uuid
 
 
 router = APIRouter(
@@ -14,7 +20,7 @@ router = APIRouter(
 
 
 @router.post("/")
-def run_scan(request: ScanRequest):
+def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
 
     effective_mode = request.mode
 
@@ -31,14 +37,53 @@ def run_scan(request: ScanRequest):
 
     try:
         # ✅ Initialize AWS session
-        aws_session = AWSSession(profile_name="default")
+        account = db.query(Account).filter(Account.id == request.account_id).first()
+
+        if not account:
+            return format_response(
+                module="scanner",
+                mode=effective_mode,
+                errors=["Invalid account_id"]
+            )
+        # ✅ AWS session (DYNAMIC)
+        aws_session = AWSSession(
+            profile_name=account.profile_name,
+            role_arn=account.role_arn,
+            region_name=account.region
+        )
         aws_session.initialize()
 
-        # ✅ Create scanner
+        # ✅ Scanner
         scanner = Scanner(aws_session)
 
-        # 🔥 FIX: use FULL scan (NOT just firewall)
         findings = scanner.scan()
+
+        # ✅ Store scan
+        scan_id = str(uuid.uuid4())
+
+        scan = Scan(
+            id=scan_id,
+            account_id=account.id
+        )
+
+        db.add(scan)
+        db.commit()
+
+        # ✅ Store findings
+        for f in findings:
+            finding = Finding(
+                id=f.get("id"),
+                scan_id=scan_id,
+                account_id=account.id, 
+                type=f.get("type"),
+                severity=f.get("severity"),
+                resource_id=f.get("resource_id"),
+                region=f.get("region"),
+                status="OPEN"
+            )
+            db.add(finding)
+
+        db.commit()
 
         # ✅ Debug logs (VERY IMPORTANT)
         print("SCAN API HIT")
@@ -49,6 +94,7 @@ def run_scan(request: ScanRequest):
             module="scanner",
             mode=effective_mode,
             data={
+                "scan_id": scan_id,
                 "total_findings": len(findings),
                 "findings": findings
             }

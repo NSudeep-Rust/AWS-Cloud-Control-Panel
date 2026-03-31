@@ -56678,5 +56678,45 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-03-31T19:51:13.324652",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "d1388876-45cc-4afa-b906-5b5b653bdcbc",
+          "resource_id": "sg-0cacd516b37f14231",
+          "region": "us-east-1",
+          "action": "DELETE_UNUSED_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": {
+            "GroupId": "sg-0cacd516b37f14231",
+            "IpPermissionsEgress": [
+              {
+                "IpProtocol": "-1",
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              }
+            ],
+            "VpcId": "vpc-0f6385a662fe28b40",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:976071095315:security-group/sg-0cacd516b37f14231",
+            "OwnerId": "976071095315",
+            "GroupName": "ALL TRAFFIC",
+            "Description": "launch-wizard-1 created 2025-05-11T14:26:00.369Z",
+            "IpPermissions": []
+          },
+          "revoked_rules": null,
+          "timestamp": "2026-03-31T19:51:13.324652"
+        }
+      }
+    ]
   }
 ]

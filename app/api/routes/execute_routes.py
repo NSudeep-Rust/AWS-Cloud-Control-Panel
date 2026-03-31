@@ -6,8 +6,11 @@ from app.modules.remediation.executor import RemediationExecutor
 from app.modules.remediation.planner import RemediationPlanner
 from app.modules.protection_history.history import ProtectionHistory
 from app.core.approval_storage import APPROVAL_STORAGE
-from app.database.db import get_connection
-
+from app.database.db import get_db
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from app.database.models import Finding, Execution
+from app.database.db import SessionLocal
 import uuid
 import time
 import json
@@ -23,20 +26,14 @@ TOKEN_EXPIRY_SECONDS = 300
 # =========================================================
 # 🔥 LOAD FINDINGS FROM DB (FIX)
 # =========================================================
-def load_findings_from_db(scan_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT data FROM findings WHERE scan_id = ?
-    """, (scan_id,))
-
-    rows = cursor.fetchall()
-    conn.close()
+def load_findings_from_db(db: Session, scan_id: str):
+    rows = db.query(Finding).filter(Finding.scan_id == scan_id).all()
 
     findings = []
     for row in rows:
-        findings.append(json.loads(row["data"]))
+        data = row.__dict__.copy()
+        data.pop("_sa_instance_state", None)
+        findings.append(data)
 
     return findings
 
@@ -44,7 +41,8 @@ def load_findings_from_db(scan_id):
 # =========================================================
 # 🔥 BACKGROUND EXECUTION
 # =========================================================
-def process_execution(request: ExecuteRequest):
+def process_execution(request: ExecuteRequest, db: Session):
+    db = SessionLocal()   # 🔥 CRITICAL FIX
 
     try:
         print("\n🔥 BACKGROUND TASK STARTED")
@@ -52,7 +50,7 @@ def process_execution(request: ExecuteRequest):
         print("Finding IDs:", request.finding_ids)
 
         # ✅ FIX: LOAD FROM DB
-        findings = load_findings_from_db(request.scan_id)
+        findings = load_findings_from_db(db, request.scan_id)
         print("Loaded findings:", len(findings))
 
         if not findings:
@@ -121,8 +119,8 @@ def process_execution(request: ExecuteRequest):
         for finding in selected_findings:
             execution_id = str(uuid.uuid4())
 
-
             print("\n➡️ Executing:", finding.get("id"))
+
             remediation = planner.plan(finding)
             finding["remediation"] = remediation
 
@@ -136,77 +134,42 @@ def process_execution(request: ExecuteRequest):
 
             print("Result:", result)
 
-            conn = get_connection()
-            cursor = conn.cursor()
-
             resource_name = (
                 finding.get("user_name") or
                 finding.get("bucket_name") or
                 finding.get("resource_id")
             )
 
+            approval_token_value = None
+
             # ================= APPROVAL =================
             if result.get("status") in ["BLOCKED_BY_POLICY", "REQUIRE_APPROVAL"] and not force_execute:
 
-                approval_token = str(uuid.uuid4())
+                approval_token_value = str(uuid.uuid4())
 
-                APPROVAL_STORAGE[approval_token] = {
+                APPROVAL_STORAGE[approval_token_value] = {
                     "timestamp": time.time(),
                     "scan_id": request.scan_id,
                     "finding_ids": request.finding_ids
                 }
 
-                cursor.execute("""
-                INSERT INTO executions (
-                    execution_id,
-                    scan_id,
-                    finding_id,
-                    action,
-                    status,
-                    reason,
-                    approval_token,
-                    resource_name,
-                    metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    execution_id,
-                    request.scan_id,
-                    finding.get("id"),
-                    result.get("action"),
-                    result.get("status"),
-                    result.get("reason"),
-                    approval_token,
-                    resource_name,
-                    json.dumps(result)   # 🔥 IMPORTANT
-                ))
+            # ================= SAVE EXECUTION =================
+            print("DEBUG METADATA:", result.get("metadata"))
+            execution = Execution(
+                execution_id=result.get("execution_id", execution_id),
+                scan_id=request.scan_id,
+                finding_id=finding.get("id"),
+                action=result.get("action"),
+                status=result.get("status"),
+                reason=result.get("reason"),
+                approval_token=approval_token_value,
+                resource_name=resource_name,
+                meta=result.get("metadata") or {}
+            )
 
-                conn.commit()
-                conn.close()
-                continue
+            db.add(execution)
+            db.commit()
 
-            # ================= NORMAL =================
-           
-
-            cursor.execute("""
-                INSERT INTO executions (
-                    execution_id, scan_id, finding_id,
-                    action, status, reason,
-                    approval_token, resource_name, metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                execution_id,
-                request.scan_id,
-                finding.get("id"),
-                result.get("action"),
-                result.get("status"),
-                result.get("reason"),
-                None,
-                resource_name,
-                json.dumps(result)
-            ))
-
-            conn.commit()
-            conn.close()
 
         if force_execute:
             APPROVAL_STORAGE.pop(request.approval_token, None)
@@ -219,10 +182,10 @@ def process_execution(request: ExecuteRequest):
 # 🔥 MAIN API
 # =========================================================
 @router.post("/")
-def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks):
+def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
 
     # ✅ Validate scan exists in DB
-    findings = load_findings_from_db(request.scan_id)
+    findings = load_findings_from_db(db, request.scan_id)
 
     if not findings:
         return format_response(
@@ -231,7 +194,7 @@ def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks):
             errors=["Invalid scan_id"]
         )
 
-    background_tasks.add_task(process_execution, request)
+    background_tasks.add_task(process_execution, request, db)
 
     return format_response(
         module="execute",

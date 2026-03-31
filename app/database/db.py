@@ -1,9 +1,21 @@
-import sqlite3
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-DB_NAME = "security.db"
+# 🔐 Update with your password
+DATABASE_URL = "postgresql://postgres:rust@localhost:5432/cloud_security_panel"
 
+engine = create_engine(DATABASE_URL)
 
-def get_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# Dependency for FastAPI routes (later use)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

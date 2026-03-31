@@ -43,12 +43,6 @@ class S3Scanner:
                                 "resource_id": bucket_name,
                                 "region": "global",
                                 "description": "S3 bucket is publicly accessible via ACL",
-                                "remediation": {
-                                    "action": "REMOVE_PUBLIC_S3_ACL",
-                                    "reason": "S3 bucket is publicly accessible via ACL",
-                                    "recommended_fix": "Remove public access from bucket ACL",
-                                    "severity": "CRITICAL"
-                                }
                             })
                         break
 
@@ -97,12 +91,7 @@ class S3Scanner:
                             "resource_id": bucket_name,
                             "region": "global",
                             "description": "S3 bucket does not have versioning enabled",
-                            "remediation": {
-                                "action": "ENABLE_S3_VERSIONING",
-                                "reason": "S3 bucket versioning is disabled",
-                                "recommended_fix": "Enable versioning on the bucket",
-                                "severity": "MEDIUM"
-                            }
+
                         })
 
             except Exception as e:
@@ -126,12 +115,6 @@ class S3Scanner:
                             "resource_id": bucket_name,
                             "region": "global",
                             "description": "S3 bucket does not have access logging enabled",
-                            "remediation": {
-                                "action": "ENABLE_S3_ACCESS_LOGGING",
-                                "reason": "S3 bucket access logging is disabled",
-                                "recommended_fix": "Enable server access logging",
-                                "severity": "MEDIUM"
-                            }
                         })
 
             except Exception as e:
@@ -156,12 +139,7 @@ class S3Scanner:
                             "resource_id": bucket_name,
                             "region": "global",
                             "description": "S3 bucket does not have full block public access enabled",
-                            "remediation": {
-                                "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
-                                "reason": "S3 bucket public access block is disabled",
-                                "recommended_fix": "Enable block public access settings",
-                                "severity": "HIGH"
-                            }
+
                         })
 
             except Exception as e:

@@ -5,6 +5,7 @@ from app.modules.scanner.encryption_scanner import EncryptionScanner
 from app.modules.scanner.network_scanner import NetworkScanner
 from app.modules.iam_manager.iam_manager import IAMManager
 from app.config.security_config import SEVERITY_MAP
+import boto3
 import uuid 
 
 
@@ -23,6 +24,8 @@ class Scanner:
         self.encryption_scanner = EncryptionScanner(aws_session)
         self.network_scanner = NetworkScanner(aws_session)
         self.regions = self.get_all_regions()
+        sts = boto3.client("sts")
+        self.account_id = sts.get_caller_identity()["Account"]
 
         # IAM handled separately (IMPORTANT)
         self.iam_manager = IAMManager(aws_session)
@@ -130,11 +133,12 @@ class Scanner:
         for f in all_findings:
             if not f.get("region"):
                 f["region"] = "global"
+            f["account_id"] = self.account_id   # 🔥 ADD THIS LINE
 
         unique = {}
 
         for f in all_findings:
-            key = (f.get("type"), f.get("resource_id"), f.get("region"))
+            key = f.get("id")
             unique[key] = f
 
         return list(unique.values())

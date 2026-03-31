@@ -1,6 +1,10 @@
 ﻿from datetime import datetime
 from botocore.exceptions import ClientError
-from app.database.db import get_connection
+from app.database.db import get_db
+from sqlalchemy.orm import Session
+from app.database.models import Execution
+from app.database.db import SessionLocal
+from fastapi import Depends
 import json
 from app.core.aws_session import AWSSession
 class RollbackEngine:
@@ -9,19 +13,11 @@ class RollbackEngine:
         self.aws_session = aws_session
 
     def rollback(self, execution_id):
+        db = SessionLocal()
 
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        # -----------------------------------
-        # 1. Fetch execution from DB
-        # -----------------------------------
-        cursor.execute("""
-            SELECT * FROM executions WHERE execution_id = ?
-        """, (execution_id,))
-
-        row = cursor.fetchone()
-        conn.close()
+        row = db.query(Execution).filter(
+            Execution.execution_id == execution_id
+        ).first()
 
         if not row:
             return {
@@ -29,14 +25,15 @@ class RollbackEngine:
                 "reason": "Execution ID not found in DB"
             }
 
-        action = row["action"]
-        metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+
+        action = row.action
+        metadata = row.meta if isinstance(row.meta, dict) else {}
 
         resource_id = (
             metadata.get("user_name") or
             metadata.get("bucket_name") or
             metadata.get("resource_id") or
-            row["resource_name"]
+            row.resource_name
         )
 
         # =====================================================
@@ -71,8 +68,11 @@ class RollbackEngine:
         # =====================================================
         if action == "REMOVE_INLINE_POLICY":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
+           
 
             user_name = inner.get("user_name")
             policies = inner.get("policies", [])
@@ -103,7 +103,7 @@ class RollbackEngine:
         # =====================================================
         if action == "RESTRICT_SECURITY_GROUP":
 
-            metadata = json.loads(row["metadata"])
+            metadata = row.meta if isinstance(row.meta, dict) else {}
 
             revoked_rules = metadata.get("revoked_rules")
             resource_id = metadata.get("resource_id")
@@ -132,10 +132,12 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ENABLE_S3_VERSIONING":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            metadata = row.meta if isinstance(row.meta, dict) else {}
 
             # 🔥 SAFE EXTRACTION (handles all nesting cases)
-            inner = metadata.get("metadata") or metadata
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             bucket_name = inner.get("bucket_name")
             previous_status = inner.get("previous_versioning_status")
@@ -174,8 +176,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ENABLE_BLOCK_PUBLIC_ACCESS":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             bucket_name = inner.get("bucket_name")
             previous_config = inner.get("previous_public_access_block")
@@ -205,8 +209,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "REMOVE_PUBLIC_S3_ACL":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             bucket_name = inner.get("bucket_name")
             previous_acl = inner.get("previous_acl")
@@ -247,8 +253,10 @@ class RollbackEngine:
 
         if action == "ENABLE_S3_ACCESS_LOGGING":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             bucket_name = inner.get("bucket_name")
             previous_logging = inner.get("previous_logging")
@@ -306,8 +314,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "DISABLE_ACCESS_KEY":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             user_name = inner.get("user_name")
             access_key_id = inner.get("access_key_id")
@@ -348,8 +358,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ROTATE_ACCESS_KEY":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             user_name = inner.get("user_name")
             old_key_id = inner.get("old_key_id")
@@ -398,7 +410,7 @@ class RollbackEngine:
         # -----------------------------------
         if action == "DELETE_ACCESS_KEY":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            metadata = row.meta if isinstance(row.meta, dict) else {}
             user_name = (
                 metadata.get("user_name") or
                 metadata.get("metadata", {}).get("user_name")
@@ -440,8 +452,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ENABLE_KMS_KEY_ROTATION":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             key_id = inner.get("key_id")
             previous_state = inner.get("previous_rotation_state")
@@ -491,8 +505,10 @@ class RollbackEngine:
 
         if action == "ENABLE_VPC_FLOW_LOGS":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             flow_log_id = inner.get("flow_log_id")
             region = inner.get("region")
@@ -526,9 +542,11 @@ class RollbackEngine:
 
         if action == "DELETE_UNUSED_SECURITY_GROUP":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            metadata = row.meta if isinstance(row.meta, dict) else {}
 
-            inner = metadata.get("metadata") or metadata
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             sg = inner.get("security_group")
 
@@ -536,8 +554,8 @@ class RollbackEngine:
             region = (
                 metadata.get("region") or
                 inner.get("region") or
-                row["region"] or
-                row["resource_region"]
+                getattr(row, "region", None) or
+                getattr(row, "resource_region", None)
             )
 
             print("ROLLBACK DEBUG → REGION:", region)
@@ -621,8 +639,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "REMOVE_INLINE_WILDCARD_POLICY":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             user_name = inner.get("user_name")
             policy_name = inner.get("policy_name")
@@ -658,8 +678,10 @@ class RollbackEngine:
 
         if action == "RESTRICT_NACL_INBOUND":
 
-            metadata = json.loads(row["metadata"])
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             nacl_id = inner.get("nacl_id")
             region = inner.get("region")
@@ -688,8 +710,10 @@ class RollbackEngine:
 
         if action == "RESTRICT_NACL_OUTBOUND":
 
-            metadata = json.loads(row["metadata"])
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             nacl_id = inner.get("nacl_id")
             region = inner.get("region")
@@ -718,8 +742,10 @@ class RollbackEngine:
 
         if action == "REMOVE_PUBLIC_ROUTE":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             route_table_id = inner.get("route_table_id")
             region = inner.get("region")
@@ -749,13 +775,15 @@ class RollbackEngine:
         # -----------------------------------
         if action == "RESTRICT_ROLE_EXTERNAL_TRUST":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             role_name = (
                 inner.get("role_name") or
                 metadata.get("role_name") or
-                row["resource_name"]
+                row.resource_name
             )
 
             previous_policy = (
@@ -791,19 +819,17 @@ class RollbackEngine:
 
         if action == "ENABLE_CLOUDTRAIL":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             # ✅ FIX 1: Robust extraction
-            trail_name = (
-                inner.get("trail_name")
-                or metadata.get("trail_name")
-            )
+            trail_name = inner.get("trail_name") or metadata.get("trail_name")
 
-            bucket_name = (
-                inner.get("bucket_name")
-                or metadata.get("bucket_name")
-            )
+            bucket_name = inner.get("bucket_name") or metadata.get("bucket_name")
+
+            region = inner.get("region") or metadata.get("region")
 
             bucket_created = (
                 inner.get("bucket_created")
@@ -811,7 +837,7 @@ class RollbackEngine:
                 else metadata.get("bucket_created", False)
             )
 
-            region = inner.get("region") or metadata.get("region")
+         
 
             # ✅ FIX 2: Region fallback
             if not region or region == "global":
@@ -866,8 +892,10 @@ class RollbackEngine:
 
         if action == "START_CLOUDTRAIL_LOGGING":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             trail_name = inner.get("trail_name")
             region = inner.get("region")
@@ -900,8 +928,10 @@ class RollbackEngine:
 
         if action == "ENABLE_TERMINATION_PROTECTION":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             instance_id = inner.get("instance_id")
             previous_state = inner.get("previous_state")
@@ -937,8 +967,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ENCRYPT_EBS_VOLUME":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             original_volume_id = inner.get("original_volume_id")
             new_volume_id = inner.get("new_volume_id")
@@ -1015,8 +1047,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "ATTACH_IAM_ROLE_TO_INSTANCE":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata")
+            if not isinstance(inner, dict):
+                inner = metadata
 
             association_id = inner.get("association_id")
             region = inner.get("region")
@@ -1050,8 +1084,10 @@ class RollbackEngine:
         # -----------------------------------
         if action == "REPLACE_SECURITY_GROUP":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             instance_id = inner.get("instance_id")
             region = inner.get("region")
@@ -1094,8 +1130,10 @@ class RollbackEngine:
 
         if action == "REMOVE_ELASTIC_IP":
 
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-            inner = metadata.get("metadata") or metadata
+            metadata = row.meta if isinstance(row.meta, dict) else {}
+            inner = metadata.get("metadata") 
+            if not isinstance(inner, dict):
+                inner = metadata
 
             instance_id = inner.get("instance_id")
             region = inner.get("region")

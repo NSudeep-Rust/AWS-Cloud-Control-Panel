@@ -8,14 +8,16 @@
             "allowed": True,
             "severities": ["HIGH", "CRITICAL"]
         },
-        "ENABLE_S3_VERSIONING": {
-            "allowed": True,
-            "severities": ["MEDIUM", "HIGH", "CRITICAL"]
-        },
+ 
         # 🔥 ADD THIS
         "ENABLE_BLOCK_PUBLIC_ACCESS": {
             "allowed": True,
             "severities": ["HIGH", "CRITICAL"]
+        },
+
+        "ENABLE_S3_VERSIONING": {
+            "allowed": True,
+            "require_approval": True
         },
 
         "DETACH_ADMIN_POLICY": {

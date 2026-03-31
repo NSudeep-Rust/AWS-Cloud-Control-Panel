@@ -61,14 +61,18 @@ class RemediationExecutor:
 
 
     def _handle_enable_s3_versioning(self, finding, remediation):
-        bucket_name = finding.get("resource_id")
+        bucket_name = finding.get("bucket_name") or finding.get("resource_id")
 
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
                 "action": "ENABLE_S3_VERSIONING",
                 "bucket_name": bucket_name,
-                "recommended_fix": remediation.get("recommended_fix")
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "previous_versioning_status": "Disabled"
+                }
             }
 
         s3 = self.aws_session.session.client("s3")
@@ -96,7 +100,7 @@ class RemediationExecutor:
 
     def _handle_enable_block_public_access(self, finding, remediation):
 
-        bucket_name = finding.get("resource_id")
+        bucket_name = finding.get("bucket_name") or finding.get("resource_id")
 
         s3 = self.aws_session.session.client("s3")
 
@@ -180,7 +184,7 @@ class RemediationExecutor:
 
     def _handle_remove_public_s3_acl(self, finding, remediation):
 
-        bucket_name = finding.get("resource_id")
+        bucket_name = finding.get("bucket_name") or finding.get("resource_id")
 
         if self.execution_mode == "DRY_RUN":
             return {
@@ -382,7 +386,7 @@ class RemediationExecutor:
 
     def _handle_enable_s3_access_logging(self, finding, remediation):
 
-        bucket_name = finding.get("resource_id")
+        bucket_name = finding.get("bucket_name") or finding.get("resource_id")
 
         account_id = self.aws_session.get_account_id()
         log_bucket = f"security-logs-{account_id}"
@@ -2120,7 +2124,8 @@ class RemediationExecutor:
             return {
                 "status": "FAILED",
                 "action": "REMOVE_ELASTIC_IP",
-                "reason": str(e)
+                "reason": str(e),
+
             }
 
 
@@ -2134,14 +2139,16 @@ class RemediationExecutor:
                 "status": "SKIPPED",
                 "reason": "Invalid remediation format",
                 "found_type": str(type(remediation)),
-                "finding_id": finding.get("id")
+                "finding_id": finding.get("id"),
+                "metadata": {}
             }
         # 🔥 FIX END
 
         if remediation.get("action") == "NO_ACTION":
             return {
                 "status": "SKIPPED",
-                "reason": "No remediation defined"
+                "reason": "No remediation defined",
+                "metadata": {}
             }
 
         action = remediation.get("action")
@@ -2152,10 +2159,14 @@ class RemediationExecutor:
 
         if not guard["allowed"] and not force_execute:
             return {
-                "status": "BLOCKED_BY_POLICY",
-                "reason": "Blocked by safety guard",
+                "status": guard.get("status", "BLOCKED_BY_POLICY"),
+                "reason": guard.get("reason", "Blocked by safety guard"),
                 "action": action,
-                "resource_id": finding.get("resource_id")
+                "resource_id": finding.get("resource_id"),
+                 # 🔥 CRITICAL FIX
+                "metadata": {
+                    "resource_id": finding.get("resource_id")
+                }
             }
 
         # 🔥 ADD LIVE GATE HERE (MOVE THIS UP)
@@ -2192,7 +2203,8 @@ class RemediationExecutor:
                             "reason": "Already executed and no public exposure detected",
                             "resource_id": resource_id,
                             "action": action,
-                            "region": region
+                            "region": region,
+                            "metadata": {}
                         }
 
                 # ✅ For all other actions → simple skip
@@ -2202,7 +2214,8 @@ class RemediationExecutor:
                         "reason": "Already executed",
                         "resource_id": resource_id,
                         "action": action,
-                        "region": region
+                        "region": region,
+                        "metadata": {}
                     }
         
 
@@ -2214,7 +2227,8 @@ class RemediationExecutor:
                     "reason": "LIVE execution not approved",
                     "resource_id": resource_id,
                     "action": action,
-                    "region": region
+                    "region": region,
+                    "metadata": {}
                 }
 
             if action not in ALLOWED_LIVE_ACTIONS:
@@ -2223,7 +2237,8 @@ class RemediationExecutor:
                     "reason": "Action not allow-listed for LIVE execution",
                     "resource_id": resource_id,
                     "action": action,
-                    "region": region
+                    "region": region,
+                    "metadata": {}
                 }
 
         # -----------------------------------
@@ -2232,12 +2247,13 @@ class RemediationExecutor:
 
         handler = self.action_handlers.get(action)
         if handler:
-            return handler(finding, remediation)
-        return {
-            "status": "FAILED",
-            "reason": f"No handler implemented for action: {action}",
-            "action": action
-        }
+            result = handler(finding, remediation)
+
+            # 🔥 GUARANTEE metadata ALWAYS EXISTS
+            if "metadata" not in result or result["metadata"] is None:
+                result["metadata"] = {}
+
+            return result
 
 
 
