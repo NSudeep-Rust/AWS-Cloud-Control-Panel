@@ -36,6 +36,22 @@ class ThreatMonitor:
         self.logging_scanner = LoggingScanner(aws_session)
         self.encryption_scanner = EncryptionScanner(aws_session)
         self.network_scanner = NetworkScanner(aws_session)
+    
+    def _build_execution(self, remediation):
+        action = remediation.get("action")
+
+        if action == "NO_ACTION":
+            return {
+                "status": "INFO",
+                "action": "MANUAL_REVIEW_REQUIRED",
+                "message": "No automated fix available"
+            }
+
+        return {
+            "status": "PLANNED",
+            "action": action,
+            "message": "Execution deferred"
+        }
 
     def start(self):
 
@@ -76,14 +92,9 @@ class ThreatMonitor:
             })
 
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
 
             enriched_firewall_findings.append(finding)
-
 
 
         # S3
@@ -95,11 +106,7 @@ class ThreatMonitor:
                 "severity": finding["severity"]
             })
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
             enriched_s3_findings.append(finding)
 
      
@@ -115,11 +122,7 @@ class ThreatMonitor:
             })
 
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
 
             enriched_ec2_findings.append(finding)
 
@@ -132,11 +135,7 @@ class ThreatMonitor:
                 "severity": finding["severity"]
             })
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
             enriched_logging_findings.append(finding)
 
         # Encryption
@@ -144,7 +143,6 @@ class ThreatMonitor:
         enriched_encryption_findings = []
         for finding in encryption_findings:
 
-            # ❌ Skip remediation for these types
             if finding["type"] in [
                 "EBS_DEFAULT_ENCRYPTION_DISABLED",
                 "EBS_SNAPSHOT_NOT_ENCRYPTED"
@@ -157,18 +155,13 @@ class ThreatMonitor:
                 enriched_encryption_findings.append(finding)
                 continue
 
-            # ✅ Normal flow for others
             remediation = self.remediation_planner.plan({
                 "type": finding["type"],
                 "severity": finding["severity"]
             })
 
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
 
             enriched_encryption_findings.append(finding)
 
@@ -183,7 +176,6 @@ class ThreatMonitor:
         enriched_network_findings = []
         for finding in network_findings_raw:
 
-            # ❌ SKIP AUTOFIX (manual only)
             if finding["type"] in [
                 "PUBLIC_SUBNET_DETECTED",
                 "INTERNET_GATEWAY_ATTACHED",
@@ -194,34 +186,25 @@ class ThreatMonitor:
                     "action": "MANUAL_REVIEW_REQUIRED",
                     "message": "Manual review required"
                 }
-
-                # 🚫 DO NOT add remediation
                 enriched_network_findings.append(finding)
                 continue
 
-            # ✅ NORMAL FLOW (autofix-enabled)
             remediation = self.remediation_planner.plan({
                 "type": finding["type"],
                 "severity": finding["severity"]
             })
 
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
 
             enriched_network_findings.append(finding)
 
         raw_iam_findings = self.iam_manager.audit()
 
-        # ✅ ADD THIS BLOCK (IAM ENRICHMENT FIX)
         enriched_iam_findings = []
 
         for finding in raw_iam_findings:
 
-            # ❌ SKIP AUTOFIX (manual only)
             if finding["type"] in [
                 "IAM_PASSWORD_NEVER_EXPIRES",
                 "IAM_PASSWORD_POLICY_MISSING",
@@ -236,24 +219,19 @@ class ThreatMonitor:
                     "action": "MANUAL_REVIEW_REQUIRED",
                     "message": "Manual review required"
                 }
-
                 enriched_iam_findings.append(finding)
                 continue
 
-            # ✅ NORMAL AUTOFIX FLOW
             remediation = self.remediation_planner.plan({
                 "type": finding.get("type"),
                 "severity": finding.get("severity")
             })
 
             finding["remediation"] = remediation
-            finding["execution"] = {
-                "status": "PLANNED",
-                "action": remediation.get("action"),
-                "message": "Execution deferred"
-            }
+            finding["execution"] = self._build_execution(remediation)
 
             enriched_iam_findings.append(finding)
+
 
         # Combine
         all_findings = (

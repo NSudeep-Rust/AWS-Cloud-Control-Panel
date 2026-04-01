@@ -56718,5 +56718,45 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-01T06:48:09.198252",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "e536065a-f12d-479f-9e37-a382d7a021b2",
+          "resource_id": "sg-0b236494fb1ff6846",
+          "region": "us-east-1",
+          "action": "DELETE_UNUSED_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": {
+            "GroupId": "sg-0b236494fb1ff6846",
+            "IpPermissionsEgress": [
+              {
+                "IpProtocol": "-1",
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              }
+            ],
+            "VpcId": "vpc-0a5ebbdbaa52f539e",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:976071095315:security-group/sg-0b236494fb1ff6846",
+            "OwnerId": "976071095315",
+            "GroupName": "testsecuritygrouptrail",
+            "Description": "ready",
+            "IpPermissions": []
+          },
+          "revoked_rules": null,
+          "timestamp": "2026-04-01T06:48:09.198252"
+        }
+      }
+    ]
   }
 ]

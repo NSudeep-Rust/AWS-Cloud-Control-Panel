@@ -12,7 +12,7 @@
         # 🔥 ADD THIS
         "ENABLE_BLOCK_PUBLIC_ACCESS": {
             "allowed": True,
-            "severities": ["HIGH", "CRITICAL"]
+            "require_approval": True
         },
 
         "ENABLE_S3_VERSIONING": {
@@ -25,7 +25,8 @@
             "require_approval": True
         },
         "REMOVE_INLINE_POLICY": {
-            "allowed": False   # explicitly blocked for now
+            "allowed": False, # explicitly blocked for now
+            "require_approval": True
         }
     },
 

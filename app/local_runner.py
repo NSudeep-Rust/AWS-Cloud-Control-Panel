@@ -6,12 +6,26 @@ from modules.iam_manager.iam_manager import IAMManager
 from modules.protection_history.history import ProtectionHistory
 EXECUTION_MODE = "DRY_RUN"  # Change to "LIVE" in future
 LIVE_EXECUTION_APPROVED = False
-
+from app.database.db import SessionLocal
+from app.database.models import Account
 
 
 
 def main():
-    aws_session = AWSSession(profile_name="default")
+    db = SessionLocal()
+
+    account = db.query(Account).filter(Account.id == 1).first()
+
+    if not account:
+        print("❌ No account found in DB. Add one before running.")
+        return
+
+    print("USING AWS PROFILE:", account.profile_name)
+
+    aws_session = AWSSession(
+        profile_name=account.profile_name,
+        region_name=account.region
+    )
     aws_session.initialize()
 
     scanner = Scanner(aws_session)

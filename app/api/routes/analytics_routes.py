@@ -5,6 +5,8 @@ from app.modules.protection_history.history import ProtectionHistory
 from app.modules.remediation.executor import RemediationExecutor
 from app.core.aws_session import AWSSession
 from uuid import uuid4
+from app.database.db import get_db
+from fastapi import Depends
 from app.modules.threat_monitor.threat_monitor import ThreatMonitor
 from fastapi import APIRouter
 router = APIRouter(
@@ -14,9 +16,20 @@ router = APIRouter(
 
 SCAN_STORAGE = {}
 @router.post("/threat-monitor")
-def threat_monitor():
+def threat_monitor(account_id: int, db: Session = Depends(get_db)):
     print("🔥 HIT NEW THREAT MONITOR ROUTE")
-    aws_session = AWSSession(profile_name="default")
+    account = db.query(Account).filter(Account.id == account_id).first()
+
+    if not account:
+        return {
+            "status": "error",
+            "message": "Invalid account_id"
+        }
+
+    aws_session = AWSSession(
+        profile_name=account.profile_name,
+        region_name=account.region
+    )
     aws_session.initialize()
 
     monitor = ThreatMonitor(aws_session)
@@ -313,7 +326,7 @@ def evaluate_policies():
     )
 
 @router.post("/enforce-policies")
-def enforce_policies():
+def enforce_policies(account_id: int, db: Session = Depends(get_db)):
 
     data = history_service.read_history()
 
@@ -341,7 +354,19 @@ def enforce_policies():
         )
 
     # Initialize AWS session
-    aws_session = AWSSession(profile_name="default")
+    account = db.query(Account).filter(Account.id == account_id).first()
+
+    if not account:
+        return format_response(
+            module="policy_enforcement",
+            mode="AUTO",
+            data={"message": "Invalid account_id"}
+        )
+
+    aws_session = AWSSession(
+        profile_name=account.profile_name,
+        region_name=account.region
+    )
     aws_session.initialize()
 
     executor = RemediationExecutor(

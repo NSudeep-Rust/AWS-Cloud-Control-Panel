@@ -9,7 +9,7 @@ from app.core.approval_storage import APPROVAL_STORAGE
 from app.database.db import get_db
 from sqlalchemy.orm import Session
 from fastapi import Depends
-from app.database.models import Finding, Execution
+from app.database.models import Finding, Execution, Account
 from app.database.db import SessionLocal
 import uuid
 import time
@@ -73,7 +73,25 @@ def process_execution(request: ExecuteRequest, db: Session):
             print("❌ No matching findings")
             return
 
-        aws_session = AWSSession(profile_name="default")
+        # ✅ Get account from DB using scan_id
+        scan_account = db.query(Finding).filter(Finding.scan_id == request.scan_id).first()
+
+        if not scan_account:
+            print("❌ No account found for scan")
+            return
+
+        account = db.query(Account).filter(Account.id == scan_account.account_id).first()
+
+        if not account:
+            print("❌ Account not found in DB")
+            return
+
+        print("USING AWS PROFILE (EXECUTE):", account.profile_name)
+
+        aws_session = AWSSession(
+            profile_name=account.profile_name,
+            region_name=account.region
+        )
         aws_session.initialize()
 
         history = ProtectionHistory()

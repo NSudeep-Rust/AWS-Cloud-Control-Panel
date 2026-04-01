@@ -52,6 +52,7 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             region_name=account.region
         )
         aws_session.initialize()
+        print("USING AWS PROFILE:", account.profile_name)
 
         # ✅ Scanner
         scanner = Scanner(aws_session)

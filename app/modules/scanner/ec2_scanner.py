@@ -16,7 +16,7 @@ class EC2Scanner:
 
         try:
             response = ec2.describe_instances()
-            addresses = ec2.describe_addresses().get("Addresses", [])
+            
         except Exception as e:
             print("EC2 describe error:", str(e))
             return findings
@@ -142,24 +142,40 @@ class EC2Scanner:
 
                     except Exception as e:
                         print(f"EBS error ({volume_id}):", str(e))
+        
+        # -------------------------
+        # UNUSED ELASTIC IP (GLOBAL SAFE FIX)
+        # -------------------------
+        try:
+            eip_addresses = ec2.describe_addresses().get("Addresses", [])
 
-                # -------------------------
-                # ELASTIC IP
-                # -------------------------
-                for address in addresses:
-                    if address.get("PublicIp") == public_ip:
-                        finding_id = f"ec2-elastic-ip-{instance_id}"
+            for addr in eip_addresses:
 
-                        if finding_id not in seen_ids:
-                            seen_ids.add(finding_id)
-                            findings.append({
-                                "id": finding_id,
-                                "type": "EC2_PUBLIC_ELASTIC_IP",
-                                "severity": SEVERITY_MAP["EC2_PUBLIC_ELASTIC_IP"],
-                                "resource_id": instance_id,
-                                "region": region,
-                                "elastic_ip": address.get("PublicIp"),
-                                "description": "EC2 instance has an Elastic IP attached"
-                            })
+                allocation_id = addr.get("AllocationId")
+                public_ip = addr.get("PublicIp")
+
+                # detect UNUSED properly
+                if not addr.get("AssociationId"):
+
+                    finding_id = f"ec2-unused-eip-{allocation_id}"
+
+                    if finding_id not in seen_ids:
+                        seen_ids.add(finding_id)
+
+                        findings.append({
+                            "id": finding_id,
+                            "type": "EC2_PUBLIC_ELASTIC_IP",
+                            "severity": SEVERITY_MAP.get("EC2_PUBLIC_ELASTIC_IP", "MEDIUM"),
+                            "resource_id": allocation_id,
+                            "region": region,
+                            "public_ip": public_ip,
+                            "description": "Elastic IP is allocated but NOT attached to any resource"
+                        })
+
+        except Exception as e:
+            print(f"EIP scan error ({region}):", str(e))
+
+
+               
 
         return findings

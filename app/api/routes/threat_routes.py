@@ -33,6 +33,20 @@ def run_threat_monitor(request: ThreatRequest, db: Session = Depends(get_db)):
                 "severity": f.severity
             })
 
+
+            if remediation.get("action") == "NO_ACTION":
+                execution = {
+                    "status": "INFO",
+                    "action": "MANUAL_REVIEW_REQUIRED",
+                    "message": "No automated fix available"
+                }
+            else:
+                execution = {
+                    "status": "PLANNED",
+                    "action": remediation.get("action"),
+                    "message": "Ready for execution"
+                }
+
             enriched.append({
                 "id": f.id,
                 "type": f.type,
@@ -41,12 +55,9 @@ def run_threat_monitor(request: ThreatRequest, db: Session = Depends(get_db)):
                 "region": f.region,
                 "status": f.status,
                 "remediation": remediation,
-                "execution": {
-                    "status": "PLANNED",
-                    "action": remediation.get("action"),
-                    "message": "Ready for execution"
-                }
+                "execution": execution
             })
+
 
         return format_response(
             module="threat",

@@ -61,6 +61,7 @@ class RemediationExecutor:
 
 
     def _handle_enable_s3_versioning(self, finding, remediation):
+
         bucket_name = finding.get("bucket_name") or finding.get("resource_id")
 
         if self.execution_mode == "DRY_RUN":
@@ -85,9 +86,23 @@ class RemediationExecutor:
             VersioningConfiguration={"Status": "Enabled"}
         )
 
+        execution_id = str(uuid.uuid4())
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "ENABLE_S3_VERSIONING",
+                "resource_id": bucket_name,
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "previous_versioning_status": previous_status
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
         return {
             "status": "EXECUTED",
-            "execution_id": str(uuid.uuid4()),
+            "execution_id": execution_id,
             "timestamp": datetime.utcnow().isoformat(),
             "action": "ENABLE_S3_VERSIONING",
             "bucket_name": bucket_name,
@@ -137,9 +152,23 @@ class RemediationExecutor:
             }
         )
 
+        execution_id = str(uuid.uuid4())
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
+                "resource_id": bucket_name,
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "previous_public_access_block": previous_config
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
         return {
             "status": "EXECUTED",
-            "execution_id": str(uuid.uuid4()),
+            "execution_id": execution_id,
             "timestamp": datetime.utcnow().isoformat(),
             "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
             "bucket_name": bucket_name,
@@ -169,9 +198,23 @@ class RemediationExecutor:
             PolicyArn="arn:aws:iam::aws:policy/AdministratorAccess"
         )
 
+        execution_id = str(uuid.uuid4())
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "DETACH_ADMIN_POLICY",
+                "resource_id": user_name,
+                "metadata": {
+                    "user_name": user_name,
+                    "policy": "AdministratorAccess"
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
         return {
             "status": "EXECUTED",
-            "execution_id": str(uuid.uuid4()),
+            "execution_id": execution_id,
             "timestamp": datetime.utcnow().isoformat(),
             "action": "DETACH_ADMIN_POLICY",
             "user_name": user_name,
@@ -198,7 +241,6 @@ class RemediationExecutor:
 
         try:
             acl = s3.get_bucket_acl(Bucket=bucket_name)
-
             previous_grants = acl.get("Grants", [])
 
             new_grants = []
@@ -220,9 +262,24 @@ class RemediationExecutor:
                 }
             )
 
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "REMOVE_PUBLIC_S3_ACL",
+                    "resource_id": bucket_name,
+                    "metadata": {
+                        "bucket_name": bucket_name,
+                        "previous_acl": previous_grants,
+                        "owner": acl["Owner"]
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
             return {
                 "status": "EXECUTED",
-                "execution_id": str(uuid.uuid4()),
+                "execution_id": execution_id,
                 "timestamp": datetime.utcnow().isoformat(),
                 "action": "REMOVE_PUBLIC_S3_ACL",
                 "bucket_name": bucket_name,
@@ -261,7 +318,6 @@ class RemediationExecutor:
             backup_policies = []
 
             for policy_name in policies.get("PolicyNames", []):
-
                 policy_doc = iam.get_user_policy(
                     UserName=user_name,
                     PolicyName=policy_name
@@ -277,9 +333,23 @@ class RemediationExecutor:
                     PolicyName=policy_name
                 )
 
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "REMOVE_INLINE_POLICY",
+                    "resource_id": user_name,
+                    "metadata": {
+                        "user_name": user_name,
+                        "policies": backup_policies
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
             return {
                 "status": "EXECUTED",
-                "execution_id": str(uuid.uuid4()),
+                "execution_id": execution_id,
                 "timestamp": datetime.utcnow().isoformat(),
                 "action": "REMOVE_INLINE_POLICY",
                 "user_name": user_name,
@@ -1576,7 +1646,13 @@ class RemediationExecutor:
 
         cloudtrail = self.aws_session.session.client("cloudtrail", region_name=region)
 
-        trail_name = finding.get("trail_name") or "cloudsecure-trail"
+        trail_name = finding.get("resource_id")
+
+        if not trail_name:
+            return {
+                "status": "FAILED",
+                "reason": "Missing trail_name in finding"
+            }
 
         # -------------------------
         # DRY RUN
@@ -2254,15 +2330,3 @@ class RemediationExecutor:
                 result["metadata"] = {}
 
             return result
-
-
-
-        
-
-        
-
-       
-                    
-
-
-        

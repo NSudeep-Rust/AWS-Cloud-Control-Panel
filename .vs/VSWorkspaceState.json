@@ -1,16 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\app",
-    "\\app\\api",
-    "\\app\\api\\routes",
-    "\\app\\modules",
-    "\\app\\modules\\iam_manager",
-    "\\app\\modules\\policy_engine",
-    "\\app\\scripts",
-    "\\app\\ui",
-    "\\static"
+    "\\app"
   ],
-  "SelectedNode": "\\app\\modules\\scanner\\logging_scanner.py",
+  "SelectedNode": "\\app\\config\\execution_policy.py",
   "PreviewInSolutionExplorer": false
 }

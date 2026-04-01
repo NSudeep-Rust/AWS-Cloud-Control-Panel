@@ -22,7 +22,6 @@ class LoggingScanner:
         try:
             trails = cloudtrail.describe_trails()["trailList"]
 
-            # ❌ No trails at all
             if len(trails) == 0:
                 finding_id = "cloudtrail-disabled"
 
@@ -37,36 +36,39 @@ class LoggingScanner:
                         "description": "CloudTrail is not enabled for the AWS account"
                     })
 
-            # ✅ Trails exist → check logging
             else:
                 for trail in trails:
+
+                    trail_name = trail["Name"]
                     trail_arn = trail["TrailARN"]
+                    home_region = trail.get("HomeRegion", region)
 
                     try:
                         status = cloudtrail.get_trail_status(Name=trail_arn)
 
-                        # 🔥 FIX: THIS MUST BE HERE (inside try)
                         if not status.get("IsLogging", False):
 
-                            finding_id = f"cloudtrail-not-logging-{trail_arn}"
+                            finding_id = f"cloudtrail-not-logging-{trail_name}"
 
                             if finding_id not in seen_ids:
                                 seen_ids.add(finding_id)
+
                                 findings.append({
                                     "id": finding_id,
                                     "type": "CLOUDTRAIL_NOT_LOGGING",
-                                    "severity": SEVERITY_MAP["CLOUDTRAIL_DISABLED"],
-                                    "resource_id": "account",
-                                    "trail_arn": trail_arn,
-                                    "region": region,
-                                    "description": f"CloudTrail '{trail_arn}' is not actively logging"
+                                    "severity": SEVERITY_MAP["CLOUDTRAIL_NOT_LOGGING"], 
+                                    "resource_id": trail_name,
+                                    "region": home_region,
+                                    "trail_arn": trail_arn, 
+                                    "description": f"CloudTrail '{trail_name}' is not actively logging"
                                 })
 
                     except Exception as e:
-                        print(f"Skipping trail {trail_arn}: {str(e)}")
+                        print(f"Error checking trail {trail_name}:", str(e))
 
         except Exception as e:
             print("CloudTrail error:", str(e))
+
 
         # -------------------------
         # VPC Flow Logs Disabled

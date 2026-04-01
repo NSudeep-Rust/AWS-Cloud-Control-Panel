@@ -96,9 +96,29 @@ class Scanner:
         for f in s3_findings:
             f["region"] = "global"
         iam_findings = self.iam_manager.audit()   # ✅ FIXED
-        ec2_findings = self.ec2_scanner.scan()
-        logging_findings = self.logging_scanner.scan()
-        encryption_findings = self.encryption_scanner.scan()
+        ec2_findings = []
+        logging_findings = []
+        encryption_findings = []
+
+        for region in self.regions:
+
+            # EC2
+            try:
+                ec2_findings.extend(self.ec2_scanner.scan(region))
+            except Exception as e:
+                print(f"[ERROR] EC2 scan failed in {region}: {e}")
+
+            # Logging
+            try:
+                logging_findings.extend(self.logging_scanner.scan(region))
+            except Exception as e:
+                print(f"[ERROR] Logging scan failed in {region}: {e}")
+
+            # Encryption
+            try:
+                encryption_findings.extend(self.encryption_scanner.scan(region))
+            except Exception as e:
+                print(f"[ERROR] Encryption scan failed in {region}: {e}")
         network_findings = []
 
         for region in self.regions:

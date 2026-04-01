@@ -7,7 +7,8 @@ class AWSSession:
     Centralized AWS session handler.
     """
 
-    def __init__(self, profile_name="None", region_name=None,role_arn=None):
+    def __init__(self, profile_name=None, region_name=None, role_arn=None):
+
         self.profile_name = profile_name
         self.region_name = region_name
         self.role_arn=role_arn
@@ -15,25 +16,30 @@ class AWSSession:
 
     def initialize(self):
         try:
-            self.session = boto3.Session(
-                profile_name=self.profile_name,
-                region_name=self.region_name
-            )
+            if self.profile_name:
+                self.session = boto3.Session(
+                    profile_name=self.profile_name,
+                    region_name=self.region_name
+                )
+            else:
+                self.session = boto3.Session(
+                    region_name=self.region_name
+                )
 
-            # Force a simple call to validate credentials
+            # Validate credentials
             sts = self.session.client("sts")
-            sts.get_caller_identity()
+            identity = sts.get_caller_identity()
+
+            print("✅ ACTIVE AWS ACCOUNT:", identity.get("Account"))
 
         except ProfileNotFound:
             raise RuntimeError(
-                f"AWS profile '{self.profile_name}' not found. "
-                f"Check your AWS configuration."
+                f"AWS profile '{self.profile_name}' not found."
             )
 
         except NoCredentialsError:
             raise RuntimeError(
-                "AWS credentials not found. "
-                "Run 'aws configure' to set them up."
+                "AWS credentials not found. Run 'aws configure'."
             )
 
         except Exception as e:
@@ -46,7 +52,7 @@ class AWSSession:
         Assume an IAM role using STS and return a boto3 session.
         """
         try:
-            base_session = boto3.Session()
+            base_session = self.session
             sts_client = base_session.client("sts")
 
             response = sts_client.assume_role(
