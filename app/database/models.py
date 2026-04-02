@@ -50,6 +50,9 @@ class Finding(Base):
     resource_id = Column(String)
     region = Column(String)
     status = Column(String, default="OPEN")
+    bucket_name = Column(String, nullable=True)
+    access_key_id = Column(String, nullable=True)
+    policy_name = Column(String, nullable=True)
 
     scan = relationship("Scan", back_populates="findings")
 

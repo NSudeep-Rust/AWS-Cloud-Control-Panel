@@ -505,3 +505,79 @@ WHERE accounts.id = %(id_1)s
 2026-04-02 01:33:38,962 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-02 01:40:23,950 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-02 01:47:30,137 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 10:22:00,357 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 10:30:30,635 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 10:40:10,097 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 10:52:27,112 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 11:04:22,163 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 11:21:51,280 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 11:40:58,883 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 11:57:27,540 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 12:09:49,057 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 12:24:50,149 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 12:31:33,191 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 12:39:20,743 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 12:44:33,508 | ERROR | Rollback failed: Parameter validation failed:
+Invalid type for parameter GroupId, value: None, type: <class 'NoneType'>, valid types: <class 'str'>
+2026-04-02 12:53:02,940 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 13:51:31,226 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 14:00:18,454 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 14:06:20,751 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 14:18:09,254 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 14:40:12,092 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 14:40:27,421 | ERROR | Scanner execution failed: name 'access_key' is not defined
+2026-04-02 17:35:08,833 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 17:35:27,073 | ERROR | Scanner execution failed: name 'access_key' is not defined
+2026-04-02 19:04:29,563 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 19:25:53,321 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 19:27:38,366 | ERROR | Scanner execution failed: (psycopg2.errors.UndefinedTable) relation "scans" does not exist
+LINE 1: INSERT INTO scans (id, account_id, created_at) VALUES ('baec...
+                    ^
+
+[SQL: INSERT INTO scans (id, account_id, created_at) VALUES (%(id)s, %(account_id)s, %(created_at)s)]
+[parameters: {'id': 'baec525d-de9b-4064-b3b7-ba942a2487c5', 'account_id': 1, 'created_at': datetime.datetime(2026, 4, 2, 13, 57, 38, 362106)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-02 19:37:00,925 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 19:38:42,426 | ERROR | Scanner execution failed: (psycopg2.errors.UndefinedColumn) column "bucket_name" of relation "findings" does not exist
+LINE 1: ..._id, type, severity, resource_id, region, status, bucket_nam...
+                                                             ^
+
+[SQL: INSERT INTO findings (id, scan_id, account_id, type, severity, resource_id, region, status, bucket_name, access_key_id, policy_name) VALUES (%(id__0)s, %(scan_id__0)s, %(account_id__0)s, %(type__0)s, %(severity__0)s, %(resource_id__0)s, %(region__0)s ... 9929 characters truncated ... )s, %(region__50)s, %(status__50)s, %(bucket_name__50)s, %(access_key_id__50)s, %(policy_name__50)s)]
+[parameters: {'id__0': 's3-versioning-disabled-inlinepolicyins3', 'account_id__0': 1, 'scan_id__0': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__0': None, 'type__0': 'S3_VERSIONING_DISABLED', 'status__0': 'OPEN', 'access_key_id__0': None, 'bucket_name__0': None, 'region__0': 'global', 'severity__0': 'MEDIUM', 'resource_id__0': 'inlinepolicyins3', 'id__1': 's3-access-logging-disabled-inlinepolicyins3', 'account_id__1': 1, 'scan_id__1': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__1': None, 'type__1': 'S3_ACCESS_LOGGING_DISABLED', 'status__1': 'OPEN', 'access_key_id__1': None, 'bucket_name__1': None, 'region__1': 'global', 'severity__1': 'MEDIUM', 'resource_id__1': 'inlinepolicyins3', 'id__2': 's3-public-access-block-disabled-inlinepolicyins3', 'account_id__2': 1, 'scan_id__2': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__2': None, 'type__2': 'S3_BLOCK_PUBLIC_ACCESS_DISABLED', 'status__2': 'OPEN', 'access_key_id__2': None, 'bucket_name__2': None, 'region__2': 'global', 'severity__2': 'HIGH', 'resource_id__2': 'inlinepolicyins3', 'id__3': 's3-versioning-disabled-policys3removeal', 'account_id__3': 1, 'scan_id__3': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__3': None, 'type__3': 'S3_VERSIONING_DISABLED', 'status__3': 'OPEN', 'access_key_id__3': None, 'bucket_name__3': None, 'region__3': 'global', 'severity__3': 'MEDIUM', 'resource_id__3': 'policys3removeal', 'id__4': 's3-access-logging-disabled-policys3removeal', 'account_id__4': 1, 'scan_id__4': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__4': None, 'type__4': 'S3_ACCESS_LOGGING_DISABLED', 'status__4': 'OPEN' ... 461 parameters truncated ... 'status__46': 'OPEN', 'access_key_id__46': None, 'bucket_name__46': None, 'region__46': 'ap-northeast-1', 'severity__46': 'LOW', 'resource_id__46': 'vpc-0602f71e82a8a9b91', 'id__47': 'route-table-public-rtb-0bbbb2bdf302c6b51', 'account_id__47': 1, 'scan_id__47': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__47': None, 'type__47': 'ROUTE_TABLE_PUBLIC_ROUTE', 'status__47': 'OPEN', 'access_key_id__47': None, 'bucket_name__47': None, 'region__47': 'eu-central-1', 'severity__47': 'MEDIUM', 'resource_id__47': 'rtb-0bbbb2bdf302c6b51', 'id__48': 'internet-gateway-attached-igw-09fa741c5398b6d30', 'account_id__48': 1, 'scan_id__48': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__48': None, 'type__48': 'INTERNET_GATEWAY_ATTACHED', 'status__48': 'OPEN', 'access_key_id__48': None, 'bucket_name__48': None, 'region__48': 'eu-central-1', 'severity__48': 'LOW', 'resource_id__48': 'igw-09fa741c5398b6d30', 'id__49': 'vpc-without-nat-vpc-02cf9d54917cc7a00', 'account_id__49': 1, 'scan_id__49': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__49': None, 'type__49': 'VPC_WITHOUT_NAT_GATEWAY', 'status__49': 'OPEN', 'access_key_id__49': None, 'bucket_name__49': None, 'region__49': 'eu-central-1', 'severity__49': 'LOW', 'resource_id__49': 'vpc-02cf9d54917cc7a00', 'id__50': 'PUBLIC_SECURITY_GROUP-sg-072cd6aa7b4feb9d8-us-east-1', 'account_id__50': 1, 'scan_id__50': 'b2656434-e9be-4f56-82ca-9ff89570b0b5', 'policy_name__50': None, 'type__50': 'PUBLIC_SECURITY_GROUP', 'status__50': 'OPEN', 'access_key_id__50': None, 'bucket_name__50': None, 'region__50': 'us-east-1', 'severity__50': 'HIGH', 'resource_id__50': 'sg-072cd6aa7b4feb9d8'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-02 19:41:12,668 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 19:50:58,517 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 19:54:43,102 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 21:17:07,057 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 21:21:35,504 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 21:25:07,899 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 21:36:44,060 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 21:53:26,078 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 22:01:39,244 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 22:12:56,705 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 22:21:48,570 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 22:43:23,277 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 23:11:09,888 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 23:18:28,333 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 23:36:06,139 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-02 23:39:58,425 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 00:19:33,509 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 00:30:20,333 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 00:47:31,216 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:01:12,730 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:09:28,442 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:22:52,862 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:31:17,277 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:40:11,765 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:48:20,212 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 01:48:40,945 | ERROR | Scanner execution failed: 'IAM_INLINE_ADMIN_POLICY'
+2026-04-03 01:53:57,369 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 02:01:48,504 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 02:09:32,606 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 02:23:53,289 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 02:31:39,298 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 02:56:45,023 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 03:08:30,574 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 03:19:30,895 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 03:25:59,810 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 03:50:00,591 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

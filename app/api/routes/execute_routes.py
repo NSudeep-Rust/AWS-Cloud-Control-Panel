@@ -31,8 +31,16 @@ def load_findings_from_db(db: Session, scan_id: str):
 
     findings = []
     for row in rows:
-        data = row.__dict__.copy()
-        data.pop("_sa_instance_state", None)
+        data = {
+            "id": row.id,
+            "type": row.type,
+            "severity": row.severity,
+            "resource_id": row.resource_id,
+            "region": row.region,
+            "access_key_id": row.access_key_id,   # 🔥 CRITICAL
+            "policy_name": row.policy_name,
+            "bucket_name": row.bucket_name,
+        }
         findings.append(data)
 
     return findings

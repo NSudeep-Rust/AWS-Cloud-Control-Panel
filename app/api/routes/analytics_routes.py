@@ -52,8 +52,8 @@ def threat_monitor(account_id: int, db: Session = Depends(get_db)):
         "S3_PUBLIC_ACL": 1,
         "PUBLIC_SECURITY_GROUP": 1,
         "IAM_ADMIN_USER": 1,
-        "IAM_INLINE_ADMIN_POLICY": 1,
-        "IAM_WILDCARD_POLICY": 1,
+        "REMOVE_INLINE_POLICY": 1,
+        "REMOVE_INLINE_WILDCARD_POLICY": 1,
 
         "S3_BLOCK_PUBLIC_ACCESS_DISABLED": 2,
         "S3_VERSIONING_DISABLED": 3

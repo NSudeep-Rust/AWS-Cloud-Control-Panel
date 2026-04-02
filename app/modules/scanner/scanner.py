@@ -24,8 +24,11 @@ class Scanner:
         self.encryption_scanner = EncryptionScanner(aws_session)
         self.network_scanner = NetworkScanner(aws_session)
         self.regions = self.get_all_regions()
-        sts = boto3.client("sts")
+        sts = self.aws_session.session.client("sts")   # ✅ CORRECT
         self.account_id = sts.get_caller_identity()["Account"]
+
+        print("DEBUG FIXED ACCOUNT:", self.account_id)
+      
 
         # IAM handled separately (IMPORTANT)
         self.iam_manager = IAMManager(aws_session)

@@ -125,22 +125,27 @@ class IAMManager:
                 })
 
             # -------------------------
-            # Check: Old Access Keys
+            # Access Key Security Checks (FINAL LOGIC)
             # -------------------------
             access_keys = iam.list_access_keys(UserName=user_name).get("AccessKeyMetadata", [])
 
             for key in access_keys:
 
-                create_date = key["CreateDate"]
                 key_id = key["AccessKeyId"]
                 status = key["Status"]
 
-                now = datetime.now(timezone.utc)
-                age_days = (now - create_date).days
-                print("DEBUG KEY:", user_name, key_id, status, age_days)
+                last_used_info = iam.get_access_key_last_used(
+                    AccessKeyId=key_id
+                )["AccessKeyLastUsed"]
 
-                if status == "Inactive" and age_days >= 0:
+                last_used_date = last_used_info.get("LastUsedDate")
 
+                print("DEBUG KEY:", user_name, key_id, status, last_used_date)
+
+                # -----------------------------------
+                # 1️⃣ INACTIVE → DELETE
+                # -----------------------------------
+                if status == "Inactive":
                     add_finding({
                         "id": f"iam-old-inactive-key-{user_name}-{key_id}",
                         "type": "IAM_ACCESS_KEY_OLD_INACTIVE",
@@ -148,32 +153,14 @@ class IAMManager:
                         "resource_id": user_name,
                         "region": "global",
                         "access_key_id": key_id,
-                        "description": f"Inactive access keys",
-
+                        "description": "Inactive access key should be removed"
                     })
+                    continue
 
-                if age_days > 90:
-                    add_finding({
-                        "id": f"iam-old-access-key-{user_name}-{key_id}",
-                        "type": "IAM_ACCESS_KEY_OLD",
-                        "severity": SEVERITY_MAP["IAM_ACCESS_KEY_OLD"],
-                        "resource_id": user_name,
-                        "region": "global",
-                        "access_key_id": key_id,
-                        "description": f"Access key {key_id} is older than 90 days"
-                    })
-
-                # -------------------------
-                # Check: Unused Access Key
-                # -------------------------
-                last_used_info = iam.get_access_key_last_used(
-                    AccessKeyId=key_id
-                )["AccessKeyLastUsed"]
-
-                last_used_date = last_used_info.get("LastUsedDate")
-
+                # -----------------------------------
+                # 2️⃣ ACTIVE + NEVER USED → DISABLE
+                # -----------------------------------
                 if not last_used_date:
-
                     add_finding({
                         "id": f"iam-unused-access-key-{user_name}-{key_id}",
                         "type": "IAM_ACCESS_KEY_UNUSED",
@@ -181,43 +168,10 @@ class IAMManager:
                         "resource_id": user_name,
                         "region": "global",
                         "access_key_id": key_id,
-                        "description": f"Access key {key_id} has never been used"
+                        "description": "Access key has never been used"
                     })
+                    continue
 
-                else:
-
-                    days_unused = (datetime.utcnow() - last_used_date.replace(tzinfo=None)).days
-
-                    if days_unused > 90:
-
-                        add_finding({
-                            "id": f"iam-unused-access-key-{user_name}-{key_id}",
-                            "type": "IAM_ACCESS_KEY_UNUSED",
-                            "severity": SEVERITY_MAP["IAM_ACCESS_KEY_UNUSED"],
-                            "resource_id": user_name,
-                            "region": "global",
-                            "access_key_id": key_id,
-                            "description": f"Access key {key_id} has not been used for {days_unused} days"
-                        })
-
-            # -------------------------
-            # Check: Multiple Access Keys
-            # -------------------------
-            active_keys = [
-                key for key in access_keys
-                if key["Status"] == "Active"
-            ]
-
-            if len(active_keys) > 1:
-
-                add_finding({
-                    "id": f"iam-multiple-keys-{user_name}",
-                    "type": "IAM_MULTIPLE_ACCESS_KEYS",
-                    "severity": SEVERITY_MAP["IAM_MULTIPLE_ACCESS_KEYS"],
-                    "resource_id": user_name,
-                    "region": "global",
-                    "description": "IAM user has multiple active access keys"
-                })
 
             # -------------------------
             # Check: Unused IAM Users
@@ -228,7 +182,7 @@ class IAMManager:
 
                 days_unused = (datetime.utcnow() - password_last_used.replace(tzinfo=None)).days
 
-                if days_unused > 90:
+                if days_unused >=0:
 
                     add_finding({
                         "id": f"iam-unused-user-{user_name}",
@@ -240,8 +194,10 @@ class IAMManager:
                     })
 
             # -------------------------
-            # INLINE POLICIES (MERGED LOOP FIX)
             # -------------------------
+            # INLINE POLICIES (FINAL CLEAN FIX)
+            # -------------------------
+
             inline_policies = iam.list_user_policies(UserName=user_name).get("PolicyNames", [])
 
             for policy_name in inline_policies:
@@ -251,31 +207,41 @@ class IAMManager:
                     PolicyName=policy_name
                 )["PolicyDocument"]
 
-                for stmt in policy_doc.get("Statement", []):
+                # ✅ HANDLE both dict and list
+                statements = policy_doc.get("Statement", [])
+                if not isinstance(statements, list):
+                    statements = [statements]
+
+                for stmt in statements:
 
                     action = stmt.get("Action")
                     resource = stmt.get("Resource")
 
-                    # inline admin
-                    if action == "*" or action == ["*"]:
+                    # -------------------------
+                    # FULL ADMIN
+                    # -------------------------
+                    if is_full_admin(action, resource):
                         add_finding({
-                            "id": f"iam-inline-admin-{user_name}",
+                            "id": f"iam-inline-admin-{user_name}-{policy_name}",
                             "type": "IAM_INLINE_ADMIN_POLICY",
                             "severity": SEVERITY_MAP["IAM_INLINE_ADMIN_POLICY"],
                             "resource_id": user_name,
                             "region": "global",
-                            "description": "IAM user has inline policy with full administrative permissions"
+                            "policy_name": policy_name,
+                            "description": "Inline policy grants full admin access"
                         })
 
-                    # wildcard
-                    if action == "*" or resource == "*":
+                    # -------------------------
+                    # WILDCARD
+                    # -------------------------
+                    elif has_wildcard(action) or has_wildcard(resource):
                         add_finding({
                             "id": f"iam-wildcard-{user_name}-{policy_name}",
                             "type": "IAM_WILDCARD_POLICY",
                             "severity": SEVERITY_MAP["IAM_WILDCARD_POLICY"],
                             "resource_id": user_name,
                             "region": "global",
-                            "policy_name": policy_name,   # 🔥 CRITICAL FIX
+                            "policy_name": policy_name,
                             "description": "Inline policy contains wildcard permissions"
                         })
 

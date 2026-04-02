@@ -35,7 +35,7 @@ class RemediationPlanner:
         # ---------------------------
         # IAM wildcard inline policy (TRANSFORM, NOT DELETE)
         # ---------------------------
-        if finding_type == "IAM_WILDCARD_POLICY":
+        if finding_type == "REMOVE_INLINE_WILDCARD_POLICY":
             return {
                 "action": "REMOVE_INLINE_WILDCARD_POLICY",
                 "reason": "IAM inline policy contains wildcard permissions",
@@ -46,7 +46,7 @@ class RemediationPlanner:
         # ---------------------------
         # IAM inline admin (still DELETE)
         # ---------------------------
-        if finding_type == "IAM_INLINE_ADMIN_POLICY":
+        if finding_type == "REMOVE_INLINE_POLICY":
             return {
                 "action": "REMOVE_INLINE_POLICY",
                 "reason": "IAM inline policy has full admin access",
@@ -122,17 +122,6 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
-        # ---------------------------
-        # OLD KEY
-        # ---------------------------
-
-        if finding_type == "IAM_ACCESS_KEY_OLD":
-            return {
-                "action": "ROTATE_ACCESS_KEY",
-                "reason": "Access key older than 90 days",
-                "recommended_fix": "Rotate access key",
-                "severity": finding["severity"]
-            }
 
 
         # ---------------------------
@@ -291,8 +280,8 @@ class RemediationPlanner:
         if finding_type == "EC2_PUBLIC_ELASTIC_IP":
             return {
                 "action": "REMOVE_ELASTIC_IP",
-                "reason": "EC2 instance has an Elastic IP attached",
-                "recommended_fix": "Disassociate and release Elastic IP",
+                "reason": "Unused Elastic IP (not attached)",
+                "recommended_fix": "Release unused Elastic IP to reduce cost and attack surface",
                 "severity": finding["severity"]
             }
 
@@ -304,17 +293,6 @@ class RemediationPlanner:
                 "action": "REMOVE_ELASTIC_IP",
                 "reason": "EC2 instance is publicly exposed",
                 "recommended_fix": "Remove Elastic IP to prevent public exposure",
-                "severity": finding["severity"]
-            }
-
-        # ---------------------------
-        # RDS STORAGE NOT ENCRYPTED
-        # ---------------------------
-        if finding_type == "RDS_STORAGE_NOT_ENCRYPTED":
-            return {
-                "action": "ENCRYPT_RDS_INSTANCE",
-                "reason": "RDS instance storage is not encrypted",
-                "recommended_fix": "Create encrypted snapshot and restore new DB instance",
                 "severity": finding["severity"]
             }
 

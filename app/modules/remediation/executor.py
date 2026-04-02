@@ -39,7 +39,6 @@ class RemediationExecutor:
             "ENABLE_S3_ACCESS_LOGGING": self._handle_enable_s3_access_logging,
             "ENABLE_MFA": self._handle_enable_mfa,
             "DISABLE_ACCESS_KEY": self._handle_disable_access_key,
-            "ROTATE_ACCESS_KEY": self._handle_rotate_access_key,
             "DELETE_ACCESS_KEY": self._handle_delete_access_key,
             "ENABLE_KMS_KEY_ROTATION": self._handle_enable_kms_rotation,
             "ENABLE_VPC_FLOW_LOGS": self._handle_enable_vpc_flow_logs,
@@ -626,7 +625,10 @@ class RemediationExecutor:
     def _handle_disable_access_key(self, finding, remediation):
 
         user_name = finding.get("resource_id")
-        access_key_id = finding.get("access_key_id")
+        access_key_id = (
+            finding.get("access_key_id") or
+            finding.get("metadata", {}).get("access_key_id")
+        )
 
         if not access_key_id:
             return {
@@ -682,92 +684,15 @@ class RemediationExecutor:
                 "reason": str(e)
             }
 
-    def _handle_rotate_access_key(self, finding, remediation):
-
-
-
-        user_name = finding.get("resource_id")
-        old_key_id = finding.get("access_key_id")
-
-        if not user_name or not old_key_id:
-            return {
-                "status": "FAILED",
-                "reason": "Missing user_name or access_key_id"
-            }
-
-        iam = self.aws_session.session.client("iam")
-
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
-        if self.execution_mode == "DRY_RUN":
-            return {
-                "status": "DRY_RUN",
-                "action": "ROTATE_ACCESS_KEY",
-                "user_name": user_name,
-                "old_key_id": old_key_id,
-                "recommended_fix": remediation.get("recommended_fix")
-            }
-
-
-
-        # -----------------------------------
-        # CHECK EXISTING KEYS COUNT
-        # -----------------------------------
-        existing_keys = iam.list_access_keys(UserName=user_name).get("AccessKeyMetadata", [])
-
-        if len(existing_keys) >= 2:
-            return {
-                "status": "FAILED",
-                "reason": "User already has 2 access keys. Cannot rotate.",
-                "action": "ROTATE_ACCESS_KEY",
-                "user_name": user_name
-            }
-
-        try:
-            # -----------------------------------
-            # STEP 1 — Create new key
-            # -----------------------------------
-            new_key = iam.create_access_key(UserName=user_name)["AccessKey"]
-
-            new_key_id = new_key["AccessKeyId"]
-            new_secret = new_key["SecretAccessKey"]
-
-            # -----------------------------------
-            # STEP 2 — Disable old key
-            # -----------------------------------
-            iam.update_access_key(
-                UserName=user_name,
-                AccessKeyId=old_key_id,
-                Status="Inactive"
-            )
-
-            return {
-                "status": "EXECUTED",
-                "execution_id": str(uuid.uuid4()),
-                "timestamp": datetime.utcnow().isoformat(),
-                "action": "ROTATE_ACCESS_KEY",
-                "user_name": user_name,
-                "metadata": {
-                    "user_name": user_name,
-                    "old_key_id": old_key_id,
-                    "new_key_id": new_key_id,
-                    "new_secret": new_secret   # ⚠️ IMPORTANT (for rollback)
-                }
-            }
-
-        except Exception as e:
-            return {
-                "status": "FAILED",
-                "action": "ROTATE_ACCESS_KEY",
-                "reason": str(e)
-            }
 
 
     def _handle_delete_access_key(self, finding, remediation):
 
         user_name = finding.get("resource_id")
-        access_key_id = finding.get("access_key_id")
+        access_key_id = (
+            finding.get("access_key_id") or
+            finding.get("metadata", {}).get("access_key_id")
+        )
 
         if not access_key_id:
             return {
@@ -857,7 +782,9 @@ class RemediationExecutor:
 
                 "metadata": {
                     "previous_metadata": safe_metadata,
-                    "deleted_key_id": access_key_id
+                    "deleted_key_id": access_key_id,
+                    "user_name": user_name,                     # 🔥 ADD THIS
+                    "access_key_id": access_key_id, 
                 }
             }
 
@@ -913,9 +840,24 @@ class RemediationExecutor:
         try:
             kms.enable_key_rotation(KeyId=key_id)
 
+            execution_id = str(uuid.uuid4())   # ✅ create once
+
+            # ✅ SAVE TO DB (THIS WAS MISSING)
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "ENABLE_KMS_KEY_ROTATION",
+                    "resource_id": key_id,
+                    "metadata": {
+                        "key_id": key_id,
+                        "previous_rotation_state": previous_state
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
             return {
                 "status": "EXECUTED",
-                "execution_id": str(uuid.uuid4()),
+                "execution_id": execution_id,
                 "timestamp": datetime.utcnow().isoformat(),
                 "action": "ENABLE_KMS_KEY_ROTATION",
                 "key_id": key_id,
@@ -1757,7 +1699,12 @@ class RemediationExecutor:
 
         volume_id = finding.get("resource_id")
         region = finding.get("region")
-        instance_id = finding.get("instance_id")
+        original_volume = ec2.describe_volumes(VolumeIds=[volume_id])["Volumes"][0]
+
+        attachments = original_volume.get("Attachments", [])
+
+        instance_id = attachments[0]["InstanceId"] if attachments else None
+        device_name = attachments[0]["Device"] if attachments else None
 
         # 🔥 FIX region
         if not region or region == "global":
@@ -1787,8 +1734,15 @@ class RemediationExecutor:
             )
             snapshot_id = snapshot["SnapshotId"]
 
-            waiter = ec2.get_waiter("snapshot_completed")
-            waiter.wait(SnapshotIds=[snapshot_id])
+            waiter = ec2.get_waiter('snapshot_completed')
+
+            waiter.wait(
+                SnapshotIds=[snapshot_id],
+                WaiterConfig={
+                    'Delay': 15,        # seconds between checks
+                    'MaxAttempts': 120  # 30 minutes total
+                }
+            )
 
             # -------------------------
             # STEP 2 — Copy snapshot with encryption
@@ -1817,13 +1771,28 @@ class RemediationExecutor:
             vol_waiter = ec2.get_waiter("volume_available")
             vol_waiter.wait(VolumeIds=[new_volume_id])
 
+            if not instance_id:
+                return {
+                    "status": "SKIPPED",
+                    "reason": "Volume is not attached to any instance",
+                    "volume_id": volume_id
+                }
+
             # -------------------------
             # STEP 4 — STOP INSTANCE (REQUIRED)
             # -------------------------
             ec2.stop_instances(InstanceIds=[instance_id])
 
-            waiter = ec2.get_waiter("instance_stopped")
-            waiter.wait(InstanceIds=[instance_id])
+            snapshot_waiter = ec2.get_waiter('snapshot_completed')
+            snapshot_waiter.wait(SnapshotIds=[snapshot_id])
+
+            snapshot_waiter.wait(SnapshotIds=[encrypted_snapshot_id])
+
+            volume_waiter = ec2.get_waiter("volume_available")
+            volume_waiter.wait(VolumeIds=[new_volume_id])
+
+            instance_waiter = ec2.get_waiter("instance_stopped")
+            instance_waiter.wait(InstanceIds=[instance_id])
 
             # -------------------------
             # STEP 5 — DETACH old volume
@@ -2120,7 +2089,7 @@ class RemediationExecutor:
 
     def _handle_remove_elastic_ip(self, finding, remediation):
 
-        instance_id = finding.get("resource_id")
+        allocation_id = finding.get("resource_id")
         region = finding.get("region")
 
         if not region or region == "global":
@@ -2128,71 +2097,25 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -----------------------------------
-        # FIND ELASTIC IP
-        # -----------------------------------
-        addresses = ec2.describe_addresses()["Addresses"]
-
-        target_eip = None
-
-        for addr in addresses:
-            if addr.get("InstanceId") == instance_id:
-                target_eip = addr
-                break
-
-        if not target_eip:
-            return {
-                "status": "SKIPPED",
-                "reason": "No Elastic IP attached (auto public IP or none)",
-                "instance_id": instance_id
-            }
-
-        allocation_id = target_eip.get("AllocationId")
-        association_id = target_eip.get("AssociationId")
-        public_ip = target_eip.get("PublicIp")
-
-        # -----------------------------------
         # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
                 "action": "REMOVE_ELASTIC_IP",
-                "instance_id": instance_id,
-                "public_ip": public_ip,
+                "allocation_id": allocation_id,
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
         try:
-            # -----------------------------------
-            # DISASSOCIATE
-            # -----------------------------------
-            ec2.disassociate_address(AssociationId=association_id)
-
-            # -----------------------------------
-            # RELEASE
-            # -----------------------------------
             ec2.release_address(AllocationId=allocation_id)
-
-            if self.history:
-                self.history.record_execution({
-                    "execution_id": str(uuid.uuid4()),
-                    "action": "REMOVE_ELASTIC_IP",
-                    "resource_id": instance_id,
-                    "region": region,
-                    "public_ip": public_ip,
-                    "timestamp": datetime.utcnow().isoformat()
-                })
 
             return {
                 "status": "EXECUTED",
                 "execution_id": str(uuid.uuid4()),
                 "action": "REMOVE_ELASTIC_IP",
-                "instance_id": instance_id,
                 "metadata": {
-                    "instance_id": instance_id,
-                    "region": region,
-                    "public_ip": public_ip
+                    "allocation_id": allocation_id,
+                    "region": region
                 }
             }
 
@@ -2200,8 +2123,7 @@ class RemediationExecutor:
             return {
                 "status": "FAILED",
                 "action": "REMOVE_ELASTIC_IP",
-                "reason": str(e),
-
+                "reason": str(e)
             }
 
 

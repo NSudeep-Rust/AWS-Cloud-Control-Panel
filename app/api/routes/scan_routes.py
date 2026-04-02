@@ -80,7 +80,10 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
                 severity=f.get("severity"),
                 resource_id=f.get("resource_id"),
                 region=f.get("region"),
-                status="OPEN"
+                status="OPEN",
+                access_key_id=f.get("access_key_id"),
+                policy_name=f.get("policy_name"),
+                bucket_name=f.get("bucket_name"),
             )
             db.add(finding)
 

@@ -6,7 +6,7 @@
     "actions": {
         "RESTRICT_SECURITY_GROUP": {
             "allowed": True,
-            "severities": ["HIGH", "CRITICAL"]
+            "require_approval": True
         },
  
         # 🔥 ADD THIS
