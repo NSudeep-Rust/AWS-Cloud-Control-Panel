@@ -10,6 +10,7 @@ from fastapi import Depends
 from app.database.db import get_db
 from app.database.models import Scan, Finding
 from app.database.models import Account
+from app.modules.scanner.scanner import run_full_scan
 import uuid
 
 
@@ -57,7 +58,7 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         # ✅ Scanner
         scanner = Scanner(aws_session)
 
-        findings = scanner.scan()
+        findings = run_full_scan(aws_session, source="API")
 
         # ✅ Store scan
         scan_id = str(uuid.uuid4())
@@ -90,9 +91,19 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         db.commit()
 
         # ✅ Debug logs (VERY IMPORTANT)
-        print("SCAN API HIT")
-        print("Total findings:", len(findings))
-        print("Findings structure:", findings[:2])
+        print("\n" + "="*55)
+        print("🌐 API SCAN STARTED")
+        print("="*55)
+
+        print(f"👤 Profile: {account.profile_name}")
+
+        # results
+        print(f"📊 API FINAL TOTAL: {len(findings)}")
+        print(f"🔍 SAMPLE: {findings[:2]}")
+
+        print("="*55)
+        print("🌐 API SCAN COMPLETED")
+        print("="*55 + "\n")
 
         return format_response(
             module="scanner",

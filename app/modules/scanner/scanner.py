@@ -27,9 +27,6 @@ class Scanner:
         sts = self.aws_session.session.client("sts")   # ✅ CORRECT
         self.account_id = sts.get_caller_identity()["Account"]
 
-        print("DEBUG FIXED ACCOUNT:", self.account_id)
-      
-
         # IAM handled separately (IMPORTANT)
         self.iam_manager = IAMManager(aws_session)
 
@@ -48,7 +45,7 @@ class Scanner:
         findings = []
 
         for region in regions:
-            print("Scanning region:", region)
+            print(f"   🌍 Processing: {region}")
 
             ec2 = session.client("ec2", region_name=region)
 
@@ -165,3 +162,17 @@ class Scanner:
             unique[key] = f
 
         return list(unique.values())
+
+def run_full_scan(aws_session, source="UNKNOWN"):
+    scanner = Scanner(aws_session)
+
+    findings = scanner.scan()
+
+    total = len(findings)
+
+    if source == "API":
+        print(f"📊 [API] TOTAL FINDINGS: {total}")
+    elif source == "MONITOR":
+        print(f"📊 [MONITOR] TOTAL FINDINGS: {total}")
+
+    return findings

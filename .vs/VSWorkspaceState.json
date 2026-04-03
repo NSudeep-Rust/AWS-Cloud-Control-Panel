@@ -2,15 +2,15 @@
   "ExpandedNodes": [
     "",
     "\\app",
+    "\\app\\api",
+    "\\app\\api\\routes",
+    "\\app\\core",
     "\\app\\modules",
-    "\\app\\modules\\firewall",
-    "\\app\\modules\\iam_manager",
-    "\\app\\modules\\policy_engine",
-    "\\app\\modules\\protection_history",
-    "\\app\\modules\\remediation",
-    "\\app\\utils",
-    "\\static"
+    "\\app\\modules\\scanner",
+    "\\app\\modules\\threat_monitor",
+    "\\app\\scripts",
+    "\\app\\ui"
   ],
-  "SelectedNode": "\\app\\modules\\scanner\\scanner.py",
+  "SelectedNode": "\\app\\core\\aws_session.py",
   "PreviewInSolutionExplorer": false
 }

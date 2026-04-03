@@ -11,8 +11,11 @@ from app.modules.scanner.ec2_scanner import EC2Scanner
 from app.modules.scanner.logging_scanner import LoggingScanner
 from app.modules.scanner.encryption_scanner import EncryptionScanner
 from app.modules.scanner.network_scanner import NetworkScanner
+from app.modules.scanner.scanner import run_full_scan
+from app.api.routes.scan_routes import run_scan
 import uuid
 from app.core.scan_storage import SCAN_STORAGE
+import time
 
 
 class ThreatMonitor:
@@ -315,3 +318,18 @@ class ThreatMonitor:
         }
 
         return result
+
+    def run_once(self):
+        print("\n" + "-"*55)
+        print("📡 MONITOR SCAN STARTED")
+        print("-"*55)
+
+        findings = run_full_scan(self.aws_session, source="MONITOR")
+
+        print(f"📡 MONITOR FINAL TOTAL: {len(findings)}")
+
+        print("-"*55)
+        print("📡 MONITOR SCAN COMPLETED")
+        print("-"*55 + "\n")
+
+        return findings

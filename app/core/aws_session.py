@@ -14,6 +14,11 @@ class AWSSession:
         self.role_arn=role_arn
         self.session = None
 
+        self.session = boto3.Session(
+            profile_name=self.profile_name,
+            region_name=self.region_name
+        )
+
     def initialize(self):
         try:
             if self.profile_name:

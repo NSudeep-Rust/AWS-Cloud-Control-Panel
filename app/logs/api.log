@@ -601,3 +601,7 @@ LINE 1: ..._id, type, severity, resource_id, region, status, bucket_nam...
 2026-04-03 21:43:37,516 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-03 22:05:24,076 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-03 22:19:43,840 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 00:07:50,446 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 00:30:15,908 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 00:53:42,667 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 01:10:27,287 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
