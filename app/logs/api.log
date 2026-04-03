@@ -581,3 +581,17 @@ LINE 1: ..._id, type, severity, resource_id, region, status, bucket_nam...
 2026-04-03 03:19:30,895 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-03 03:25:59,810 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-03 03:50:00,591 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 11:49:52,817 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 11:50:13,144 | ERROR | Scanner execution failed: name 'is_full_admin' is not defined
+2026-04-03 11:54:12,177 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 12:22:12,371 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 12:35:48,011 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 12:57:07,271 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 13:06:55,499 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 13:13:42,718 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 13:32:45,641 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 14:02:15,320 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 14:19:02,594 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 14:43:02,311 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 14:55:39,675 | INFO | Module=Scanner | Account=1 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-03 15:40:39,261 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

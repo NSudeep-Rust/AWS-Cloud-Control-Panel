@@ -1,5 +1,6 @@
 ﻿from app.config.security_config import SEVERITY_MAP
 from datetime import datetime, timezone
+from app.utils.iam_policy_utils import has_wildcard, is_full_admin, normalize_statements
 
 class IAMManager:
     """
@@ -176,24 +177,40 @@ class IAMManager:
             # -------------------------
             # Check: Unused IAM Users
             # -------------------------
+
             password_last_used = user.get("PasswordLastUsed")
+            create_date = user.get("CreateDate")
 
-            if password_last_used:
+            now = datetime.utcnow()
 
-                days_unused = (datetime.utcnow() - password_last_used.replace(tzinfo=None)).days
+            # Case 1: NEVER USED (MOST IMPORTANT)
+            if not password_last_used:
+                days_unused = (now - create_date.replace(tzinfo=None)).days
 
-                if days_unused >=0:
+                if days_unused >= 0:   # 🔥 NEW USER GRACE PERIOD
+                    add_finding({
+                        "id": f"iam-unused-user-never-{user_name}",
+                        "type": "IAM_UNUSED_USER",
+                        "severity": SEVERITY_MAP["IAM_UNUSED_USER"],
+                        "resource_id": user_name,
+                        "region": "global",
+                        "description": f"IAM user never used for {days_unused} days"
+                    })
 
+            # Case 2: USED BUT INACTIVE
+            else:
+                days_unused = (now - password_last_used.replace(tzinfo=None)).days
+
+                if days_unused >= 0:
                     add_finding({
                         "id": f"iam-unused-user-{user_name}",
                         "type": "IAM_UNUSED_USER",
                         "severity": SEVERITY_MAP["IAM_UNUSED_USER"],
                         "resource_id": user_name,
                         "region": "global",
-                        "description": f"IAM user has not logged in for {days_unused} days"
+                        "description": f"IAM user inactive for {days_unused} days"
                     })
 
-            # -------------------------
             # -------------------------
             # INLINE POLICIES (FINAL CLEAN FIX)
             # -------------------------
@@ -206,11 +223,8 @@ class IAMManager:
                     UserName=user_name,
                     PolicyName=policy_name
                 )["PolicyDocument"]
+                statements = normalize_statements(policy_doc)
 
-                # ✅ HANDLE both dict and list
-                statements = policy_doc.get("Statement", [])
-                if not isinstance(statements, list):
-                    statements = [statements]
 
                 for stmt in statements:
 

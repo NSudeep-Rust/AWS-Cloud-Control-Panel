@@ -1,8 +1,9 @@
 import json
 import os
 from datetime import datetime
-
-
+import uuid
+from app.database.db import get_db
+from sqlalchemy import text
 class ProtectionHistory:
     """
     Stores security findings and remediation decisions.
@@ -96,5 +97,84 @@ class ProtectionHistory:
         history = self.read_history()
         history.append(record)
 
+        # JSON write
         with open(self.file_path, "w") as f:
             json.dump(history, f, indent=2)
+
+        # -----------------------------------
+        # 🔥 DB INSERT (executions + rollback)
+        # -----------------------------------
+        try:
+            db = next(get_db())
+            execution_id = execution_data.get("execution_id")
+
+            # -------------------------
+            # INSERT INTO executions
+            # -------------------------
+            db.execute(text("""
+                INSERT INTO executions (
+                    execution_id,
+                    scan_id,
+                    finding_id,
+                    action,
+                    status,
+                    reason,
+                    approval_token,
+                    resource_name,
+                    metadata,
+                    created_at
+                )
+                VALUES (
+                    :execution_id,
+                    :scan_id,
+                    :finding_id,
+                    :action,
+                    :status,
+                    :reason,
+                    :approval_token,
+                    :resource_name,
+                    :metadata,
+                    :created_at
+                )
+            """), {
+                "execution_id": execution_id,
+                "scan_id": None,   # you don't have this yet
+                "finding_id": None,
+                "action": execution_data.get("action"),
+                "status": "EXECUTED",
+                "reason": None,
+                "approval_token": None,
+                "resource_name": execution_data.get("resource_id"),
+                "metadata": json.dumps(execution_data.get("metadata", {})),
+                "created_at": datetime.utcnow()
+            })
+
+            # -------------------------
+            # INSERT INTO rollbacks
+            # -------------------------
+            db.execute(text("""
+                INSERT INTO rollbacks (
+                    id,
+                    execution_id,
+                    status,
+                    created_at
+                )
+                VALUES (
+                    :id,
+                    :execution_id,
+                    :status,
+                    :created_at
+                )
+            """), {
+                "id": str(uuid.uuid4()),
+                "execution_id": execution_id,
+                "status": "AVAILABLE",
+                "created_at": datetime.utcnow()
+            })
+
+            db.commit()
+
+        except Exception as e:
+            print("DB ERROR:", str(e))
+            db.rollback()
+            raise

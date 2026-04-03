@@ -6,8 +6,12 @@ from app.database.models import Execution
 from app.database.db import SessionLocal
 from fastapi import Depends
 import json
+from app.utils.json_utils import extract_metadata
 from app.core.aws_session import AWSSession
 from app.database.models import Rollback
+from sqlalchemy import text
+import uuid 
+
 class RollbackEngine:
 
     def __init__(self, aws_session):
@@ -18,6 +22,7 @@ class RollbackEngine:
             print("LOGGING ROLLBACK →", execution_id, status)
 
             db.add(Rollback(
+                id=str(uuid.uuid4()), 
                 execution_id=execution_id,
                 status=status,
                 created_at=datetime.utcnow()
@@ -90,52 +95,61 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # =====================================================
-            # INLINE POLICY ROLLBACK (NOT POSSIBLE)
-            # =====================================================
+            # -----------------------------------
+            # INLINE POLICY DELETE ROLLBACK
+            # -----------------------------------
             if action == "REMOVE_INLINE_POLICY":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 user_name = inner.get("user_name")
                 policies = inner.get("policies", [])
+
+                user_name = metadata.get("user_name")
+                policies = metadata.get("policies", [])
 
                 if not user_name or not policies:
                     return self._fail(db, execution_id, "No backup policies found")
 
                 iam = self.aws_session.session.client("iam")
 
-                for policy in policies:
-                    iam.put_user_policy(
-                        UserName=user_name,
-                        PolicyName=policy["policy_name"],
-                        PolicyDocument=json.dumps(policy["document"])
-                    )
+                restored = 0
 
-                return self._success(db, execution_id, {
-                    "status": "ROLLBACK_SUCCESS",
-                    "execution_id": execution_id,
-                    "restored_policies": len(policies)
-                })
+                try:
+                    for policy in policies:
+                        iam.put_user_policy(
+                            UserName=user_name,
+                            PolicyName=policy["policy_name"],
+                            PolicyDocument=json.dumps(policy["document"])
+                        )
+                        restored += 1
+
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "user_name": user_name,
+                        "restored_policies": restored
+                    })
+
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
 
             # =====================================================
             # SECURITY GROUP ROLLBACK
             # =====================================================
             if action == "RESTRICT_SECURITY_GROUP":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
+                inner = extract_metadata(row)
 
-                revoked_rules = metadata.get("revoked_rules")
+                revoked_rules = inner.get("revoked_rules")
 
                 resource_id = (
-                    metadata.get("resource_id") or
-                    metadata.get("security_group_id")
+                    inner.get("resource_id") or
+                    inner.get("security_group_id")
                 )
 
-                region = metadata.get("region")
+                region = inner.get("region")
 
                 if not resource_id:
                     return self._fail(db, execution_id, "Missing security group ID in metadata")
@@ -160,12 +174,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "ENABLE_S3_VERSIONING":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-
-                # 🔥 SAFE EXTRACTION (handles all nesting cases)
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 bucket_name = inner.get("bucket_name")
                 previous_status = inner.get("previous_versioning_status")
@@ -201,10 +210,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "ENABLE_BLOCK_PUBLIC_ACCESS":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 bucket_name = inner.get("bucket_name")
                 previous_config = inner.get("previous_public_access_block")
@@ -231,10 +237,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "REMOVE_PUBLIC_S3_ACL":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 bucket_name = inner.get("bucket_name")
                 previous_acl = inner.get("previous_acl")
@@ -269,10 +272,7 @@ class RollbackEngine:
 
             if action == "ENABLE_S3_ACCESS_LOGGING":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 bucket_name = inner.get("bucket_name")
                 previous_logging = inner.get("previous_logging")
@@ -327,10 +327,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "DISABLE_ACCESS_KEY":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 user_name = inner.get("user_name")
                 access_key_id = inner.get("access_key_id")
@@ -365,7 +362,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "DELETE_ACCESS_KEY":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
+                inner = extract_metadata(row)
                 user_name = (
                     metadata.get("user_name") or
                     metadata.get("metadata", {}).get("user_name")
@@ -401,10 +398,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "ENABLE_KMS_KEY_ROTATION":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 key_id = inner.get("key_id")
                 previous_state = inner.get("previous_rotation_state")
@@ -445,10 +439,7 @@ class RollbackEngine:
 
             if action == "ENABLE_VPC_FLOW_LOGS":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 flow_log_id = inner.get("flow_log_id")
                 region = inner.get("region")
@@ -476,11 +467,7 @@ class RollbackEngine:
 
             if action == "DELETE_UNUSED_SECURITY_GROUP":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 sg = inner.get("security_group")
 
@@ -564,14 +551,11 @@ class RollbackEngine:
             # -----------------------------------
             if action == "REMOVE_INLINE_WILDCARD_POLICY":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
-                user_name = inner.get("user_name")
-                policy_name = inner.get("policy_name")
-                original_policy = inner.get("original_policy")
+                user_name = metadata.get("user_name")
+                policy_name = metadata.get("policy_name")
+                original_policy = metadata.get("original_policy")
 
                 if not user_name or not policy_name or not original_policy:
                     return self._fail(db, execution_id, "Missing rollback metadata")
@@ -588,6 +572,7 @@ class RollbackEngine:
                     return self._success(db, execution_id, {
                         "status": "ROLLBACK_SUCCESS",
                         "execution_id": execution_id,
+                        "action": action,
                         "user_name": user_name,
                         "policy_name": policy_name
                     })
@@ -597,10 +582,7 @@ class RollbackEngine:
 
             if action == "RESTRICT_NACL_INBOUND":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 nacl_id = inner.get("nacl_id")
                 region = inner.get("region")
@@ -629,10 +611,7 @@ class RollbackEngine:
 
             if action == "RESTRICT_NACL_OUTBOUND":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 nacl_id = inner.get("nacl_id")
                 region = inner.get("region")
@@ -661,10 +640,7 @@ class RollbackEngine:
 
             if action == "REMOVE_PUBLIC_ROUTE":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 route_table_id = inner.get("route_table_id")
                 region = inner.get("region")
@@ -691,10 +667,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "RESTRICT_ROLE_EXTERNAL_TRUST":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 role_name = (
                     inner.get("role_name") or
@@ -729,10 +702,7 @@ class RollbackEngine:
 
             if action == "ENABLE_CLOUDTRAIL":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 # ✅ FIX 1: Robust extraction
                 trail_name = inner.get("trail_name") or metadata.get("trail_name")
@@ -796,10 +766,7 @@ class RollbackEngine:
 
             if action == "START_CLOUDTRAIL_LOGGING":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 trail_name = inner.get("trail_name")
                 region = inner.get("region")
@@ -826,10 +793,7 @@ class RollbackEngine:
 
             if action == "ENABLE_TERMINATION_PROTECTION":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 instance_id = inner.get("instance_id")
                 previous_state = inner.get("previous_state")
@@ -860,10 +824,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "ENCRYPT_EBS_VOLUME":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 original_volume_id = inner.get("original_volume_id")
                 new_volume_id = inner.get("new_volume_id")
@@ -934,10 +895,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "ATTACH_IAM_ROLE_TO_INSTANCE":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata")
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 association_id = inner.get("association_id")
                 region = inner.get("region")
@@ -965,10 +923,7 @@ class RollbackEngine:
             # -----------------------------------
             if action == "REPLACE_SECURITY_GROUP":
 
-                metadata = row.meta if isinstance(row.meta, dict) else {}
-                inner = metadata.get("metadata") 
-                if not isinstance(inner, dict):
-                    inner = metadata
+                inner = extract_metadata(row)
 
                 instance_id = inner.get("instance_id")
                 region = inner.get("region")
@@ -1010,6 +965,65 @@ class RollbackEngine:
                     "execution_id": execution_id,
                     "note": "Elastic IP was permanently released and cannot be restored"
                 })
+
+            # -----------------------------------
+            # DELETE UNUSED IAM USER ROLLBACK
+            # -----------------------------------
+            if action == "DELETE_UNUSED_IAM_USER":
+
+                inner = extract_metadata(row)
+
+                backup = inner.get("user_backup")
+
+                if not backup:
+                    return self._fail(db, execution_id, "No backup found")
+
+                iam = self.aws_session.session.client("iam")
+
+                try:
+                    user_name = backup["user"]["UserName"]
+
+                    # recreate user
+                    iam.create_user(UserName=user_name)
+
+                    # restore login profile (password reset required)
+                    if backup.get("login_profile"):
+                        iam.create_login_profile(
+                            UserName=user_name,
+                            Password="TempPassword@123",  # 🔥 forced reset
+                            PasswordResetRequired=True
+                        )
+
+                    # restore inline policies
+                    for p in backup.get("inline_policies", []):
+                        iam.put_user_policy(
+                            UserName=user_name,
+                            PolicyName=p["policy_name"],
+                            PolicyDocument=json.dumps(p["document"])
+                        )
+
+                    # restore attached policies
+                    for p in backup.get("attached_policies", []):
+                        iam.attach_user_policy(
+                            UserName=user_name,
+                            PolicyArn=p["PolicyArn"]
+                        )
+
+                    # restore groups
+                    for g in backup.get("groups", []):
+                        iam.add_user_to_group(
+                            UserName=user_name,
+                            GroupName=g["GroupName"]
+                        )
+
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "action": action,
+                        "user_name": user_name
+                    })
+
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
 
             
             # =====================================================

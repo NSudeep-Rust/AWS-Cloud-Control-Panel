@@ -21,6 +21,15 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
+
+        if finding_type == "IAM_UNUSED_USER":
+            return {
+                "action": "DELETE_UNUSED_IAM_USER",
+                "reason": "IAM user inactive for long duration",
+                "recommended_fix": "Delete unused IAM user",
+                "severity": finding["severity"]
+            }
+
         # ---------------------------
         # IAM admin policy remediation
         # ---------------------------
@@ -32,25 +41,25 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
-        # ---------------------------
-        # IAM wildcard inline policy (TRANSFORM, NOT DELETE)
-        # ---------------------------
-        if finding_type == "REMOVE_INLINE_WILDCARD_POLICY":
+        # -------------------------
+        # IAM INLINE ADMIN POLICY
+        # -------------------------
+        if finding_type == "IAM_INLINE_ADMIN_POLICY":
             return {
-                "action": "REMOVE_INLINE_WILDCARD_POLICY",
-                "reason": "IAM inline policy contains wildcard permissions",
-                "recommended_fix": "Replace wildcard actions with least privilege actions",
+                "action": "REMOVE_INLINE_POLICY",
+                "reason": "Inline policy grants full admin access",
+                "recommended_fix": "Delete inline policy",
                 "severity": finding["severity"]
             }
 
-        # ---------------------------
-        # IAM inline admin (still DELETE)
-        # ---------------------------
-        if finding_type == "REMOVE_INLINE_POLICY":
+        # -------------------------
+        # IAM WILDCARD POLICY
+        # -------------------------
+        if finding_type == "IAM_WILDCARD_POLICY":
             return {
-                "action": "REMOVE_INLINE_POLICY",
-                "reason": "IAM inline policy has full admin access",
-                "recommended_fix": "Remove inline admin policy",
+                "action": "REMOVE_INLINE_WILDCARD_POLICY",
+                "reason": "Inline policy contains wildcard permissions",
+                "recommended_fix": "Restrict wildcard permissions",
                 "severity": finding["severity"]
             }
      

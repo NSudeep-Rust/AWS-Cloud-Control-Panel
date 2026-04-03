@@ -57135,5 +57135,62 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-03T07:10:52.109749",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "57efa454-e626-4446-b19e-163cc4e93136",
+          "resource_id": "test-inline-admin",
+          "region": null,
+          "action": "REMOVE_INLINE_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T07:10:52.109749"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T08:36:14.486024",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "eadd05ae-3ee3-4d8d-b49f-fd1cc77e47b6",
+          "resource_id": "test-inline-wildcard",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T08:36:14.486024"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T08:54:21.096546",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "91d29924-c1a8-47a4-ad28-5a00f4a79033",
+          "resource_id": "test-inline-wildcard",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T08:54:21.096546"
+        }
+      }
+    ]
   }
 ]

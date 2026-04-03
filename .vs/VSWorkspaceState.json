@@ -4,12 +4,12 @@
     "\\app",
     "\\app\\logs",
     "\\app\\modules",
-    "\\app\\modules\\firewall",
-    "\\app\\modules\\iam_manager",
-    "\\app\\modules\\policy_engine",
-    "\\app\\modules\\protection_history",
     "\\app\\modules\\remediation",
-    "\\app\\modules\\scanner"
+    "\\app\\modules\\remediation\\__pycache__ (2)",
+    "\\app\\modules\\threat_monitor",
+    "\\app\\scripts",
+    "\\app\\ui",
+    "\\static"
   ],
   "PreviewInSolutionExplorer": false
 }

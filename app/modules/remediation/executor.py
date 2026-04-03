@@ -3,6 +3,8 @@ from botocore.exceptions import ClientError
 import json  
 import copy
 import time
+from app.utils.iam_policy_utils import has_wildcard, normalize_statements
+from app.utils.json_utils import make_json_safe
 
 
 #from app.config.security_config import S3_LOGGING_BUCKET
@@ -34,7 +36,6 @@ class RemediationExecutor:
             "ENABLE_BLOCK_PUBLIC_ACCESS": self._handle_enable_block_public_access,
             "DETACH_ADMIN_POLICY": self._handle_detach_admin_policy,
             "REMOVE_PUBLIC_S3_ACL": self._handle_remove_public_s3_acl,
-            "REMOVE_INLINE_POLICY": self._handle_remove_inline_policy,
             "RESTRICT_SECURITY_GROUP": self._handle_restrict_security_group,
             "ENABLE_S3_ACCESS_LOGGING": self._handle_enable_s3_access_logging,
             "ENABLE_MFA": self._handle_enable_mfa,
@@ -43,7 +44,6 @@ class RemediationExecutor:
             "ENABLE_KMS_KEY_ROTATION": self._handle_enable_kms_rotation,
             "ENABLE_VPC_FLOW_LOGS": self._handle_enable_vpc_flow_logs,
             "DELETE_UNUSED_SECURITY_GROUP": self._handle_delete_unused_security_group,
-            "REMOVE_INLINE_WILDCARD_POLICY": self._handle_remove_inline_wildcard_policy,
             "RESTRICT_NACL_INBOUND": self._handle_restrict_nacl_inbound,
             "RESTRICT_NACL_OUTBOUND": self._handle_restrict_nacl_outbound,
             "REMOVE_PUBLIC_ROUTE": self._handle_remove_public_route,
@@ -55,6 +55,9 @@ class RemediationExecutor:
             "ATTACH_IAM_ROLE_TO_INSTANCE": self._handle_attach_iam_role,
             "REPLACE_SECURITY_GROUP": self._handle_replace_security_group,
             "REMOVE_ELASTIC_IP": self._handle_remove_elastic_ip,
+            "REMOVE_INLINE_POLICY": self._handle_remove_inline_policy,
+            "REMOVE_INLINE_WILDCARD_POLICY": self._handle_remove_inline_wildcard_policy,
+            "DELETE_UNUSED_IAM_USER": self._handle_delete_unused_iam_user,
                      
         }
 
@@ -1143,21 +1146,38 @@ class RemediationExecutor:
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
+     
         # -----------------------------------
         # TRANSFORM POLICY
         # -----------------------------------
-        transformed_policy = json.loads(json.dumps(policy_doc))  # deep copy
+        transformed_policy = json.loads(json.dumps(policy_doc))
+        statements = normalize_statements(transformed_policy)
 
-        for stmt in transformed_policy.get("Statement", []):
+
+        def has_wildcard(value):
+            if isinstance(value, str):
+                return "*" in value
+            if isinstance(value, list):
+                return any("*" in v for v in value)
+            return False
+
+
+        for stmt in statements:
 
             actions = stmt.get("Action")
+            resources = stmt.get("Resource")
 
-            if actions == "*" or actions == ["*"]:
-                # 🔥 Replace wildcard with safe minimal actions
+            if has_wildcard(actions):
                 stmt["Action"] = [
                     "s3:GetObject",
                     "ec2:DescribeInstances"
                 ]
+
+            if has_wildcard(resources):
+                stmt["Resource"] = "*"
+
+        # 🔥 IMPORTANT
+        transformed_policy["Statement"] = statements
 
         # -----------------------------------
         # APPLY TRANSFORMED POLICY
@@ -2123,6 +2143,138 @@ class RemediationExecutor:
             return {
                 "status": "FAILED",
                 "action": "REMOVE_ELASTIC_IP",
+                "reason": str(e)
+            }
+
+    def _handle_delete_unused_iam_user(self, finding, remediation):
+
+        user_name = finding.get("resource_id")
+        iam = self.aws_session.session.client("iam")
+
+        # -----------------------------------
+        # DRY RUN
+        # -----------------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DELETE_UNUSED_IAM_USER",
+                "user_name": user_name,
+                "recommended_fix": remediation.get("recommended_fix")
+            }
+
+        try:
+            # -----------------------------------
+            # STEP 1 — GET USER (for backup)
+            # -----------------------------------
+            user = iam.get_user(UserName=user_name)["User"]
+
+            backup = {
+                "user": user,
+                "login_profile": None,
+                "access_keys": [],
+                "inline_policies": [],
+                "attached_policies": [],
+                "groups": []
+            }
+
+            # -----------------------------------
+            # STEP 2 — LOGIN PROFILE (password)
+            # -----------------------------------
+            try:
+                profile = iam.get_login_profile(UserName=user_name)
+                backup["login_profile"] = profile["LoginProfile"]
+
+                iam.delete_login_profile(UserName=user_name)
+
+            except iam.exceptions.NoSuchEntityException:
+                pass
+
+            # -----------------------------------
+            # STEP 3 — ACCESS KEYS
+            # -----------------------------------
+            keys = iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+
+            for key in keys:
+                backup["access_keys"].append({
+                    "AccessKeyId": key["AccessKeyId"],
+                    "Status": key["Status"]
+                })
+
+                # disable first
+                iam.update_access_key(
+                    UserName=user_name,
+                    AccessKeyId=key["AccessKeyId"],
+                    Status="Inactive"
+                )
+
+                # delete
+                iam.delete_access_key(
+                    UserName=user_name,
+                    AccessKeyId=key["AccessKeyId"]
+                )
+
+            # -----------------------------------
+            # STEP 4 — INLINE POLICIES
+            # -----------------------------------
+            inline = iam.list_user_policies(UserName=user_name)["PolicyNames"]
+
+            for p in inline:
+                doc = iam.get_user_policy(UserName=user_name, PolicyName=p)
+
+                backup["inline_policies"].append({
+                    "policy_name": p,
+                    "document": doc["PolicyDocument"]
+                })
+
+                iam.delete_user_policy(UserName=user_name, PolicyName=p)
+
+            # -----------------------------------
+            # STEP 5 — ATTACHED POLICIES
+            # -----------------------------------
+            attached = iam.list_attached_user_policies(UserName=user_name)["AttachedPolicies"]
+
+            for p in attached:
+                backup["attached_policies"].append(p)
+
+                iam.detach_user_policy(
+                    UserName=user_name,
+                    PolicyArn=p["PolicyArn"]
+                )
+
+            # -----------------------------------
+            # STEP 6 — GROUPS
+            # -----------------------------------
+            groups = iam.list_groups_for_user(UserName=user_name)["Groups"]
+
+            for g in groups:
+                backup["groups"].append(g)
+
+                iam.remove_user_from_group(
+                    UserName=user_name,
+                    GroupName=g["GroupName"]
+                )
+
+            # -----------------------------------
+            # STEP 7 — FINAL DELETE
+            # -----------------------------------
+            iam.delete_user(UserName=user_name)
+            safe_backup = make_json_safe(backup)
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "DELETE_UNUSED_IAM_USER",
+                "user_name": user_name,
+                "metadata": {
+                    "user_backup": safe_backup
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "DELETE_UNUSED_IAM_USER",
                 "reason": str(e)
             }
 
