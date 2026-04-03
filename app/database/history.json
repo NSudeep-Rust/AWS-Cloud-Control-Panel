@@ -57192,5 +57192,119 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-03T15:37:13.091067",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "7cfd5f96-a290-4e6c-b6c9-2050fdf12ca5",
+          "resource_id": "daryl",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T15:37:13.091067"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T15:51:44.947332",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "65f1dd3d-7481-4206-b1be-438647519d8d",
+          "resource_id": "futpolicy",
+          "region": null,
+          "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T15:51:44.947332"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": null,
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "cab640d3-9a3a-4850-a4aa-56cb883bd4c5",
+          "resource_id": "rtb-00ece6349bef9c98a",
+          "region": "eu-central-1",
+          "action": "REMOVE_PUBLIC_ROUTE",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": null
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T16:39:08.515557",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "23346c49-5ca7-4416-9dfa-4c7fbbc62676",
+          "resource_id": "daryl",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T16:39:08.515557"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T16:42:18.642411",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "267efece-ea9b-49fe-bb97-fca13aca1db2",
+          "resource_id": "cloudsecure-trail-596953737128",
+          "region": null,
+          "action": "ENABLE_S3_VERSIONING",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T16:42:18.642411"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-03T16:54:34.309808",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "ffc12e6a-8cf4-40d3-87de-4589346cc64e",
+          "resource_id": "cloudsecure-trail-596953737128",
+          "region": null,
+          "action": "ENABLE_S3_VERSIONING",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-03T16:54:34.309808"
+        }
+      }
+    ]
   }
 ]
