@@ -605,3 +605,16 @@ LINE 1: ..._id, type, severity, resource_id, region, status, bucket_nam...
 2026-04-04 00:30:15,908 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-04 00:53:42,667 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
 2026-04-04 01:10:27,287 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 02:39:23,470 | INFO | Module=Scanner | Account=3 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 02:39:23,473 | ERROR | Scanner execution failed: (psycopg2.errors.UndefinedFunction) operator does not exist: character varying = integer
+LINE 3: WHERE accounts.aws_account_id = 3 
+                                      ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: SELECT accounts.id AS accounts_id, accounts.aws_account_id AS accounts_aws_account_id, accounts.profile_name AS accounts_profile_name, accounts.role_arn AS accounts_role_arn, accounts.access_key AS accounts_access_key, accounts.secret_key AS accounts_secret_key, accounts.region AS accounts_region, accounts.created_at AS accounts_created_at 
+FROM accounts 
+WHERE accounts.aws_account_id = %(aws_account_id_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'aws_account_id_1': 3, 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-04 02:42:24,461 | INFO | Module=Scanner | Account=3 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

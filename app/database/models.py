@@ -14,10 +14,11 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, index=True)
-
     aws_account_id = Column(String, nullable=False)   # real AWS account ID
     profile_name = Column(String, nullable=True)      # for local profiles
     role_arn = Column(String, nullable=True)          # for cross-account access
+    access_key = Column(String, nullable=True)
+    secret_key = Column(String, nullable=True)
     region = Column(String, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)

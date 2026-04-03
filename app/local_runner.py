@@ -11,6 +11,7 @@ from app.database.models import Account
 
 
 
+
 def main():
     db = SessionLocal()
 

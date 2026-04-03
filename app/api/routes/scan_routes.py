@@ -38,7 +38,9 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
 
     try:
         # ✅ Initialize AWS session
-        account = db.query(Account).filter(Account.id == request.account_id).first()
+        account = db.query(Account).filter(
+            Account.id == request.account_id
+        ).first()
 
         if not account:
             return format_response(
@@ -50,6 +52,8 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         aws_session = AWSSession(
             profile_name=account.profile_name,
             role_arn=account.role_arn,
+            access_key=getattr(account, "access_key", None),
+            secret_key=getattr(account, "secret_key", None),
             region_name=account.region
         )
         aws_session.initialize()

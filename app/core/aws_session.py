@@ -7,26 +7,40 @@ class AWSSession:
     Centralized AWS session handler.
     """
 
-    def __init__(self, profile_name=None, region_name=None, role_arn=None):
+    def __init__(self, profile_name=None, region_name=None, role_arn=None,access_key=None,secret_key=None):
 
         self.profile_name = profile_name
         self.region_name = region_name
-        self.role_arn=role_arn
+        self.role_arn = role_arn
+        self.access_key = access_key
+        self.secret_key = secret_key
         self.session = None
 
-        self.session = boto3.Session(
-            profile_name=self.profile_name,
-            region_name=self.region_name
-        )
 
     def initialize(self):
         try:
-            if self.profile_name:
+                        # Priority: Access Keys > Profile
+
+            if self.access_key and self.secret_key:
+                print("🔐 Using ACCESS KEY authentication")
+
+                self.session = boto3.Session(
+                    aws_access_key_id=self.access_key,
+                    aws_secret_access_key=self.secret_key,
+                    region_name=self.region_name
+                )
+
+            elif self.profile_name:
+                print("👤 Using PROFILE authentication:", self.profile_name)
+
                 self.session = boto3.Session(
                     profile_name=self.profile_name,
                     region_name=self.region_name
                 )
+
             else:
+                print("⚠️ Using DEFAULT boto3 session")
+
                 self.session = boto3.Session(
                     region_name=self.region_name
                 )

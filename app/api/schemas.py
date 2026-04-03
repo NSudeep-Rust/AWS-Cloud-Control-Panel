@@ -20,5 +20,16 @@ class ThreatRequest(BaseModel):
     scan_id: str
 
 
+class MonitorRequest(BaseModel):
+    account_id: str
+
 class RollbackRequest(BaseModel):
     execution_id: str = Field(..., example="execution-uuid")
+
+class AccountCreateRequest(BaseModel):
+    aws_account_id: str
+    profile_name: str | None = None
+    role_arn: str | None = None
+    region: str
+    access_key: str | None = None
+    secret_key: str | None = None

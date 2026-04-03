@@ -8,6 +8,8 @@ from app.modules.remediation.planner import RemediationPlanner
 from app.core.monitor_service import MonitorService
 from app.modules.threat_monitor.threat_monitor import ThreatMonitor
 from app.core.aws_session import AWSSession
+from app.database.models import Account 
+from app.api.schemas import MonitorRequest
 
 monitor_service = None
 
@@ -81,16 +83,34 @@ def run_threat_monitor(request: ThreatRequest, db: Session = Depends(get_db)):
             errors=[str(e)]
         )
 
+
+
 @router.post("/monitor/start")
-def start_monitor():
+def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     global monitor_service
 
-    session = AWSSession(region_name="us-east-1")
-    session.initialize()
-    print("🔥 MONITOR USING ACCOUNT:", session.get_account_id())
+    # 1. Get account from DB
+    account = db.query(Account).filter(
+        Account.aws_account_id == request.account_id
+    ).first()
 
-    monitor = ThreatMonitor(aws_session=session)
+    if not account:
+        return {"error": "Account not found"}
 
+    # 2. Create AWS session using DB values
+    aws = AWSSession(
+        profile_name=account.profile_name,
+        access_key=account.access_key,
+        secret_key=account.secret_key,
+        region_name=account.region
+    )
+
+    aws.initialize()
+
+    print("🔥 MONITOR USING ACCOUNT:", aws.get_account_id())
+
+    # 3. Start monitoring
+    monitor = ThreatMonitor(aws_session=aws)
     monitor_service = MonitorService(monitor, interval=60)
 
     return {"message": monitor_service.start()}

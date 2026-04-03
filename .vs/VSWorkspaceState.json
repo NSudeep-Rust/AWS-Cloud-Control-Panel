@@ -2,15 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\api",
-    "\\app\\api\\routes",
-    "\\app\\core",
-    "\\app\\modules",
-    "\\app\\modules\\scanner",
-    "\\app\\modules\\threat_monitor",
-    "\\app\\scripts",
-    "\\app\\ui"
+    "\\app\\api"
   ],
-  "SelectedNode": "\\app\\core\\aws_session.py",
+  "SelectedNode": "\\app\\api\\schemas.py",
   "PreviewInSolutionExplorer": false
 }
