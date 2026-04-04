@@ -58,6 +58,8 @@ class RemediationExecutor:
             "REMOVE_INLINE_POLICY": self._handle_remove_inline_policy,
             "REMOVE_INLINE_WILDCARD_POLICY": self._handle_remove_inline_wildcard_policy,
             "DELETE_UNUSED_IAM_USER": self._handle_delete_unused_iam_user,
+            "STOP_EC2_INSTANCE": self._handle_stop_ec2_instance,
+            "TERMINATE_EC2_INSTANCE": self._handle_terminate_ec2_instance,
                      
         }
 
@@ -2277,6 +2279,109 @@ class RemediationExecutor:
                 "action": "DELETE_UNUSED_IAM_USER",
                 "reason": str(e)
             }
+
+    def _handle_stop_ec2_instance(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -------------------------
+        # DRY RUN
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "STOP_EC2_INSTANCE",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region
+                }
+            }
+
+        try:
+            ec2.stop_instances(InstanceIds=[instance_id])
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "STOP_EC2_INSTANCE",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "previous_state": "running"
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "STOP_EC2_INSTANCE",
+                "reason": str(e)
+            }
+
+
+    def _handle_terminate_ec2_instance(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # -------------------------
+        # SAFETY CHECK
+        # -------------------------
+        desc = ec2.describe_instances(InstanceIds=[instance_id])
+        state = desc["Reservations"][0]["Instances"][0]["State"]["Name"]
+
+        if state != "stopped":
+            return {
+                "status": "SKIPPED",
+                "reason": "Instance must be stopped before termination",
+                "instance_id": instance_id
+            }
+
+        # -------------------------
+        # DRY RUN
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "TERMINATE_EC2_INSTANCE",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region
+                }
+            }
+
+        try:
+            ec2.terminate_instances(InstanceIds=[instance_id])
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "TERMINATE_EC2_INSTANCE",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "previous_state": "stopped"
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "TERMINATE_EC2_INSTANCE",
+                "reason": str(e)
+            }
+
 
 
     def execute(self, finding):

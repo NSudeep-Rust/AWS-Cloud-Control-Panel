@@ -618,3 +618,11 @@ WHERE accounts.aws_account_id = %(aws_account_id_1)s
 [parameters: {'aws_account_id_1': 3, 'param_1': 1}]
 (Background on this error at: https://sqlalche.me/e/20/f405)
 2026-04-04 02:42:24,461 | INFO | Module=Scanner | Account=3 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 10:20:23,583 | INFO | Module=Scanner | Account=4 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 10:26:56,588 | INFO | Module=Scanner | Account=4 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 10:36:12,797 | INFO | Module=Scanner | Account=4 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 10:38:44,705 | INFO | Module=Scanner | Account=4 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 14:41:04,823 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 14:46:14,137 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 14:53:47,903 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN
+2026-04-04 15:00:19,662 | INFO | Module=Scanner | Account=2 | RequestedMode=DRY_RUN | EffectiveMode=DRY_RUN

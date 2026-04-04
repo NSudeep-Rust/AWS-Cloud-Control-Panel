@@ -175,7 +175,46 @@ class EC2Scanner:
         except Exception as e:
             print(f"EIP scan error ({region}):", str(e))
 
+        # -------------------------
+        # EC2 RUNNING INSTANCE
+        # -------------------------
+        state = instance.get("State", {}).get("Name")
 
-               
+        if state == "running":
+            finding_id = f"ec2-running-{instance_id}"
+
+            if finding_id not in seen_ids:
+                seen_ids.add(finding_id)
+
+                findings.append({
+                    "id": finding_id,
+                    "type": "EC2_INSTANCE_RUNNING",
+                    "severity": "LOW",
+                    "resource_id": instance_id,
+                    "region": region,
+                    "state": state,
+                    "description": "EC2 instance is running (cost optimization opportunity)"
+                })
+
+
+        # -------------------------
+        # EC2 STOPPED INSTANCE
+        # -------------------------
+        if state == "stopped":
+            finding_id = f"ec2-stopped-{instance_id}"
+
+            if finding_id not in seen_ids:
+                seen_ids.add(finding_id)
+
+                findings.append({
+                    "id": finding_id,
+                    "type": "EC2_INSTANCE_STOPPED",
+                    "severity": "LOW",
+                    "resource_id": instance_id,
+                    "region": region,
+                    "state": state,
+                    "description": "EC2 instance is stopped (cleanup opportunity)"
+                })
+        
 
         return findings

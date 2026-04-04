@@ -131,5 +131,6 @@ class AWSSession:
             "us-west-2",
             "eu-west-1",
             "ap-northeast-1",
-            "eu-central-1"
+            "eu-central-1",
+            "eu-north-1"
         ]

@@ -1025,6 +1025,34 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
+            if action == "STOP_EC2_INSTANCE":
+
+                inner = extract_metadata(row)
+
+                instance_id = inner.get("instance_id")
+                region = inner.get("region")
+
+                ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                try:
+                    ec2.start_instances(InstanceIds=[instance_id])
+
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "instance_id": instance_id
+                    })
+
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            if action == "TERMINATE_EC2_INSTANCE":
+
+                return self._success(db, execution_id, {
+                    "status": "ROLLBACK_NOT_SUPPORTED",
+                    "note": "Terminated instance cannot be restored"
+                })
+
             
             # =====================================================
             # UNKNOWN

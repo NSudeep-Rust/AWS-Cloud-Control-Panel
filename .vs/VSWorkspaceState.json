@@ -2,8 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\api"
+    "\\app\\config"
   ],
-  "SelectedNode": "\\app\\api\\schemas.py",
+  "SelectedNode": "\\app\\config\\security_config.py",
   "PreviewInSolutionExplorer": false
 }

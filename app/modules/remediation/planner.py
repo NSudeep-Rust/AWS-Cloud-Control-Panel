@@ -305,6 +305,28 @@ class RemediationPlanner:
                 "severity": finding["severity"]
             }
 
+        # ---------------------------
+        # EC2 RUNNING → STOP
+        # ---------------------------
+        if finding_type == "EC2_INSTANCE_RUNNING":
+            return {
+                "action": "STOP_EC2_INSTANCE",
+                "reason": "Instance is running unnecessarily",
+                "recommended_fix": "Stop instance to save cost",
+                "severity": finding["severity"]
+            }
+
+        # ---------------------------
+        # EC2 STOPPED → TERMINATE
+        # ---------------------------
+        if finding_type == "EC2_INSTANCE_STOPPED":
+            return {
+                "action": "TERMINATE_EC2_INSTANCE",
+                "reason": "Stopped instance unused",
+                "recommended_fix": "Terminate instance to clean up",
+                "severity": finding["severity"]
+            }
+
         return {
             "action": "NO_ACTION",
             "reason": "No remediation required"
