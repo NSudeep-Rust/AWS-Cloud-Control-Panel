@@ -1,4 +1,5 @@
 from app.modules.policy_engine.policies import POLICIES
+from app.config.security_config import ENFORCEMENT_MAP
 
 
 class PolicyEngine:
@@ -16,12 +17,15 @@ class PolicyEngine:
 
                 if finding.get("type") == policy["finding_type"]:
 
+                    severity = policy["severity"]
+                    enforcement = ENFORCEMENT_MAP.get(severity, "IGNORE")
+
                     violations.append({
                         "policy_id": policy["policy_id"],
                         "policy_name": policy["name"],
                         "description": policy["description"],
-                        "severity": policy["severity"],
-                        "enforcement": policy.get("enforcement", "MONITOR"),
+                        "severity": severity,
+                        "enforcement": enforcement,
                         "resource_id": finding.get("resource_id"),
                         "finding": finding
                     })

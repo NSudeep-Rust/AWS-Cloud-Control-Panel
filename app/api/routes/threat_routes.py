@@ -10,6 +10,7 @@ from app.modules.threat_monitor.threat_monitor import ThreatMonitor
 from app.core.aws_session import AWSSession
 from app.database.models import Account 
 from app.api.schemas import MonitorRequest
+from datetime import datetime
 
 monitor_service = None
 
@@ -124,3 +125,21 @@ def stop_monitor():
         return {"message": "Not running"}
 
     return {"message": monitor_service.stop()}
+
+
+@router.get("/monitor/status")
+def monitor_status():
+    global monitor_service
+
+    if not monitor_service:
+        return format_response(
+            module="monitor",
+            mode="READ",
+            data={"status": "not_started"}
+        )
+
+    return format_response(
+        module="monitor",
+        mode="READ",
+        data=monitor_service.get_status()
+    )

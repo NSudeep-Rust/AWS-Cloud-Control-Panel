@@ -5,6 +5,9 @@ from app.database.base import Base
 from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
+import uuid
+from sqlalchemy import Enum
+
 
 
 # -------------------------
@@ -103,4 +106,16 @@ class Alert(Base):
     finding_id = Column(String)
     message = Column(String)
     severity = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
+class FindingChange(Base):
+    __tablename__ = "finding_changes"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    finding_id = Column(String, nullable=False)
+    change_type = Column(String, nullable=False)  # NEW / RESOLVED
+    scan_id = Column(String, nullable=True)
+    previous_scan_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

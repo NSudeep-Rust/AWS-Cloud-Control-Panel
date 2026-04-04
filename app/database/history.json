@@ -57306,5 +57306,24 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-04T12:57:36.354129",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "0c5d2671-1138-464a-bc34-89b55ce0b437",
+          "resource_id": "meowwww",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-04T12:57:36.354129"
+        }
+      }
+    ]
   }
 ]

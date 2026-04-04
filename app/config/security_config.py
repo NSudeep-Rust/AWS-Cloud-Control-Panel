@@ -9,6 +9,8 @@ DEFAULT_EXECUTION_MODE = "DRY_RUN"
 LIVE_EXECUTION_ENABLED = True
 LIVE_EXECUTION_APPROVED_BY_USER = True
 
+
+
 ALLOWED_LIVE_ACTIONS = {
     "ENABLE_S3_VERSIONING",
     "ENABLE_BLOCK_PUBLIC_ACCESS",
@@ -118,12 +120,15 @@ SEVERITY_MAP = {
 # --------------------------------------------------
 
 ENFORCEMENT_MAP = {
-    "CRITICAL": "AUTO_FIX",
-    "HIGH": "AUTO_FIX",
+    "CRITICAL": "REQUIRE_APPROVAL",
+    "HIGH": "REQUIRE_APPROVAL",
     "MEDIUM": "REQUIRE_APPROVAL",
     "LOW": "IGNORE",
     "INFO": "IGNORE"
 }
+
+
+ALERT_SEVERITIES = ["CRITICAL", "HIGH"]
 
 # --------------------------------------------------
 # Risk scoring weights

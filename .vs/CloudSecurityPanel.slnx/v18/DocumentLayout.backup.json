@@ -3,12 +3,40 @@
   "WorkspaceRootPath": "P:\\CloudSecurityPanel\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\api\\routes\\rollback_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\api\\routes\\rollback_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\config\\security_config.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\config\\security_config.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\executor.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\scanner\\scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\core\\aws_session.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\core\\aws_session.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\scanner\\ec2_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\api\\routes\\execute_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\api\\routes\\execute_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\rollback.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\planner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\api\\routes\\rollback_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\api\\routes\\rollback_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\api\\routes\\scan_routes.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -39,14 +67,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\database\\models.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\scanner\\scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\core\\aws_session.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\core\\aws_session.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\threat_monitor\\threat_monitor.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\threat_monitor\\threat_monitor.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -75,10 +95,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:run_db.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\executor.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\protection_history\\history.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\protection_history\\history.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -99,14 +115,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\scanner\\s3_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\planner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\remediation\\rollback.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\utils\\json_utils.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\utils\\json_utils.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -117,14 +125,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\iam_manager\\iam_manager.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\iam_manager\\iam_manager.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\config\\security_config.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\config\\security_config.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modules\\scanner\\ec2_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\modules\\scanner\\encryption_scanner.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -182,7 +182,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 14,
               "Title": "local_runner.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\local_runner.py",
               "RelativeDocumentMoniker": "app\\local_runner.py",
@@ -195,7 +195,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 16,
               "Title": "threat_monitor.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\threat_monitor\\threat_monitor.py",
               "RelativeDocumentMoniker": "app\\modules\\threat_monitor\\threat_monitor.py",
@@ -208,7 +208,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 17,
               "Title": "monitor_service.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\core\\monitor_service.py",
               "RelativeDocumentMoniker": "app\\core\\monitor_service.py",
@@ -221,7 +221,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 10,
               "Title": "threat_routes.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\threat_routes.py",
               "RelativeDocumentMoniker": "app\\api\\routes\\threat_routes.py",
@@ -238,69 +238,111 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "scanner.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py",
-              "RelativeDocumentMoniker": "app\\modules\\scanner\\scanner.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py",
-              "RelativeToolTip": "app\\modules\\scanner\\scanner.py",
-              "ViewState": "AgIAAJ4AAAAAAAAAAAAAwK8AAAA2AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-27T09:47:09.687Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "scan_routes.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\scan_routes.py",
-              "RelativeDocumentMoniker": "app\\api\\routes\\scan_routes.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\routes\\scan_routes.py",
-              "RelativeToolTip": "app\\api\\routes\\scan_routes.py",
-              "ViewState": "AgIAAFwAAAAAAAAAAAAYwDMAAAAGAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-31T10:11:06.207Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 5,
-              "Title": "schemas.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\schemas.py",
-              "RelativeDocumentMoniker": "app\\api\\schemas.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\schemas.py",
-              "RelativeToolTip": "app\\api\\schemas.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-30T19:09:08.31Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "main.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\main.py",
-              "RelativeDocumentMoniker": "app\\api\\main.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\main.py",
-              "RelativeToolTip": "app\\api\\main.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAApAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-30T11:22:00.686Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
               "Title": "execute_routes.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\execute_routes.py",
               "RelativeDocumentMoniker": "app\\api\\routes\\execute_routes.py",
               "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\routes\\execute_routes.py",
               "RelativeToolTip": "app\\api\\routes\\execute_routes.py",
-              "ViewState": "AgIAAOQAAAAAAAAAAAAAAOkAAAAFAAAAAAAAAA==",
+              "ViewState": "AgIAAM8AAAAAAAAAAAAAAOkAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2026-03-27T10:00:27.566Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ec2_scanner.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py",
+              "RelativeDocumentMoniker": "app\\modules\\scanner\\ec2_scanner.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py",
+              "RelativeToolTip": "app\\modules\\scanner\\ec2_scanner.py",
+              "ViewState": "AgIAALIAAAAAAAAAAAAAANkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-29T09:43:18.645Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "executor.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py",
+              "RelativeDocumentMoniker": "app\\modules\\remediation\\executor.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py",
+              "RelativeToolTip": "app\\modules\\remediation\\executor.py",
+              "ViewState": "AgIAADAAAAAAAAAAAAAAAD0AAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-30T13:18:59.691Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "aws_session.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\core\\aws_session.py",
+              "RelativeDocumentMoniker": "app\\core\\aws_session.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\core\\aws_session.py",
+              "RelativeToolTip": "app\\core\\aws_session.py",
+              "ViewState": "AgIAAHkAAAAAAAAAAADwv4IAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-27T10:38:33.273Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "scanner.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py",
+              "RelativeDocumentMoniker": "app\\modules\\scanner\\scanner.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\scanner.py",
+              "RelativeToolTip": "app\\modules\\scanner\\scanner.py",
+              "ViewState": "AgIAAGMAAAAAAAAAAADwv2wAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-27T09:47:09.687Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "security_config.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\config\\security_config.py",
+              "RelativeDocumentMoniker": "app\\config\\security_config.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\config\\security_config.py",
+              "RelativeToolTip": "app\\config\\security_config.py",
+              "ViewState": "AgIAABsAAAAAAAAAAAAAACgAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-04-02T17:38:55.025Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "rollback.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py",
+              "RelativeDocumentMoniker": "app\\modules\\remediation\\rollback.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py",
+              "RelativeToolTip": "app\\modules\\remediation\\rollback.py",
+              "ViewState": "AgIAAMYDAAAAAAAAAAAAANIDAABKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-27T11:57:46.892Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "planner.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py",
+              "RelativeDocumentMoniker": "app\\modules\\remediation\\planner.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py",
+              "RelativeToolTip": "app\\modules\\remediation\\planner.py",
+              "ViewState": "AgIAADoBAAAAAAAAAAAAAEcBAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-27T09:47:52.409Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "rollback_routes.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\rollback_routes.py",
               "RelativeDocumentMoniker": "app\\api\\routes\\rollback_routes.py",
@@ -313,19 +355,43 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "aws_session.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\core\\aws_session.py",
-              "RelativeDocumentMoniker": "app\\core\\aws_session.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\core\\aws_session.py",
-              "RelativeToolTip": "app\\core\\aws_session.py",
-              "ViewState": "AgIAAHMAAAAAAAAAAAAAwH0AAAALAAAAAAAAAA==",
+              "DocumentIndex": 13,
+              "Title": "main.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\main.py",
+              "RelativeDocumentMoniker": "app\\api\\main.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\main.py",
+              "RelativeToolTip": "app\\api\\main.py",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-27T10:38:33.273Z"
+              "WhenOpened": "2026-03-30T11:22:00.686Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 12,
+              "Title": "schemas.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\schemas.py",
+              "RelativeDocumentMoniker": "app\\api\\schemas.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\schemas.py",
+              "RelativeToolTip": "app\\api\\schemas.py",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-30T19:09:08.31Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "scan_routes.py",
+              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\scan_routes.py",
+              "RelativeDocumentMoniker": "app\\api\\routes\\scan_routes.py",
+              "ToolTip": "P:\\CloudSecurityPanel\\app\\api\\routes\\scan_routes.py",
+              "RelativeToolTip": "app\\api\\routes\\scan_routes.py",
+              "ViewState": "AgIAAFwAAAAAAAAAAAAYwDMAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2026-03-31T10:11:06.207Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "account_routes.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\account_routes.py",
               "RelativeDocumentMoniker": "app\\api\\routes\\account_routes.py",
@@ -337,19 +403,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
-              "Title": "executor.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py",
-              "RelativeDocumentMoniker": "app\\modules\\remediation\\executor.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\executor.py",
-              "RelativeToolTip": "app\\modules\\remediation\\executor.py",
-              "ViewState": "AgIAAB4AAAAAAAAAAAAAAAoAAAAoAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-30T13:18:59.691Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 15,
               "Title": "models.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\database\\models.py",
               "RelativeDocumentMoniker": "app\\database\\models.py",
@@ -361,7 +415,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 20,
               "Title": "check_db.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\check_db.py",
               "RelativeDocumentMoniker": "check_db.py",
@@ -373,7 +427,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 19,
               "Title": "init_db.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\database\\init_db.py",
               "RelativeDocumentMoniker": "app\\database\\init_db.py",
@@ -385,7 +439,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 18,
               "Title": "db.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\database\\db.py",
               "RelativeDocumentMoniker": "app\\database\\db.py",
@@ -397,7 +451,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 30,
               "Title": "iam_manager.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\iam_manager\\iam_manager.py",
               "RelativeDocumentMoniker": "app\\modules\\iam_manager\\iam_manager.py",
@@ -409,31 +463,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
-              "Title": "rollback.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py",
-              "RelativeDocumentMoniker": "app\\modules\\remediation\\rollback.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\rollback.py",
-              "RelativeToolTip": "app\\modules\\remediation\\rollback.py",
-              "ViewState": "AgIAAPsDAAAAAAAAAAAAAAcEAABXAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-27T11:57:46.892Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 24,
-              "Title": "planner.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py",
-              "RelativeDocumentMoniker": "app\\modules\\remediation\\planner.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\remediation\\planner.py",
-              "RelativeToolTip": "app\\modules\\remediation\\planner.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-27T09:47:52.409Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 21,
               "Title": "test_db.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\test_db.py",
               "RelativeDocumentMoniker": "test_db.py",
@@ -445,7 +475,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 22,
               "Title": "run_db.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\run_db.py",
               "RelativeDocumentMoniker": "run_db.py",
@@ -457,7 +487,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 23,
               "Title": "history.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\protection_history\\history.py",
               "RelativeDocumentMoniker": "app\\modules\\protection_history\\history.py",
@@ -469,7 +499,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 24,
               "Title": "history_routes.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\api\\routes\\history_routes.py",
               "RelativeDocumentMoniker": "app\\api\\routes\\history_routes.py",
@@ -481,7 +511,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 25,
               "Title": "policies.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\policy_engine\\policies.py",
               "RelativeDocumentMoniker": "app\\modules\\policy_engine\\policies.py",
@@ -493,7 +523,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 27,
               "Title": "s3_scanner.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\s3_scanner.py",
               "RelativeDocumentMoniker": "app\\modules\\scanner\\s3_scanner.py",
@@ -505,7 +535,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 26,
               "Title": "policy_engine.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\core\\policy_engine.py",
               "RelativeDocumentMoniker": "app\\core\\policy_engine.py",
@@ -517,7 +547,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 29,
               "Title": "iam_policy_utils.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\utils\\iam_policy_utils.py",
               "RelativeDocumentMoniker": "app\\utils\\iam_policy_utils.py",
@@ -529,7 +559,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 28,
               "Title": "json_utils.py",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\utils\\json_utils.py",
               "RelativeDocumentMoniker": "app\\utils\\json_utils.py",
@@ -538,18 +568,6 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2026-04-03T07:57:51.093Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 29,
-              "Title": "security_config.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\config\\security_config.py",
-              "RelativeDocumentMoniker": "app\\config\\security_config.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\config\\security_config.py",
-              "RelativeToolTip": "app\\config\\security_config.py",
-              "ViewState": "AgIAABUAAAAAAAAAAAAAACYAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-04-02T17:38:55.025Z"
             },
             {
               "$type": "Document",
@@ -574,18 +592,6 @@
               "ViewState": "AgIAAGUAAAAAAAAAAAAAwIIAAAA+AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2026-03-27T19:02:20.987Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 30,
-              "Title": "ec2_scanner.py",
-              "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py",
-              "RelativeDocumentMoniker": "app\\modules\\scanner\\ec2_scanner.py",
-              "ToolTip": "P:\\CloudSecurityPanel\\app\\modules\\scanner\\ec2_scanner.py",
-              "RelativeToolTip": "app\\modules\\scanner\\ec2_scanner.py",
-              "ViewState": "AgIAAKoAAAAAAAAAAAAAALQAAAAXAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-03-29T09:43:18.645Z"
             },
             {
               "$type": "Document",

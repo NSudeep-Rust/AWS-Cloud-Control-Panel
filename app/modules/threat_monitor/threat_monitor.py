@@ -16,6 +16,7 @@ from app.api.routes.scan_routes import run_scan
 import uuid
 from app.core.scan_storage import SCAN_STORAGE
 import time
+from datetime import datetime
 
 
 class ThreatMonitor:
@@ -321,15 +322,15 @@ class ThreatMonitor:
 
     def run_once(self):
         print("\n" + "-"*55)
-        print("📡 MONITOR SCAN STARTED")
+        print(f"\n📡 MONITOR SCAN STARTED at {datetime.utcnow().isoformat()}")
         print("-"*55)
 
         findings = run_full_scan(self.aws_session, source="MONITOR")
 
-        print(f"📡 MONITOR FINAL TOTAL: {len(findings)}")
+        print(f"📡 MONITOR FINAL TOTAL: {len(findings)} at {datetime.utcnow().isoformat()}")
 
         print("-"*55)
-        print("📡 MONITOR SCAN COMPLETED")
+        print(f"📡 MONITOR SCAN COMPLETED at {datetime.utcnow().isoformat()}")
         print("-"*55 + "\n")
 
         return findings
