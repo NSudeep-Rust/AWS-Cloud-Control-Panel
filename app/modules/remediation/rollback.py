@@ -1053,6 +1053,285 @@ class RollbackEngine:
                     "note": "Terminated instance cannot be restored"
                 })
 
+
+            # =========================================================
+            # REVOKE UNRESTRICTED SSH — ROLLBACK (re-authorize the rule)
+            # =========================================================
+            if action == "REVOKE_UNRESTRICTED_SSH":
+                inner = extract_metadata(row)
+                resource_id = inner.get("resource_id")
+                region = inner.get("region")
+                revoked_rules = inner.get("revoked_rules", [])
+
+                if not resource_id or not revoked_rules:
+                    return self._fail(db, execution_id, "Missing resource_id or revoked_rules in metadata")
+
+                ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                try:
+                    ec2.authorize_security_group_ingress(
+                        GroupId=resource_id,
+                        IpPermissions=revoked_rules
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "resource_id": resource_id,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # REVOKE UNRESTRICTED RDP — ROLLBACK (re-authorize the rule)
+            # =========================================================
+            if action == "REVOKE_UNRESTRICTED_RDP":
+                inner = extract_metadata(row)
+                resource_id = inner.get("resource_id")
+                region = inner.get("region")
+                revoked_rules = inner.get("revoked_rules", [])
+
+                if not resource_id or not revoked_rules:
+                    return self._fail(db, execution_id, "Missing resource_id or revoked_rules in metadata")
+
+                ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                try:
+                    ec2.authorize_security_group_ingress(
+                        GroupId=resource_id,
+                        IpPermissions=revoked_rules
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "resource_id": resource_id,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # ENFORCE IMDSv2 — ROLLBACK (restore IMDSv1 optional)
+            # =========================================================
+            if action == "ENFORCE_IMDSV2":
+                inner = extract_metadata(row)
+                instance_id = inner.get("instance_id")
+                region = inner.get("region")
+                previous_http_tokens = inner.get("previous_http_tokens", "optional")
+
+                if not instance_id:
+                    return self._fail(db, execution_id, "Missing instance_id in metadata")
+
+                ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                try:
+                    ec2.modify_instance_metadata_options(
+                        InstanceId=instance_id,
+                        HttpTokens=previous_http_tokens,
+                        HttpEndpoint="enabled"
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "instance_id": instance_id,
+                        "restored_http_tokens": previous_http_tokens
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # MAKE SNAPSHOT PRIVATE — ROLLBACK (re-make public)
+            # =========================================================
+            if action == "MAKE_SNAPSHOT_PRIVATE":
+                inner = extract_metadata(row)
+                snapshot_id = inner.get("snapshot_id")
+                region = inner.get("region")
+
+                if not snapshot_id:
+                    return self._fail(db, execution_id, "Missing snapshot_id in metadata")
+
+                ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                try:
+                    ec2.modify_snapshot_attribute(
+                        SnapshotId=snapshot_id,
+                        Attribute="createVolumePermission",
+                        OperationType="add",
+                        GroupNames=["all"]
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "snapshot_id": snapshot_id,
+                        "note": "Snapshot restored to public. Review immediately."
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # DISABLE RDS PUBLIC ACCESS — ROLLBACK (re-enable public)
+            # =========================================================
+            if action == "DISABLE_RDS_PUBLIC_ACCESS":
+                inner = extract_metadata(row)
+                db_id = inner.get("db_id")
+                region = inner.get("region")
+
+                if not db_id:
+                    return self._fail(db, execution_id, "Missing db_id in metadata")
+
+                rds = self.aws_session.session.client("rds", region_name=region)
+
+                try:
+                    rds.modify_db_instance(
+                        DBInstanceIdentifier=db_id,
+                        PubliclyAccessible=True,
+                        ApplyImmediately=True
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "db_id": db_id
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # ENABLE RDS BACKUP — ROLLBACK (restore previous retention)
+            # =========================================================
+            if action == "ENABLE_RDS_BACKUP":
+                inner = extract_metadata(row)
+                db_id = inner.get("db_id")
+                region = inner.get("region")
+                previous_retention = inner.get("previous_retention_period", 0)
+
+                if not db_id:
+                    return self._fail(db, execution_id, "Missing db_id in metadata")
+
+                rds = self.aws_session.session.client("rds", region_name=region)
+
+                try:
+                    rds.modify_db_instance(
+                        DBInstanceIdentifier=db_id,
+                        BackupRetentionPeriod=previous_retention,
+                        ApplyImmediately=True
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "db_id": db_id,
+                        "restored_retention_period": previous_retention
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # ENABLE RDS DELETION PROTECTION — ROLLBACK (disable it)
+            # =========================================================
+            if action == "ENABLE_RDS_DELETION_PROTECTION":
+                inner = extract_metadata(row)
+                db_id = inner.get("db_id")
+                region = inner.get("region")
+
+                if not db_id:
+                    return self._fail(db, execution_id, "Missing db_id in metadata")
+
+                rds = self.aws_session.session.client("rds", region_name=region)
+
+                try:
+                    rds.modify_db_instance(
+                        DBInstanceIdentifier=db_id,
+                        DeletionProtection=False,
+                        ApplyImmediately=True
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "db_id": db_id
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # DISABLE STALE ACCESS KEY — ROLLBACK (re-enable the key)
+            # =========================================================
+            if action == "DISABLE_STALE_ACCESS_KEY":
+                inner = extract_metadata(row)
+                user_name = inner.get("user_name")
+                access_key_id = inner.get("access_key_id")
+                previous_status = inner.get("previous_status", "Active")
+
+                if not user_name or not access_key_id:
+                    return self._fail(db, execution_id, "Missing user_name or access_key_id in metadata")
+
+                iam = self.aws_session.session.client("iam")
+
+                try:
+                    iam.update_access_key(
+                        UserName=user_name,
+                        AccessKeyId=access_key_id,
+                        Status=previous_status
+                    )
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "user_name": user_name,
+                        "access_key_id": access_key_id,
+                        "restored_status": previous_status
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
+            # =========================================================
+            # SET LOG GROUP RETENTION — ROLLBACK (delete retention policy)
+            # =========================================================
+            if action == "SET_LOG_GROUP_RETENTION":
+                inner = extract_metadata(row)
+                log_group_name = inner.get("log_group_name")
+                region = inner.get("region")
+                previous_retention_days = inner.get("previous_retention_days")
+
+                if not log_group_name:
+                    return self._fail(db, execution_id, "Missing log_group_name in metadata")
+
+                logs = self.aws_session.session.client("logs", region_name=region)
+
+                try:
+                    if previous_retention_days is None:
+                        # Was "never expire" — delete the policy to restore that
+                        logs.delete_retention_policy(logGroupName=log_group_name)
+                    else:
+                        logs.put_retention_policy(
+                            logGroupName=log_group_name,
+                            retentionInDays=previous_retention_days
+                        )
+
+                    return self._success(db, execution_id, {
+                        "status": "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action": action,
+                        "log_group_name": log_group_name,
+                        "restored_retention_days": previous_retention_days
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, str(e))
+
+
             
             # =====================================================
             # UNKNOWN

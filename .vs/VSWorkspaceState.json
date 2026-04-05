@@ -3,7 +3,8 @@
     "",
     "\\app",
     "\\app\\config",
-    "\\app\\ui"
+    "\\app\\modules"
   ],
+  "SelectedNode": "\\app\\modules\\remediation\\executor.py",
   "PreviewInSolutionExplorer": false
 }

@@ -18,16 +18,117 @@ class RemediationPlanner:
                 "action": "RESTRICT_SECURITY_GROUP",
                 "reason": "Inbound access open to 0.0.0.0/0",
                 "recommended_fix": "Limit CIDR to trusted IP ranges",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
+        # ---------------------------
+        # Unrestricted SSH (NEW)
+        # ---------------------------
+        if finding_type == "SECURITY_GROUP_UNRESTRICTED_SSH":
+            return {
+                "action": "REVOKE_UNRESTRICTED_SSH",
+                "reason": "Security group allows SSH (port 22) from 0.0.0.0/0",
+                "recommended_fix": "Revoke the inbound rule that allows port 22 from 0.0.0.0/0",
+                "severity": finding.get("severity")
+            }
 
+        # ---------------------------
+        # Unrestricted RDP (NEW)
+        # ---------------------------
+        if finding_type == "SECURITY_GROUP_UNRESTRICTED_RDP":
+            return {
+                "action": "REVOKE_UNRESTRICTED_RDP",
+                "reason": "Security group allows RDP (port 3389) from 0.0.0.0/0",
+                "recommended_fix": "Revoke the inbound rule that allows port 3389 from 0.0.0.0/0",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # IMDSv1 Enabled (NEW)
+        # ---------------------------
+        if finding_type == "EC2_IMDSV1_ENABLED":
+            return {
+                "action": "ENFORCE_IMDSV2",
+                "reason": "EC2 instance allows IMDSv1 which is vulnerable to SSRF attacks",
+                "recommended_fix": "Set HttpTokens to 'required' to enforce IMDSv2 only",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # EBS Snapshot Public (NEW)
+        # ---------------------------
+        if finding_type == "EBS_SNAPSHOT_PUBLIC":
+            return {
+                "action": "MAKE_SNAPSHOT_PRIVATE",
+                "reason": "EBS snapshot is publicly accessible to all AWS accounts",
+                "recommended_fix": "Remove the 'all' group from snapshot create volume permissions",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # RDS Publicly Accessible (NEW)
+        # ---------------------------
+        if finding_type == "RDS_PUBLICLY_ACCESSIBLE":
+            return {
+                "action": "DISABLE_RDS_PUBLIC_ACCESS",
+                "reason": "RDS instance is publicly accessible from the internet",
+                "recommended_fix": "Set PubliclyAccessible to False on the RDS instance",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # RDS Backup Disabled (NEW)
+        # ---------------------------
+        if finding_type == "RDS_BACKUP_DISABLED":
+            return {
+                "action": "ENABLE_RDS_BACKUP",
+                "reason": "RDS automated backups are disabled (retention period = 0)",
+                "recommended_fix": "Set backup retention period to at least 7 days",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # RDS Deletion Protection Disabled (NEW)
+        # ---------------------------
+        if finding_type == "RDS_DELETION_PROTECTION_DISABLED":
+            return {
+                "action": "ENABLE_RDS_DELETION_PROTECTION",
+                "reason": "RDS instance does not have deletion protection enabled",
+                "recommended_fix": "Enable deletion protection to prevent accidental deletion",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # IAM Access Key Not Rotated (NEW)
+        # ---------------------------
+        if finding_type == "IAM_ACCESS_KEY_NOT_ROTATED":
+            return {
+                "action": "DISABLE_STALE_ACCESS_KEY",
+                "reason": "Active access key has not been rotated in 90+ days",
+                "recommended_fix": "Disable old access key and create a new one",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # CloudWatch Log Group No Retention (NEW)
+        # ---------------------------
+        if finding_type == "CLOUDWATCH_LOG_GROUP_NO_RETENTION":
+            return {
+                "action": "SET_LOG_GROUP_RETENTION",
+                "reason": "CloudWatch Log Group has no retention policy — logs accumulate forever",
+                "recommended_fix": "Set a retention policy of 90 days on the log group",
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # IAM Unused User
+        # ---------------------------
         if finding_type == "IAM_UNUSED_USER":
             return {
                 "action": "DELETE_UNUSED_IAM_USER",
                 "reason": "IAM user inactive for long duration",
                 "recommended_fix": "Delete unused IAM user",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -38,7 +139,7 @@ class RemediationPlanner:
                 "action": "DETACH_ADMIN_POLICY",
                 "reason": "IAM user has AdministratorAccess attached",
                 "recommended_fix": "Detach AdministratorAccess policy from user",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # -------------------------
@@ -49,7 +150,7 @@ class RemediationPlanner:
                 "action": "REMOVE_INLINE_POLICY",
                 "reason": "Inline policy grants full admin access",
                 "recommended_fix": "Delete inline policy",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # -------------------------
@@ -60,9 +161,9 @@ class RemediationPlanner:
                 "action": "REMOVE_INLINE_WILDCARD_POLICY",
                 "reason": "Inline policy contains wildcard permissions",
                 "recommended_fix": "Restrict wildcard permissions",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
-     
+
         # ---------------------------
         # S3 versioning remediation
         # ---------------------------
@@ -71,7 +172,7 @@ class RemediationPlanner:
                 "action": "ENABLE_S3_VERSIONING",
                 "reason": "S3 bucket versioning is disabled",
                 "recommended_fix": "Enable versioning on the bucket",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -82,7 +183,7 @@ class RemediationPlanner:
                 "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
                 "reason": "S3 bucket public access block is disabled",
                 "recommended_fix": "Enable block public access settings",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -93,7 +194,7 @@ class RemediationPlanner:
                 "action": "REMOVE_PUBLIC_S3_ACL",
                 "reason": "S3 bucket is publicly accessible via ACL",
                 "recommended_fix": "Remove public access from bucket ACL",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -104,34 +205,30 @@ class RemediationPlanner:
                 "action": "ENABLE_S3_ACCESS_LOGGING",
                 "reason": "S3 bucket access logging is disabled",
                 "recommended_fix": "Enable server access logging",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
         # IAM MFA
         # ---------------------------
-
         if finding_type == "IAM_USER_WITHOUT_MFA":
             return {
                 "action": "ENABLE_MFA",
                 "reason": "IAM user does not have MFA enabled",
                 "recommended_fix": "Enable MFA for the user",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
-        # Access Key
+        # Access Key — unused (disable)
         # ---------------------------
-
         if finding_type == "IAM_ACCESS_KEY_UNUSED":
             return {
                 "action": "DISABLE_ACCESS_KEY",
                 "reason": "Access key is unused and poses security risk",
                 "recommended_fix": "Disable unused access key",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
-
-
 
         # ---------------------------
         # OLD INACTIVE KEY (SAFE DELETE)
@@ -141,7 +238,7 @@ class RemediationPlanner:
                 "action": "DELETE_ACCESS_KEY",
                 "reason": "Old inactive access key should be removed",
                 "recommended_fix": "Delete unused inactive access key",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -152,19 +249,18 @@ class RemediationPlanner:
                 "action": "ENABLE_KMS_KEY_ROTATION",
                 "reason": "KMS key rotation is disabled",
                 "recommended_fix": "Enable automatic key rotation",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
         # VPC FLOW
         # ---------------------------
-
         if finding_type == "VPC_FLOW_LOGS_DISABLED":
             return {
                 "action": "ENABLE_VPC_FLOW_LOGS",
                 "reason": "VPC Flow Logs are not enabled",
                 "recommended_fix": "Enable VPC Flow Logs for monitoring network traffic",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -175,7 +271,7 @@ class RemediationPlanner:
                 "action": "DELETE_UNUSED_SECURITY_GROUP",
                 "reason": "Security group is not attached to any resource",
                 "recommended_fix": "Delete unused security group to reduce attack surface",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -186,7 +282,7 @@ class RemediationPlanner:
                 "action": "RESTRICT_NACL_INBOUND",
                 "reason": "NACL allows unrestricted inbound access (0.0.0.0/0)",
                 "recommended_fix": "Restrict inbound CIDR or remove allow rule",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -197,7 +293,7 @@ class RemediationPlanner:
                 "action": "RESTRICT_NACL_OUTBOUND",
                 "reason": "NACL allows unrestricted outbound access (0.0.0.0/0)",
                 "recommended_fix": "Restrict outbound CIDR or remove allow rule",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -208,7 +304,7 @@ class RemediationPlanner:
                 "action": "REMOVE_PUBLIC_ROUTE",
                 "reason": "Route table exposes subnet to internet via IGW",
                 "recommended_fix": "Remove 0.0.0.0/0 route to Internet Gateway",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -219,19 +315,18 @@ class RemediationPlanner:
                 "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
                 "reason": "IAM role trust policy allows external account access",
                 "recommended_fix": "Restrict trust policy to current AWS account only",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
-        #   CLOUDTRAIL_DISABLED
+        # CLOUDTRAIL DISABLED
         # ---------------------------
-
         if finding_type == "CLOUDTRAIL_DISABLED":
             return {
                 "action": "ENABLE_CLOUDTRAIL",
                 "reason": "CloudTrail is not enabled",
                 "recommended_fix": "Enable CloudTrail with multi-region logging",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         if finding_type == "CLOUDTRAIL_NOT_LOGGING":
@@ -239,7 +334,7 @@ class RemediationPlanner:
                 "action": "START_CLOUDTRAIL_LOGGING",
                 "reason": "CloudTrail exists but logging is disabled",
                 "recommended_fix": "Enable logging for existing CloudTrail",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         if finding_type == "EC2_TERMINATION_PROTECTION_DISABLED":
@@ -247,7 +342,7 @@ class RemediationPlanner:
                 "action": "ENABLE_TERMINATION_PROTECTION",
                 "reason": "EC2 termination protection is disabled",
                 "recommended_fix": "Enable termination protection to prevent accidental deletion",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -258,7 +353,7 @@ class RemediationPlanner:
                 "action": "ENCRYPT_EBS_VOLUME",
                 "reason": "EBS volume is not encrypted",
                 "recommended_fix": "Create encrypted copy of the volume and replace it",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -269,7 +364,7 @@ class RemediationPlanner:
                 "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
                 "reason": "EC2 instance does not have an IAM role attached",
                 "recommended_fix": "Attach IAM role using instance profile",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -280,7 +375,7 @@ class RemediationPlanner:
                 "action": "REPLACE_SECURITY_GROUP",
                 "reason": "Instance is using default security group",
                 "recommended_fix": "Attach a restricted security group and remove default",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -291,7 +386,7 @@ class RemediationPlanner:
                 "action": "REMOVE_ELASTIC_IP",
                 "reason": "Unused Elastic IP (not attached)",
                 "recommended_fix": "Release unused Elastic IP to reduce cost and attack surface",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -302,7 +397,7 @@ class RemediationPlanner:
                 "action": "REMOVE_ELASTIC_IP",
                 "reason": "EC2 instance is publicly exposed",
                 "recommended_fix": "Remove Elastic IP to prevent public exposure",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -313,7 +408,7 @@ class RemediationPlanner:
                 "action": "STOP_EC2_INSTANCE",
                 "reason": "Instance is running unnecessarily",
                 "recommended_fix": "Stop instance to save cost",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         # ---------------------------
@@ -324,11 +419,10 @@ class RemediationPlanner:
                 "action": "TERMINATE_EC2_INSTANCE",
                 "reason": "Stopped instance unused",
                 "recommended_fix": "Terminate instance to clean up",
-                "severity": finding["severity"]
+                "severity": finding.get("severity")
             }
 
         return {
             "action": "NO_ACTION",
             "reason": "No remediation required"
         }
-        

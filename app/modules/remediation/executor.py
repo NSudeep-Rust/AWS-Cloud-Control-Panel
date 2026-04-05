@@ -60,6 +60,15 @@ class RemediationExecutor:
             "DELETE_UNUSED_IAM_USER": self._handle_delete_unused_iam_user,
             "STOP_EC2_INSTANCE": self._handle_stop_ec2_instance,
             "TERMINATE_EC2_INSTANCE": self._handle_terminate_ec2_instance,
+            "REVOKE_UNRESTRICTED_SSH":self._handle_revoke_unrestricted_ssh,
+            "REVOKE_UNRESTRICTED_RDP":self._handle_revoke_unrestricted_rdp,
+            "ENFORCE_IMDSV2":self._handle_enforce_imdsv2,
+            "MAKE_SNAPSHOT_PRIVATE":self._handle_make_snapshot_private,
+            "DISABLE_RDS_PUBLIC_ACCESS":self._handle_disable_rds_public_access,
+            "ENABLE_RDS_BACKUP":self._handle_enable_rds_backup,
+            "ENABLE_RDS_DELETION_PROTECTION":self._handle_enable_rds_deletion_protection,
+            "DISABLE_STALE_ACCESS_KEY":self._handle_disable_stale_access_key,
+            "SET_LOG_GROUP_RETENTION":self._handle_set_log_group_retention,
                      
         }
 
@@ -2380,6 +2389,677 @@ class RemediationExecutor:
                 "status": "FAILED",
                 "action": "TERMINATE_EC2_INSTANCE",
                 "reason": str(e)
+            }
+
+    # =========================================================
+    # REVOKE UNRESTRICTED SSH (port 22 from 0.0.0.0/0)
+    # =========================================================
+    def _handle_revoke_unrestricted_ssh(self, finding, remediation):
+        resource_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # Collect rules that open port 22 to 0.0.0.0/0
+        response = ec2.describe_security_groups(GroupIds=[resource_id])
+        sg = response["SecurityGroups"][0]
+
+        rules_to_revoke = []
+        for permission in sg.get("IpPermissions", []):
+            from_port = permission.get("FromPort", 0)
+            to_port = permission.get("ToPort", 65535)
+            protocol = permission.get("IpProtocol", "")
+
+            for ip_range in permission.get("IpRanges", []):
+                if ip_range.get("CidrIp") == "0.0.0.0/0":
+                    if protocol in ["-1", "tcp"] and from_port <= 22 <= to_port:
+                        rules_to_revoke.append({
+                            "IpProtocol": protocol,
+                            "FromPort": from_port,
+                            "ToPort": to_port,
+                            "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+                        })
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REVOKE_UNRESTRICTED_SSH",
+                "resource_id": resource_id,
+                "region": region,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "rules_to_revoke": rules_to_revoke,
+                "metadata": {
+                    "resource_id": resource_id,
+                    "region": region,
+                    "revoked_rules": rules_to_revoke
+                }
+            }
+
+        if not rules_to_revoke:
+            return {
+                "status": "SKIPPED",
+                "reason": "No matching SSH rule found",
+                "resource_id": resource_id,
+                "metadata": {}
+            }
+
+        try:
+            ec2.revoke_security_group_ingress(
+                GroupId=resource_id,
+                IpPermissions=rules_to_revoke
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "REVOKE_UNRESTRICTED_SSH",
+                    "resource_id": resource_id,
+                    "metadata": {
+                        "resource_id": resource_id,
+                        "region": region,
+                        "revoked_rules": rules_to_revoke
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "REVOKE_UNRESTRICTED_SSH",
+                "resource_id": resource_id,
+                "metadata": {
+                    "resource_id": resource_id,
+                    "region": region,
+                    "revoked_rules": rules_to_revoke
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REVOKE_UNRESTRICTED_SSH",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # REVOKE UNRESTRICTED RDP (port 3389 from 0.0.0.0/0)
+    # =========================================================
+    def _handle_revoke_unrestricted_rdp(self, finding, remediation):
+        resource_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        response = ec2.describe_security_groups(GroupIds=[resource_id])
+        sg = response["SecurityGroups"][0]
+
+        rules_to_revoke = []
+        for permission in sg.get("IpPermissions", []):
+            from_port = permission.get("FromPort", 0)
+            to_port = permission.get("ToPort", 65535)
+            protocol = permission.get("IpProtocol", "")
+
+            for ip_range in permission.get("IpRanges", []):
+                if ip_range.get("CidrIp") == "0.0.0.0/0":
+                    if protocol in ["-1", "tcp"] and from_port <= 3389 <= to_port:
+                        rules_to_revoke.append({
+                            "IpProtocol": protocol,
+                            "FromPort": from_port,
+                            "ToPort": to_port,
+                            "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
+                        })
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "REVOKE_UNRESTRICTED_RDP",
+                "resource_id": resource_id,
+                "region": region,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "rules_to_revoke": rules_to_revoke,
+                "metadata": {
+                    "resource_id": resource_id,
+                    "region": region,
+                    "revoked_rules": rules_to_revoke
+                }
+            }
+
+        if not rules_to_revoke:
+            return {
+                "status": "SKIPPED",
+                "reason": "No matching RDP rule found",
+                "resource_id": resource_id,
+                "metadata": {}
+            }
+
+        try:
+            ec2.revoke_security_group_ingress(
+                GroupId=resource_id,
+                IpPermissions=rules_to_revoke
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "REVOKE_UNRESTRICTED_RDP",
+                    "resource_id": resource_id,
+                    "metadata": {
+                        "resource_id": resource_id,
+                        "region": region,
+                        "revoked_rules": rules_to_revoke
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "REVOKE_UNRESTRICTED_RDP",
+                "resource_id": resource_id,
+                "metadata": {
+                    "resource_id": resource_id,
+                    "region": region,
+                    "revoked_rules": rules_to_revoke
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REVOKE_UNRESTRICTED_RDP",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # ENFORCE IMDSv2 (disable IMDSv1 on EC2 instance)
+    # =========================================================
+    def _handle_enforce_imdsv2(self, finding, remediation):
+        instance_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENFORCE_IMDSV2",
+                "instance_id": instance_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "previous_http_tokens": "optional"
+                }
+            }
+
+        try:
+            ec2.modify_instance_metadata_options(
+                InstanceId=instance_id,
+                HttpTokens="required",
+                HttpEndpoint="enabled"
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "ENFORCE_IMDSV2",
+                    "resource_id": instance_id,
+                    "metadata": {
+                        "instance_id": instance_id,
+                        "region": region,
+                        "previous_http_tokens": "optional"
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ENFORCE_IMDSV2",
+                "instance_id": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region": region,
+                    "previous_http_tokens": "optional"
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ENFORCE_IMDSV2",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # MAKE EBS SNAPSHOT PRIVATE
+    # =========================================================
+    def _handle_make_snapshot_private(self, finding, remediation):
+        snapshot_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "MAKE_SNAPSHOT_PRIVATE",
+                "snapshot_id": snapshot_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "snapshot_id": snapshot_id,
+                    "region": region,
+                    "previous_permission": "public"
+                }
+            }
+
+        try:
+            ec2.modify_snapshot_attribute(
+                SnapshotId=snapshot_id,
+                Attribute="createVolumePermission",
+                OperationType="remove",
+                GroupNames=["all"]
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "MAKE_SNAPSHOT_PRIVATE",
+                    "resource_id": snapshot_id,
+                    "metadata": {
+                        "snapshot_id": snapshot_id,
+                        "region": region,
+                        "previous_permission": "public"
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "MAKE_SNAPSHOT_PRIVATE",
+                "snapshot_id": snapshot_id,
+                "metadata": {
+                    "snapshot_id": snapshot_id,
+                    "region": region,
+                    "previous_permission": "public"
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "MAKE_SNAPSHOT_PRIVATE",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # DISABLE RDS PUBLIC ACCESS
+    # =========================================================
+    def _handle_disable_rds_public_access(self, finding, remediation):
+        db_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        rds = self.aws_session.session.client("rds", region_name=region)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DISABLE_RDS_PUBLIC_ACCESS",
+                "db_id": db_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_publicly_accessible": True
+                }
+            }
+
+        try:
+            rds.modify_db_instance(
+                DBInstanceIdentifier=db_id,
+                PubliclyAccessible=False,
+                ApplyImmediately=True
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "DISABLE_RDS_PUBLIC_ACCESS",
+                    "resource_id": db_id,
+                    "metadata": {
+                        "db_id": db_id,
+                        "region": region,
+                        "previous_publicly_accessible": True
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "DISABLE_RDS_PUBLIC_ACCESS",
+                "db_id": db_id,
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_publicly_accessible": True
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "DISABLE_RDS_PUBLIC_ACCESS",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # ENABLE RDS BACKUP (set retention to 7 days)
+    # =========================================================
+    def _handle_enable_rds_backup(self, finding, remediation):
+        db_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        rds = self.aws_session.session.client("rds", region_name=region)
+
+        # Get current retention for rollback metadata
+        try:
+            desc = rds.describe_db_instances(DBInstanceIdentifier=db_id)
+            previous_retention = desc["DBInstances"][0].get("BackupRetentionPeriod", 0)
+        except Exception:
+            previous_retention = 0
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENABLE_RDS_BACKUP",
+                "db_id": db_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_retention_period": previous_retention
+                }
+            }
+
+        try:
+            rds.modify_db_instance(
+                DBInstanceIdentifier=db_id,
+                BackupRetentionPeriod=7,
+                ApplyImmediately=True
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "ENABLE_RDS_BACKUP",
+                    "resource_id": db_id,
+                    "metadata": {
+                        "db_id": db_id,
+                        "region": region,
+                        "previous_retention_period": previous_retention
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ENABLE_RDS_BACKUP",
+                "db_id": db_id,
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_retention_period": previous_retention
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ENABLE_RDS_BACKUP",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # ENABLE RDS DELETION PROTECTION
+    # =========================================================
+    def _handle_enable_rds_deletion_protection(self, finding, remediation):
+        db_id = finding.get("resource_id")
+        region = finding.get("region")
+
+        rds = self.aws_session.session.client("rds", region_name=region)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "ENABLE_RDS_DELETION_PROTECTION",
+                "db_id": db_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_deletion_protection": False
+                }
+            }
+
+        try:
+            rds.modify_db_instance(
+                DBInstanceIdentifier=db_id,
+                DeletionProtection=True,
+                ApplyImmediately=True
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "ENABLE_RDS_DELETION_PROTECTION",
+                    "resource_id": db_id,
+                    "metadata": {
+                        "db_id": db_id,
+                        "region": region,
+                        "previous_deletion_protection": False
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "ENABLE_RDS_DELETION_PROTECTION",
+                "db_id": db_id,
+                "metadata": {
+                    "db_id": db_id,
+                    "region": region,
+                    "previous_deletion_protection": False
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "ENABLE_RDS_DELETION_PROTECTION",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # DISABLE STALE ACCESS KEY (90+ days old, still active)
+    # =========================================================
+    def _handle_disable_stale_access_key(self, finding, remediation):
+        user_name = finding.get("resource_id")
+        access_key_id = (
+            finding.get("access_key_id") or
+            finding.get("metadata", {}).get("access_key_id")
+        )
+
+        if not access_key_id:
+            return {
+                "status": "FAILED",
+                "reason": "Missing access_key_id",
+                "metadata": {}
+            }
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DISABLE_STALE_ACCESS_KEY",
+                "user_name": user_name,
+                "access_key_id": access_key_id,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "user_name": user_name,
+                    "access_key_id": access_key_id,
+                    "previous_status": "Active"
+                }
+            }
+
+        iam = self.aws_session.session.client("iam")
+
+        try:
+            iam.update_access_key(
+                UserName=user_name,
+                AccessKeyId=access_key_id,
+                Status="Inactive"
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "DISABLE_STALE_ACCESS_KEY",
+                    "resource_id": user_name,
+                    "metadata": {
+                        "user_name": user_name,
+                        "access_key_id": access_key_id,
+                        "previous_status": "Active"
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "DISABLE_STALE_ACCESS_KEY",
+                "user_name": user_name,
+                "metadata": {
+                    "user_name": user_name,
+                    "access_key_id": access_key_id,
+                    "previous_status": "Active"
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "DISABLE_STALE_ACCESS_KEY",
+                "reason": str(e),
+                "metadata": {}
+            }
+
+
+    # =========================================================
+    # SET CLOUDWATCH LOG GROUP RETENTION (90 days)
+    # =========================================================
+    def _handle_set_log_group_retention(self, finding, remediation):
+        log_group_name = finding.get("resource_id")  # resource_id IS the log group name
+        region = finding.get("region")
+
+        logs = self.aws_session.session.client("logs", region_name=region)
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "SET_LOG_GROUP_RETENTION",
+                "log_group_name": log_group_name,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "log_group_name": log_group_name,
+                    "region": region,
+                    "previous_retention_days": None,
+                    "new_retention_days": 90
+                }
+            }
+
+        try:
+            logs.put_retention_policy(
+                logGroupName=log_group_name,
+                retentionInDays=90
+            )
+
+            execution_id = str(uuid.uuid4())
+
+            if self.history:
+                self.history.record_execution({
+                    "execution_id": execution_id,
+                    "action": "SET_LOG_GROUP_RETENTION",
+                    "resource_id": log_group_name,
+                    "metadata": {
+                        "log_group_name": log_group_name,
+                        "region": region,
+                        "previous_retention_days": None,
+                        "new_retention_days": 90
+                    },
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+            return {
+                "status": "EXECUTED",
+                "execution_id": execution_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "action": "SET_LOG_GROUP_RETENTION",
+                "log_group_name": log_group_name,
+                "metadata": {
+                    "log_group_name": log_group_name,
+                    "region": region,
+                    "previous_retention_days": None,
+                    "new_retention_days": 90
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "SET_LOG_GROUP_RETENTION",
+                "reason": str(e),
+                "metadata": {}
             }
 
 
