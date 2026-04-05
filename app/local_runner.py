@@ -8,6 +8,14 @@ EXECUTION_MODE = "DRY_RUN"  # Change to "LIVE" in future
 LIVE_EXECUTION_APPROVED = False
 from app.database.db import SessionLocal
 from app.database.models import Account
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+# After all your routers are registered:
+ui_dist = os.path.join(os.path.dirname(__file__), "../ui/dist")
+if os.path.exists(ui_dist):
+    app.mount("/", StaticFiles(directory=ui_dist, html=True), name="ui")
 
 
 

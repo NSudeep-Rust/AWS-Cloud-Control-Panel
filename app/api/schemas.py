@@ -1,12 +1,11 @@
 from pydantic import BaseModel, Field
-from typing import List
 from typing import List, Optional
 
 
 class ScanRequest(BaseModel):
-    account_id: int            
+    account_id: int
     mode: str
-    regions: Optional[List[str]] = None   
+    regions: Optional[List[str]] = None
 
 
 class ExecuteRequest(BaseModel):
@@ -16,6 +15,7 @@ class ExecuteRequest(BaseModel):
     approval_token: str | None = None
     confirm: bool = False
 
+
 class ThreatRequest(BaseModel):
     scan_id: str
 
@@ -23,13 +23,22 @@ class ThreatRequest(BaseModel):
 class MonitorRequest(BaseModel):
     account_id: str
 
+
 class RollbackRequest(BaseModel):
     execution_id: str = Field(..., example="execution-uuid")
+
 
 class AccountCreateRequest(BaseModel):
     aws_account_id: str
     profile_name: str | None = None
-    role_arn: str | None = None
     region: str
     access_key: str | None = None
     secret_key: str | None = None
+
+
+class IamUserCreateRequest(BaseModel):
+    account_id: int           # FK to parent root Account.id
+    username: str             # display label e.g. "varun-dev"
+    access_key: str
+    secret_key: str
+    region: str

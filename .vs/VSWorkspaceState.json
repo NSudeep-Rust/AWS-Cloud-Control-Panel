@@ -2,8 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\api"
+    "\\app\\config",
+    "\\app\\ui"
   ],
-  "SelectedNode": "\\app\\api\\schemas.py",
   "PreviewInSolutionExplorer": false
 }

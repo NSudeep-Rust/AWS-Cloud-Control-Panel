@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.db import get_db
-from app.database.models import Account
-from app.api.schemas import AccountCreateRequest
+from app.database.models import Account, IamUser
+from app.api.schemas import AccountCreateRequest, IamUserCreateRequest
 
 router = APIRouter(
     prefix="/api/accounts",
@@ -10,10 +10,12 @@ router = APIRouter(
 )
 
 
-# ✅ CREATE ACCOUNT
+# ─────────────────────────────────────────
+# ROOT ACCOUNTS
+# ─────────────────────────────────────────
+
 @router.post("/")
 def create_account(request: AccountCreateRequest, db: Session = Depends(get_db)):
-
     # Check duplicate
     existing = db.query(Account).filter(
         Account.aws_account_id == request.aws_account_id
@@ -25,16 +27,10 @@ def create_account(request: AccountCreateRequest, db: Session = Depends(get_db))
     account = Account(
         aws_account_id=request.aws_account_id,
         profile_name=request.profile_name,
-        role_arn=request.role_arn,
-        region=request.region
+        region=request.region,
+        access_key=request.access_key,
+        secret_key=request.secret_key,
     )
-
-    # Optional fields (safe)
-    if hasattr(Account, "access_key"):
-        account.access_key = request.access_key
-
-    if hasattr(Account, "secret_key"):
-        account.secret_key = request.secret_key
 
     db.add(account)
     db.commit()
@@ -43,28 +39,95 @@ def create_account(request: AccountCreateRequest, db: Session = Depends(get_db))
     return {
         "message": "Account added successfully",
         "account": {
+            "id": account.id,
             "aws_account_id": account.aws_account_id,
             "profile_name": account.profile_name,
-            "region": account.region
+            "region": account.region,
+            "account_type": "root",
         }
     }
 
 
-# ✅ LIST ACCOUNTS
 @router.get("/")
 def list_accounts(db: Session = Depends(get_db)):
-
     accounts = db.query(Account).all()
 
     result = []
     for acc in accounts:
         result.append({
+            "id": acc.id,
             "aws_account_id": acc.aws_account_id,
             "profile_name": acc.profile_name,
-            "region": acc.region
+            "region": acc.region,
+            "account_type": "root",
         })
 
     return {
         "total": len(result),
         "accounts": result
+    }
+
+
+# ─────────────────────────────────────────
+# IAM USERS
+# ─────────────────────────────────────────
+
+@router.post("/iam-users/")
+def create_iam_user(request: IamUserCreateRequest, db: Session = Depends(get_db)):
+    # Verify parent account exists
+    parent = db.query(Account).filter(Account.id == request.account_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent account not found")
+
+    # Check duplicate username under same account
+    existing = db.query(IamUser).filter(
+        IamUser.account_id == request.account_id,
+        IamUser.username == request.username
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="IAM user with this username already exists under this account")
+
+    iam_user = IamUser(
+        account_id=request.account_id,
+        username=request.username,
+        access_key=request.access_key,
+        secret_key=request.secret_key,
+        region=request.region,
+    )
+
+    db.add(iam_user)
+    db.commit()
+    db.refresh(iam_user)
+
+    return {
+        "message": "IAM user added successfully",
+        "iam_user": {
+            "id": iam_user.id,
+            "account_id": iam_user.account_id,
+            "parent_aws_account_id": parent.aws_account_id,
+            "username": iam_user.username,
+            "region": iam_user.region,
+            "account_type": "iam",
+        }
+    }
+
+
+@router.get("/iam-users/")
+def list_iam_users(db: Session = Depends(get_db)):
+    iam_users = db.query(IamUser).join(Account).all()
+
+    result = []
+    for u in iam_users:
+        result.append({
+            "id": u.id,
+            "account_id": u.account_id,
+            "parent_aws_account_id": u.account.aws_account_id,
+            "username": u.username,
+            "region": u.region,
+            "account_type": "iam",
+        })
+
+    return {
+        "total": len(result),
+        "iam_users": result
     }

@@ -23,8 +23,9 @@ class Account(Base):
     access_key = Column(String, nullable=True)
     secret_key = Column(String, nullable=True)
     region = Column(String, nullable=False)
-
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    iam_users = relationship("IamUser", back_populates="account")
 
 
 # -------------------------
@@ -48,7 +49,7 @@ class Finding(Base):
 
     id = Column(String)
     scan_id = Column(String, ForeignKey("scans.id"))
-    account_id = Column(String, nullable=False) 
+    account_id = Column(String, nullable=False)
     type = Column(String)
     severity = Column(String)
     resource_id = Column(String)
@@ -109,7 +110,9 @@ class Alert(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-
+# -------------------------
+# 7️⃣ FINDING CHANGES
+# -------------------------
 class FindingChange(Base):
     __tablename__ = "finding_changes"
 
@@ -119,3 +122,20 @@ class FindingChange(Base):
     scan_id = Column(String, nullable=True)
     previous_scan_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# -------------------------
+# 8️⃣ IAM USERS
+# -------------------------
+class IamUser(Base):
+    __tablename__ = "iam_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)  # parent root account
+    username = Column(String, nullable=False)       # display label e.g. "varun-dev"
+    access_key = Column(String, nullable=False)     # IAM user's own access key
+    secret_key = Column(String, nullable=False)     # IAM user's own secret key
+    region = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    account = relationship("Account", back_populates="iam_users")
