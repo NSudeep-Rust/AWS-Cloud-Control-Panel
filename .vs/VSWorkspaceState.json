@@ -2,9 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\config",
-    "\\app\\modules"
+    "\\app\\api",
+    "\\app\\api\\routes",
+    "\\app\\modules",
+    "\\app\\ui"
   ],
-  "SelectedNode": "\\app\\modules\\remediation\\executor.py",
   "PreviewInSolutionExplorer": false
 }

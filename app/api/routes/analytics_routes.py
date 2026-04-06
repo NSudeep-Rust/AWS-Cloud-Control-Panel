@@ -1,401 +1,284 @@
-﻿from fastapi import APIRouter
+﻿from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from typing import Optional
+from app.database.db import get_db
+from app.database.models import Scan, Finding, Execution
 from app.api.response_formatter import format_response
 from app.core.policy_engine import PolicyEngine
-from app.modules.protection_history.history import ProtectionHistory
-from app.modules.remediation.executor import RemediationExecutor
-from app.core.aws_session import AWSSession
-from uuid import uuid4
-from app.database.db import get_db
-from fastapi import Depends
-from app.modules.threat_monitor.threat_monitor import ThreatMonitor
-from fastapi import APIRouter
-router = APIRouter(
-    prefix="/api/analytics",
-    tags=["Analytics"]
-)
-
-SCAN_STORAGE = {}
-@router.post("/threat-monitor")
-def threat_monitor(account_id: int, db: Session = Depends(get_db)):
-    print("🔥 HIT NEW THREAT MONITOR ROUTE")
-    account = db.query(Account).filter(Account.id == account_id).first()
-
-    if not account:
-        return {
-            "status": "error",
-            "message": "Invalid account_id"
-        }
-
-    aws_session = AWSSession(
-        profile_name=account.profile_name,
-        region_name=account.region
-    )
-    aws_session.initialize()
-
-    monitor = ThreatMonitor(aws_session)
-
-    result = monitor.start()
-
-    # -----------------------------------
-    # 🔥 FLATTEN FINDINGS
-    # -----------------------------------
-    all_findings = []
-
-    for key in result:
-        if isinstance(result[key], list):
-            all_findings.extend(result[key])
-
-    # -----------------------------------
-    # 🔥 PRIORITY SORT
-    # -----------------------------------
-    PRIORITY = {
-        "S3_PUBLIC_ACL": 1,
-        "PUBLIC_SECURITY_GROUP": 1,
-        "IAM_ADMIN_USER": 1,
-        "REMOVE_INLINE_POLICY": 1,
-        "REMOVE_INLINE_WILDCARD_POLICY": 1,
-
-        "S3_BLOCK_PUBLIC_ACCESS_DISABLED": 2,
-        "S3_VERSIONING_DISABLED": 3
-    }
-
-    all_findings = sorted(
-        all_findings,
-        key=lambda f: PRIORITY.get(f.get("type"), 100)
-    )
-
-    # -----------------------------------
-    # 🔥 EXECUTION LOOP
-    # -----------------------------------
-    executor = RemediationExecutor(
-        aws_session=aws_session,
-        history=ProtectionHistory(),
-        execution_mode="DRY_RUN"
-    )
-
-    for key in result:
-        if isinstance(result[key], list):
-            for finding in result[key]:
-
-                if finding.get("execution", {}).get("status") == "BLOCKED_BY_POLICY":
-                    continue
-
-                exec_result = executor.execute(finding)
-                finding["execution"] = exec_result
-
-    # -----------------------------------
-    # STORE UPDATED RESULT
-    # -----------------------------------
-    scan_id = str(uuid4())
-    SCAN_STORAGE[scan_id] = result
-
-    return {
-        "status": "success",
-        "scan_id": scan_id,
-        "data": result
-    }
 
 router = APIRouter(
     prefix="/api/analytics",
     tags=["Analytics"]
 )
 
-history_service = ProtectionHistory()
+
+def _latest_scan_findings(account_id: Optional[int], db: Session):
+    """Return findings from the most recent scan for this account (or global)."""
+    q = db.query(Scan)
+    if account_id is not None:
+        q = q.filter(Scan.account_id == account_id)
+    latest_scan = q.order_by(Scan.created_at.desc()).first()
+    if not latest_scan:
+        return None, None
+    findings = db.query(Finding).filter(Finding.scan_id == latest_scan.id).all()
+    return latest_scan, findings
+
+
+def _all_scans(account_id: Optional[int], db: Session):
+    q = db.query(Scan)
+    if account_id is not None:
+        q = q.filter(Scan.account_id == account_id)
+    return q.order_by(Scan.created_at.asc()).all()
 
 
 @router.get("/risk-score")
-def calculate_risk_score():
+def calculate_risk_score(
+    account_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Risk score based on the LATEST scan for this account.
+    If no account_id given, uses latest scan globally.
+    """
+    latest_scan, findings = _latest_scan_findings(account_id, db)
 
-    data = history_service.read_history()
-
-    if not data:
+    if not latest_scan or not findings:
         return format_response(
             module="risk_score",
             mode="READ",
             data={
-                "message": "No scan history available",
-                "risk_score": 0,
-                "risk_level": "LOW"
+                "message":              "No scan history for this account",
+                "risk_score":           0,
+                "risk_level":           "LOW",
+                "active_high_findings": 0,
             }
         )
 
-    latest_event = data[-1]
-
-    total_high = 0
+    # Count high/critical findings that haven't been remediated
     active_high = 0
-    remediated = 0
-    skipped = 0
+    total_high  = 0
+    remediated  = 0
+    skipped     = 0
 
-    for detail in latest_event.get("details", []):
-        if detail.get("severity") == "HIGH":
+    # Get all executed remediations for this scan
+    executed_finding_ids = set(
+        row.finding_id for row in
+        db.query(Execution.finding_id)
+        .filter(Execution.scan_id == latest_scan.id, Execution.status == "EXECUTED")
+        .all()
+    )
+
+    for f in findings:
+        if f.severity in ("HIGH", "CRITICAL"):
             total_high += 1
-
-            execution = detail.get("execution", {})
-            status = execution.get("status")
-
-            if status == "EXECUTED":
+            if f.id in executed_finding_ids:
                 remediated += 1
-            elif status == "SKIPPED":
-                skipped += 1
-                active_high += 1
             else:
                 active_high += 1
 
     risk_score = min(100, active_high * 10)
-
-    if risk_score <= 20:
-        level = "LOW"
-    elif risk_score <= 50:
-        level = "MEDIUM"
-    elif risk_score <= 80:
-        level = "HIGH"
-    else:
-        level = "CRITICAL"
+    level = (
+        "LOW"      if risk_score <= 20 else
+        "MEDIUM"   if risk_score <= 50 else
+        "HIGH"     if risk_score <= 80 else
+        "CRITICAL"
+    )
 
     return format_response(
         module="risk_score",
         mode="READ",
         data={
-            "latest_event_timestamp": latest_event.get("timestamp"),
-            "total_high_findings": total_high,
+            "latest_scan_id":       latest_scan.id,
+            "latest_scan_at":       latest_scan.created_at.isoformat() if latest_scan.created_at else None,
+            "total_high_findings":  total_high,
             "active_high_findings": active_high,
-            "remediated_findings": remediated,
-            "skipped_findings": skipped,
-            "risk_score": risk_score,
-            "risk_level": level
+            "remediated_findings":  remediated,
+            "risk_score":           risk_score,
+            "risk_level":           level,
         }
     )
 
 
 @router.get("/risk-trend")
-def calculate_risk_trend():
+def calculate_risk_trend(
+    account_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Risk trend across all scans for this account."""
+    scans = _all_scans(account_id, db)
 
-    data = history_service.read_history()
-
-    if not data:
+    if not scans:
         return format_response(
             module="risk_trend",
             mode="READ",
-            data={"message": "No scan history available"}
+            data={"message": "No scan history for this account", "trend": []}
         )
 
     trend = []
+    for scan in scans:
+        findings  = db.query(Finding).filter(Finding.scan_id == scan.id).all()
+        executed_ids = set(
+            row.finding_id for row in
+            db.query(Execution.finding_id)
+            .filter(Execution.scan_id == scan.id, Execution.status == "EXECUTED")
+            .all()
+        )
 
-    for event in data:
-
-        total_high = 0
-        active_high = 0
-
-        for detail in event.get("details", []):
-            if detail.get("severity") == "HIGH":
-                total_high += 1
-
-                execution = detail.get("execution", {})
-                status = execution.get("status")
-
-                if status != "EXECUTED":
-                    active_high += 1
-
+        active_high = sum(
+            1 for f in findings
+            if f.severity in ("HIGH", "CRITICAL") and f.id not in executed_ids
+        )
+        total_high = sum(1 for f in findings if f.severity in ("HIGH", "CRITICAL"))
         risk_score = min(100, active_high * 10)
-
-        if risk_score <= 20:
-            level = "LOW"
-        elif risk_score <= 50:
-            level = "MEDIUM"
-        elif risk_score <= 80:
-            level = "HIGH"
-        else:
-            level = "CRITICAL"
-
+        level = (
+            "LOW"      if risk_score <= 20 else
+            "MEDIUM"   if risk_score <= 50 else
+            "HIGH"     if risk_score <= 80 else
+            "CRITICAL"
+        )
         trend.append({
-            "timestamp": event.get("timestamp"),
-            "total_high_findings": total_high,
+            "scan_id":              scan.id,
+            "timestamp":            scan.created_at.isoformat() if scan.created_at else None,
+            "total_high_findings":  total_high,
             "active_high_findings": active_high,
-            "risk_score": risk_score,
-            "risk_level": level
+            "risk_score":           risk_score,
+            "risk_level":           level,
         })
 
     return format_response(
         module="risk_trend",
         mode="READ",
-        data={
-            "total_events": len(trend),
-            "trend": trend
-        }
+        data={"total_events": len(trend), "trend": trend}
     )
 
+
 @router.get("/audit-report")
-def generate_audit_report():
+def generate_audit_report(
+    account_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    scans = _all_scans(account_id, db)
+    if not scans:
+        return format_response(module="audit_report", mode="READ",
+                               data={"message": "No scan history for this account"})
 
-    data = history_service.read_history()
+    total_high = total_remediated = total_skipped = 0
+    latest_scan = scans[-1]
+    latest_findings = db.query(Finding).filter(Finding.scan_id == latest_scan.id).all()
 
-    if not data:
-        return format_response(
-            module="audit_report",
-            mode="READ",
-            data={"message": "No scan history available"}
+    latest_executed_ids = set(
+        row.finding_id for row in
+        db.query(Execution.finding_id)
+        .filter(Execution.scan_id == latest_scan.id, Execution.status == "EXECUTED")
+        .all()
+    )
+
+    for scan in scans:
+        findings = db.query(Finding).filter(Finding.scan_id == scan.id).all()
+        executed_ids = set(
+            row.finding_id for row in
+            db.query(Execution.finding_id)
+            .filter(Execution.scan_id == scan.id, Execution.status == "EXECUTED")
+            .all()
         )
-
-    total_events = len(data)
-    total_high = 0
-    total_remediated = 0
-    total_skipped = 0
-
-    for event in data:
-        for detail in event.get("details", []):
-            if detail.get("severity") == "HIGH":
+        for f in findings:
+            if f.severity in ("HIGH", "CRITICAL"):
                 total_high += 1
-                execution = detail.get("execution", {})
-                status = execution.get("status")
-
-                if status == "EXECUTED":
+                if f.id in executed_ids:
                     total_remediated += 1
-                elif status == "SKIPPED":
+                else:
                     total_skipped += 1
 
-    # Use latest snapshot for posture
-    latest_event = data[-1]
-    active_high = 0
-
-    for detail in latest_event.get("details", []):
-        if detail.get("severity") == "HIGH":
-            execution = detail.get("execution", {})
-            if execution.get("status") != "EXECUTED":
-                active_high += 1
-
-    risk_score = min(100, active_high * 10)
-
-    if risk_score <= 20:
-        risk_level = "LOW"
-        compliance_rating = "GOOD"
-    elif risk_score <= 50:
-        risk_level = "MEDIUM"
-        compliance_rating = "MODERATE"
-    elif risk_score <= 80:
-        risk_level = "HIGH"
-        compliance_rating = "POOR"
-    else:
-        risk_level = "CRITICAL"
-        compliance_rating = "NON-COMPLIANT"
+    active_high  = sum(1 for f in latest_findings if f.severity in ("HIGH", "CRITICAL") and f.id not in latest_executed_ids)
+    risk_score   = min(100, active_high * 10)
+    risk_level   = "LOW" if risk_score <= 20 else "MEDIUM" if risk_score <= 50 else "HIGH" if risk_score <= 80 else "CRITICAL"
+    compliance   = "GOOD" if risk_score <= 20 else "MODERATE" if risk_score <= 50 else "POOR" if risk_score <= 80 else "NON-COMPLIANT"
 
     return format_response(
         module="audit_report",
         mode="READ",
         data={
-            "report_generated_at": latest_event.get("timestamp"),
-            "total_scan_events": total_events,
-            "total_high_findings_detected": total_high,
-            "total_remediated_findings": total_remediated,
-            "total_skipped_findings": total_skipped,
-            "current_active_high_findings": active_high,
-            "current_risk_score": risk_score,
-            "current_risk_level": risk_level,
-            "compliance_rating": compliance_rating
+            "total_scan_events":             len(scans),
+            "total_high_findings_detected":  total_high,
+            "total_remediated_findings":     total_remediated,
+            "total_skipped_findings":        total_skipped,
+            "current_active_high_findings":  active_high,
+            "current_risk_score":            risk_score,
+            "current_risk_level":            risk_level,
+            "compliance_rating":             compliance,
         }
     )
 
+
 @router.get("/policy-violations")
-def evaluate_policies():
+def evaluate_policies(
+    account_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    _, findings = _latest_scan_findings(account_id, db)
+    if not findings:
+        return format_response(module="policy_evaluation", mode="READ",
+                               data={"message": "No scan history for this account"})
 
-    data = history_service.read_history()
-
-    if not data:
-        return format_response(
-            module="policy_evaluation",
-            mode="READ",
-            data={"message": "No scan history available"}
-        )
-
-    latest_event = data[-1]
-    findings = latest_event.get("details", [])
-
-    engine = PolicyEngine()
-    violations = engine.evaluate(findings)
-
-    compliance_status = "COMPLIANT" if not violations else "NON_COMPLIANT"
+    findings_dicts = [
+        {"type": f.type, "severity": f.severity, "resource_id": f.resource_id, "region": f.region}
+        for f in findings
+    ]
+    engine     = PolicyEngine()
+    violations = engine.evaluate(findings_dicts)
+    status     = "COMPLIANT" if not violations else "NON_COMPLIANT"
 
     return format_response(
         module="policy_evaluation",
         mode="READ",
         data={
-            "total_findings_evaluated": len(findings),
-            "total_violations": len(violations),
-            "compliance_status": compliance_status,
-            "violations": violations
+            "total_findings_evaluated": len(findings_dicts),
+            "total_violations":         len(violations),
+            "compliance_status":        status,
+            "violations":               violations,
         }
     )
+
 
 @router.post("/enforce-policies")
 def enforce_policies(account_id: int, db: Session = Depends(get_db)):
+    # Kept same as original — requires account_id
+    from app.core.aws_session import AWSSession
+    from app.modules.remediation.executor import RemediationExecutor
+    from app.modules.protection_history.history import ProtectionHistory
+    from app.database.models import Account
 
-    data = history_service.read_history()
+    _, findings = _latest_scan_findings(account_id, db)
+    if not findings:
+        return format_response(module="policy_enforcement", mode="AUTO",
+                               data={"message": "No scan history for this account"})
 
-    if not data:
-        return format_response(
-            module="policy_enforcement",
-            mode="AUTO",
-            data={"message": "No scan history available"}
-        )
-
-    latest_event = data[-1]
-    findings = latest_event.get("details", [])
-
-    engine = PolicyEngine()
-    violations = engine.evaluate(findings)
-
+    findings_dicts = [
+        {"type": f.type, "severity": f.severity, "resource_id": f.resource_id, "region": f.region}
+        for f in findings
+    ]
+    engine     = PolicyEngine()
+    violations = engine.evaluate(findings_dicts)
     if not violations:
-        return format_response(
-            module="policy_enforcement",
-            mode="AUTO",
-            data={
-                "message": "No policy violations detected",
-                "actions_executed": 0
-            }
-        )
+        return format_response(module="policy_enforcement", mode="AUTO",
+                               data={"message": "No policy violations", "actions_executed": 0})
 
-    # Initialize AWS session
     account = db.query(Account).filter(Account.id == account_id).first()
-
     if not account:
-        return format_response(
-            module="policy_enforcement",
-            mode="AUTO",
-            data={"message": "Invalid account_id"}
-        )
+        return format_response(module="policy_enforcement", mode="AUTO",
+                               data={"message": "Invalid account_id"})
 
-    aws_session = AWSSession(
-        profile_name=account.profile_name,
-        region_name=account.region
-    )
+    aws_session = AWSSession(profile_name=account.profile_name, region_name=account.region)
     aws_session.initialize()
+    executor = RemediationExecutor(aws_session=aws_session,
+                                   history=ProtectionHistory(), execution_mode="DRY_RUN")
 
-    executor = RemediationExecutor(
-        aws_session=aws_session,
-        history=history_service,
-        execution_mode="DRY_RUN"
-    )
-
-    enforcement_results = []
-
-    # Only enforce findings that actually violated policy
-    violated_resource_ids = {v["resource_id"] for v in violations}
-
-    for finding in findings:
-
-        if finding.get("resource_id") in violated_resource_ids:
+    violated_ids = {v["resource_id"] for v in violations}
+    results = []
+    for finding in findings_dicts:
+        if finding.get("resource_id") in violated_ids:
             result = executor.execute(finding)
-            enforcement_results.append({
-                "resource_id": finding.get("resource_id"),
-                "region": finding.get("region"),
-                "action": finding.get("remediation", {}).get("action"),
-                "execution_result": result
-            })
+            results.append({"resource_id": finding["resource_id"], "execution_result": result})
 
-    return format_response(
-        module="policy_enforcement",
-        mode="AUTO",
-        data={
-            "total_violations": len(violations),
-            "enforcement_actions": enforcement_results
-        }
-    )
+    return format_response(module="policy_enforcement", mode="AUTO",
+                           data={"total_violations": len(violations), "enforcement_actions": results})

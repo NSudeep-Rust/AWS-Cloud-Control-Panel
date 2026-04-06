@@ -1,52 +1,67 @@
 import axios from 'axios'
 
-const api = axios.create({
-    baseURL: 'http://localhost:8000',
-    headers: { 'Content-Type': 'application/json' }
-})
+const BASE = 'http://localhost:8000'
 
-export const scanAPI = {
-    runScan: (data) => api.post('/api/scan/', data),
-}
+const api = axios.create({ baseURL: BASE })
 
-export const threatAPI = {
-    runThreatMonitor: (data) => api.post('/api/threats/', data),
-    startMonitor: (data) => api.post('/api/threats/monitor/start', data),
-    stopMonitor: (data) => api.post('/api/threats/monitor/stop', data),
-    getStatus: () => api.get('/api/threats/monitor/status'),
-}
-
-export const executeAPI = {
-    executeFix: (data) => api.post('/api/execute/', data),
-}
-
-export const rollbackAPI = {
-    rollback: (data) => api.post('/api/rollback/', data),
-}
-
-export const historyAPI = {
-    getAll: () => api.get('/api/history/'),
-    getSummary: () => api.get('/api/history/summary'),
-    getByResource: (id) => api.get(`/api/history/resource/${id}`),
-}
-
-export const analyticsAPI = {
-    getRiskScore: () => api.get('/api/analytics/risk-score'),
-    getRiskTrend: () => api.get('/api/analytics/risk-trend'),
-    getAuditReport: () => api.get('/api/analytics/audit-report'),
-    getPolicyViolations: () => api.get('/api/analytics/policy-violations'),
-    enforcePolicies: (data) => api.post('/api/analytics/enforce-policies', data),
-}
-
+// ── Accounts API ─────────────────────────────────────────────────
 export const accountsAPI = {
+    // GET /api/accounts/ — list all root accounts
     list: () => api.get('/api/accounts/'),
+
+    // POST /api/accounts/ — create root account
     create: (data) => api.post('/api/accounts/', data),
-    createIamUser: (data) => api.post('/api/accounts/iam-users/', data),
+
+    // GET /api/accounts/iam-users/ — list all IAM users
+    // ── FIX: This was missing — was why IAM users never showed in Sign In ──
     listIamUsers: () => api.get('/api/accounts/iam-users/'),
+
+    // POST /api/accounts/iam-users/ — create IAM user
+    createIamUser: (data) => api.post('/api/accounts/iam-users/', data),
 }
 
+// ── Scan API ────────────────────────────────────────────────────
+export const scanAPI = {
+    run: (data) => api.post('/api/scan/', data),
+}
+
+// ── Threat API ──────────────────────────────────────────────────
+export const threatAPI = {
+    analyze: (data) => api.post('/api/threats/', data),
+    startMonitor: (data) => api.post('/api/threats/monitor/start', data),
+    stopMonitor: () => api.post('/api/threats/monitor/stop'),
+    monitorStatus: () => api.get('/api/threats/monitor/status'),
+}
+
+// ── Execute API ─────────────────────────────────────────────────
+export const executeAPI = {
+    run: (data) => api.post('/api/execute/', data),
+}
+
+// ── Rollback API ────────────────────────────────────────────────
+export const rollbackAPI = {
+    run: (data) => api.post('/api/rollback/', data),
+}
+
+// ── History API ─────────────────────────────────────────────────
+export const historyAPI = {
+    all: () => api.get('/api/history/'),
+    summary: () => api.get('/api/history/summary'),
+    byResource: (resourceId) => api.get(`/api/history/resource/${resourceId}`),
+}
+
+// ── Analytics API ───────────────────────────────────────────────
+export const analyticsAPI = {
+    riskScore: () => api.get('/api/analytics/risk-score'),
+    riskTrend: () => api.get('/api/analytics/risk-trend'),
+    auditReport: () => api.get('/api/analytics/audit-report'),
+    policyViolations: () => api.get('/api/analytics/policy-violations'),
+    enforcePolicies: (account_id) => api.post('/api/analytics/enforce-policies', null, { params: { account_id } }),
+}
+
+// ── Alerts API ──────────────────────────────────────────────────
 export const alertsAPI = {
-    getAlerts: () => api.get('/api/alerts/'),
+    all: () => api.get('/api/alerts/'),
 }
 
 export default api
