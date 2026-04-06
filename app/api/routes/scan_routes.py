@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 from app.api.schemas import ScanRequest
 from app.config import security_config
 from app.api.response_formatter import format_response
@@ -128,4 +128,32 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             errors=[str(e)]
         )
 
-        
+
+@router.get("/history")
+def get_scan_history(account_id: int, limit: int = 5, db: Session = Depends(get_db)):
+    """Return the most recent scans for an account."""
+    try:
+        scans = (
+            db.query(Scan)
+            .filter(Scan.account_id == account_id)
+            .order_by(Scan.started_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return format_response(
+            module="scanner",
+            mode="READ",
+            data={
+                "scans": [
+                    {
+                        "scan_id": s.id,
+                        "total_findings": db.query(Finding).filter(Finding.scan_id == s.id).count(),
+                        "started_at": s.started_at.isoformat() if s.started_at else None,
+                    }
+                    for s in scans
+                ]
+            }
+        )
+    except Exception as e:
+        return format_response(module="scanner", mode="READ", errors=[str(e)])
+

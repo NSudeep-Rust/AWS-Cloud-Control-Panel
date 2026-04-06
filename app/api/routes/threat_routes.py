@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.api.schemas import ThreatRequest
 from app.api.response_formatter import format_response
@@ -112,7 +112,7 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
 
     # 3. Start monitoring
     monitor = ThreatMonitor(aws_session=aws)
-    monitor_service = MonitorService(monitor, interval=60)
+    monitor_service = MonitorService(monitor, interval=15)
 
     return {"message": monitor_service.start()}
 

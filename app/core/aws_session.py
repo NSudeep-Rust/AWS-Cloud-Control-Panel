@@ -127,10 +127,13 @@ class AWSSession:
         Return only approved high-usage regions (performance optimized).
         """
         return [
-            "us-east-1",
-            "us-west-2",
-            "eu-west-1",
-            "ap-northeast-1",
-            "eu-central-1",
-            "eu-north-1"
+            "us-east-1",       # N. Virginia — highest traffic globally
+            "us-east-2",       # Ohio — US secondary
+            "us-west-2",       # Oregon — US West primary
+            "eu-west-1",       # Ireland — EU primary
+            "eu-central-1",    # Frankfurt — EU enterprise
+            "eu-north-1",      # Stockholm
+            "ap-northeast-1",  # Tokyo — APAC primary
+            "ap-southeast-1",  # Singapore — SE Asia
+            "ap-south-1",      # Mumbai — South Asia
         ]

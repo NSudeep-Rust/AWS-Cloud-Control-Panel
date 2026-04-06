@@ -215,8 +215,7 @@
               "ViewState": "AgIAAK8BAAAAAAAAAAAwwL4BAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2026-04-06T12:28:01.931Z",
-              "IsPinned": true,
-              "EditorCaption": ""
+              "IsPinned": true
             },
             {
               "$type": "Document",
@@ -226,7 +225,7 @@
               "RelativeDocumentMoniker": "app\\ui\\src\\pages\\sections\\Overview.jsx",
               "ToolTip": "P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\Overview.jsx",
               "RelativeToolTip": "app\\ui\\src\\pages\\sections\\Overview.jsx",
-              "ViewState": "AgIAAMAAAAAAAAAAAIAwwNAAAAA/AAAAAAAAAA==",
+              "ViewState": "AgIAAMoAAAAAAAAAAAAAAMoAAAAlAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2026-04-05T19:46:00.974Z",
               "IsPinned": true,

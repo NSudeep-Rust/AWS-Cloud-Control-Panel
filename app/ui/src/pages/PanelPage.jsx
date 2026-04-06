@@ -6,6 +6,7 @@ import Overview from '@/pages/sections/Overview'
 import { ScannerSection, ThreatsSection, ExecuteSection, RollbackSection } from '@/pages/sections/Operations'
 import { HistorySection, AnalyticsSection, AlertsSection } from '@/pages/sections/DataSections'
 import { ScanProvider } from '@/context/ScanContext'
+import ToastSystem from '@/components/ToastSystem'
 
 const FONT_INJECT = `
 @font-face { font-family: 'Amazon Ember'; src: local('Amazon Ember'), local('AmazonEmber'); }
@@ -81,7 +82,6 @@ export default function PanelPage() {
     const theme = dark ? darkTheme : lightTheme
 
     return (
-        // ── ScanProvider wraps EVERYTHING so scan state persists across nav ──
         <ScanProvider>
             <style>{FONT_INJECT}</style>
             <style>{`
@@ -127,6 +127,9 @@ export default function PanelPage() {
                     </div>
                 </main>
             </div>
+
+            {/* Windows Defender-style toast notifications — always mounted */}
+            <ToastSystem onNav={handleNav} />
         </ScanProvider>
     )
 }

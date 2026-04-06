@@ -87,8 +87,12 @@ const SCAN_LINES = [
     'Finalizing scan results...',
 ]
 
-// 6 regions from aws_session.py
-const SCAN_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1', 'eu-central-1', 'eu-north-1']
+// 9 regions — 6 original + 3 most-used additions
+const SCAN_REGIONS = [
+    'us-east-1', 'us-west-2', 'eu-west-1',
+    'ap-northeast-1', 'eu-central-1', 'eu-north-1',
+    'ap-southeast-1', 'us-east-2', 'ap-south-1',
+]
 
 export function ScannerSection({ onNav, dark }) {
     const { account } = useAuth()
@@ -217,39 +221,135 @@ export function ScannerSection({ onNav, dark }) {
 
             {/* ── IDLE ── */}
             {status === 'idle' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
-                    <div style={{ position: 'relative', width: 160, height: 160 }}>
-                        {[0, 1, 2].map(i => (
-                            <div key={i} style={{ position: 'absolute', inset: i * 20, borderRadius: '50%', border: `1px solid rgba(255,153,0,${0.15 - i * 0.04})` }} />
-                        ))}
-                        <div style={{ position: 'absolute', inset: 60, borderRadius: '50%', background: 'rgba(255,153,0,0.1)', border: '2px solid rgba(255,153,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Search size={20} color="#FF9900" />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36, padding: '20px 0' }}>
+                    <style>{`
+                        @keyframes orbitRing { to { transform: rotate(360deg) } }
+                        @keyframes orbitRingRev { to { transform: rotate(-360deg) } }
+                        @keyframes shieldPulse { 0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px rgba(255,153,0,0.4))} 50%{transform:scale(1.06);filter:drop-shadow(0 0 22px rgba(255,153,0,0.7))} }
+                        @keyframes orbitDot { to { transform: rotate(360deg) translateX(58px) rotate(-360deg) } }
+                        @keyframes orbitDot2 { to { transform: rotate(360deg) translateX(80px) rotate(-360deg) } }
+                        @keyframes scanBeam { 0%{opacity:0;transform:scaleY(0)} 20%{opacity:1;transform:scaleY(1)} 80%{opacity:1} 100%{opacity:0;transform:scaleY(0)} }
+                        @keyframes idleFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+                        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                    `}</style>
+
+                    {/* Hero visual */}
+                    <div style={{ position: 'relative', width: 200, height: 200, animation: 'idleFloat 4s ease infinite' }}>
+                        {/* Outer orbit ring */}
+                        <div style={{
+                            position: 'absolute', inset: 0, borderRadius: '50%',
+                            border: '1.5px solid rgba(255,153,0,0.15)',
+                            animation: 'orbitRing 8s linear infinite',
+                        }}>
+                            {/* 3 orbit dots on outer ring */}
+                            {[0, 120, 240].map((deg, i) => (
+                                <div key={i} style={{
+                                    position: 'absolute', top: '50%', left: '50%',
+                                    width: i === 0 ? 10 : 7, height: i === 0 ? 10 : 7,
+                                    borderRadius: '50%',
+                                    background: i === 0 ? '#FF9900' : i === 1 ? '#0972d3' : '#1d8102',
+                                    boxShadow: `0 0 ${i === 0 ? 10 : 6}px ${i === 0 ? '#FF990088' : i === 1 ? '#0972d388' : '#1d810288'}`,
+                                    transform: `translate(-50%,-50%) rotate(${deg}deg) translateX(98px)`,
+                                    marginTop: 0,
+                                }} />
+                            ))}
+                        </div>
+                        {/* Middle ring */}
+                        <div style={{
+                            position: 'absolute', inset: 22, borderRadius: '50%',
+                            border: '1px dashed rgba(255,153,0,0.2)',
+                            animation: 'orbitRingRev 12s linear infinite',
+                        }}>
+                            {[60, 180, 300].map((deg, i) => (
+                                <div key={i} style={{
+                                    position: 'absolute', top: '50%', left: '50%',
+                                    width: 6, height: 6, borderRadius: '50%',
+                                    background: 'rgba(255,153,0,0.5)',
+                                    transform: `translate(-50%,-50%) rotate(${deg}deg) translateX(70px)`,
+                                }} />
+                            ))}
+                        </div>
+                        {/* Inner ring */}
+                        <div style={{
+                            position: 'absolute', inset: 44, borderRadius: '50%',
+                            border: '1px solid rgba(255,153,0,0.12)',
+                        }} />
+                        {/* Center shield */}
+                        <div style={{
+                            position: 'absolute', inset: 56,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, rgba(255,153,0,0.15), rgba(255,153,0,0.08))',
+                            border: '2px solid rgba(255,153,0,0.5)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            animation: 'shieldPulse 2.5s ease infinite',
+                            backdropFilter: 'blur(4px)',
+                        }}>
+                            <Shield size={34} color="#FF9900" strokeWidth={1.5} />
                         </div>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Ready to Scan</div>
-                        <div style={{ fontSize: 13, color: 'var(--text3)', maxWidth: 420, lineHeight: 1.6 }}>
-                            Full security scan across <strong style={{ color: 'var(--text2)' }}>key AWS regions</strong> · Checks 52+ misconfiguration types across IAM, S3, EC2, VPC, and more.
+
+                    {/* Text block */}
+                    <div style={{ textAlign: 'center', maxWidth: 460 }}>
+                        <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text)', marginBottom: 10, letterSpacing: -0.5 }}>Ready to Scan</div>
+                        <div style={{ fontSize: 13.5, color: 'var(--text3)', lineHeight: 1.7 }}>
+                            Full multi-region security analysis across <strong style={{ color: 'var(--text2)' }}>9 AWS regions</strong>
+                            &nbsp;&middot;&nbsp;52+ check types across IAM, S3, EC2, VPC, KMS &amp; more.
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 28 }}>
-                        {[{ label: 'Check Types', val: '52+' }, { label: 'Services', val: '12+' }, { label: 'Coverage', val: 'Global' }].map(s => (
+
+                    {/* Stats row */}
+                    <div style={{ display: 'flex', gap: 32 }}>
+                        {[{ label: 'Check Types', val: '52+' }, { label: 'Services', val: '12+' }, { label: 'Regions', val: '9' }, { label: 'Coverage', val: 'Global' }].map(s => (
                             <div key={s.label} style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: 22, fontWeight: 800, color: '#FF9900', fontFamily: 'monospace' }}>{s.val}</div>
-                                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{s.label}</div>
+                                <div style={{ fontSize: 24, fontWeight: 900, color: '#FF9900', fontFamily: 'monospace',
+                                    background: 'linear-gradient(90deg, #FF9900, #ec8a00, #FF9900)',
+                                    backgroundSize: '200%',
+                                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                                    animation: 'shimmer 3s linear infinite',
+                                }}>{s.val}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</div>
                             </div>
                         ))}
                     </div>
-                    {/* Region chips — generic labels, not specific AWS region names */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        {['US Primary', 'US Secondary', 'EU West', 'Asia Pacific', 'EU Central', 'EU North'].map(r => (
-                            <span key={r} style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text3)', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '3px 8px' }}>{r}</span>
+
+                    {/* Region grid — real AWS region names now */}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 540 }}>
+                        {[
+                            { id: 'us-east-1', label: 'US East (N. Virginia)', color: '#FF9900' },
+                            { id: 'us-east-2', label: 'US East (Ohio)', color: '#FF9900' },
+                            { id: 'us-west-2', label: 'US West (Oregon)', color: '#FF9900' },
+                            { id: 'eu-west-1', label: 'EU (Ireland)', color: '#0972d3' },
+                            { id: 'eu-central-1', label: 'EU (Frankfurt)', color: '#0972d3' },
+                            { id: 'eu-north-1', label: 'EU (Stockholm)', color: '#0972d3' },
+                            { id: 'ap-northeast-1', label: 'AP (Tokyo)', color: '#1d8102' },
+                            { id: 'ap-southeast-1', label: 'AP (Singapore)', color: '#1d8102' },
+                            { id: 'ap-south-1', label: 'AP (Mumbai)', color: '#1d8102' },
+                        ].map(r => (
+                            <span key={r.id} style={{
+                                fontSize: 10, fontFamily: 'monospace', color: r.color,
+                                background: `${r.color}0d`,
+                                border: `1px solid ${r.color}35`,
+                                borderRadius: 5, padding: '4px 10px',
+                                fontWeight: 600,
+                            }}>{r.id}</span>
                         ))}
                     </div>
-                    <button onClick={triggerScan} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 32px', borderRadius: 8, background: '#FF9900', color: '#232F3E', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 20px rgba(255,153,0,0.35)', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#ec8a00'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#FF9900'; e.currentTarget.style.transform = 'translateY(0)' }}>
-                        <Zap size={16} />Start Security Scan
+
+                    {/* CTA button */}
+                    <button onClick={triggerScan} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '14px 40px', borderRadius: 10,
+                        background: 'linear-gradient(135deg, #FF9900, #ec8a00)',
+                        color: '#232F3E', border: 'none', cursor: 'pointer',
+                        fontSize: 15, fontWeight: 800, letterSpacing: 0.3,
+                        boxShadow: '0 6px 28px rgba(255,153,0,0.40)',
+                        transition: 'all 0.18s',
+                    }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 36px rgba(255,153,0,0.55)' }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(255,153,0,0.40)' }}
+                    >
+                        <Zap size={17} />
+                        Start Security Scan
                     </button>
                 </div>
             )}

@@ -8,6 +8,34 @@ from app.config.security_config import ALERT_SEVERITIES
 from datetime import datetime
 from app.database.models import Alert
 
+# Windows desktop notification (plyer)
+try:
+    from plyer import notification as desktop_notif
+    DESKTOP_NOTIF_AVAILABLE = True
+except ImportError:
+    DESKTOP_NOTIF_AVAILABLE = False
+
+
+def _fire_windows_toast(severity: str, finding_id: str, message: str):
+    """Fire a real Windows OS-level desktop notification."""
+    if not DESKTOP_NOTIF_AVAILABLE:
+        return
+    try:
+        sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}
+        title = f"{sev_icon.get(severity, '⚠️')} AWS Security Alert — {severity}"
+        # Shorten finding_id for display
+        short_id = finding_id[:48] if finding_id else "Unknown"
+        body = f"{message}\n{short_id}"
+        desktop_notif.notify(
+            title=title,
+            message=body,
+            app_name="Cloud Security Panel",
+            timeout=10,          # stays 10 seconds on screen
+        )
+        print(f"🔔 Windows toast fired: [{severity}] {short_id}")
+    except Exception as e:
+        print(f"⚠️  Toast error: {e}")
+
 
 class MonitorService:
 
@@ -90,9 +118,21 @@ class MonitorService:
                             db.commit()
                             db.close()
 
-                            # ✅ SMART PRINT
+                            # ✅ SMART PRINT + Windows toast
                             if severities_triggered:
                                 print(f"🚨 Alerts generated for: {', '.join(severities_triggered)}")
+                                # Fire one Windows toast per new CRITICAL/HIGH finding
+                                for fid in diff["new"]:
+                                    finding = current_map.get(fid)
+                                    if not finding:
+                                        continue
+                                    sev = finding.get("severity")
+                                    if sev in ALERT_SEVERITIES:
+                                        _fire_windows_toast(
+                                            severity=sev,
+                                            finding_id=fid,
+                                            message=f"New {sev} issue detected"
+                                        )
                             else:
                                 print("ℹ️ No alert-worthy findings")
 

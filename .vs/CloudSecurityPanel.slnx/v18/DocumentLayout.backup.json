@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "P:\\CloudSecurityPanel\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\ScannerSection.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\ui\\src\\pages\\sections\\ScannerSection.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\Overview.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\ui\\src\\pages\\sections\\Overview.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\ScannerSection.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\ui\\src\\pages\\sections\\ScannerSection.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\PanelPage.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
@@ -202,31 +202,30 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "ScannerSection.jsx",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\ScannerSection.jsx",
               "RelativeDocumentMoniker": "app\\ui\\src\\pages\\sections\\ScannerSection.jsx",
               "ToolTip": "P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\ScannerSection.jsx",
               "RelativeToolTip": "app\\ui\\src\\pages\\sections\\ScannerSection.jsx",
-              "ViewState": "AgIAACYAAAAAAAAAAAAkwLcBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAK8BAAAAAAAAAAAwwL4BAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2026-04-06T12:28:01.931Z",
-              "IsPinned": true,
-              "EditorCaption": ""
+              "IsPinned": true
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Overview.jsx",
               "DocumentMoniker": "P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\Overview.jsx",
               "RelativeDocumentMoniker": "app\\ui\\src\\pages\\sections\\Overview.jsx",
               "ToolTip": "P:\\CloudSecurityPanel\\app\\ui\\src\\pages\\sections\\Overview.jsx",
               "RelativeToolTip": "app\\ui\\src\\pages\\sections\\Overview.jsx",
-              "ViewState": "AgIAAE8CAAAAAAAAAAAwwGMCAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAMsAAAAAAAAAAAAAwNAAAAA/AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2026-04-05T19:46:00.974Z",
               "IsPinned": true,

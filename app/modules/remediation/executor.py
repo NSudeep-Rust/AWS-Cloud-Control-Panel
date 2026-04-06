@@ -1,4 +1,4 @@
-﻿from app.modules.remediation.safety_guard import RemediationSafetyGuard
+from app.modules.remediation.safety_guard import RemediationSafetyGuard
 from botocore.exceptions import ClientError
 import json  
 import copy
@@ -2120,7 +2120,7 @@ class RemediationExecutor:
 
     def _handle_remove_elastic_ip(self, finding, remediation):
 
-        allocation_id = finding.get("resource_id")
+        instance_id = finding.get("resource_id")
         region = finding.get("region")
 
         if not region or region == "global":
@@ -2128,16 +2128,48 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
+        # ── Resolve the EIP attached to this instance ──────────────────────────
+        try:
+            addrs = ec2.describe_addresses(
+                Filters=[{"Name": "instance-id", "Values": [instance_id]}]
+            ).get("Addresses", [])
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "REMOVE_ELASTIC_IP",
+                "reason": f"Could not look up EIP for {instance_id}: {str(e)}"
+            }
+
+        if not addrs:
+            # Instance has a public IP but no EIP — nothing to release
+            return {
+                "status": "SKIPPED",
+                "action": "REMOVE_ELASTIC_IP",
+                "reason": f"Instance {instance_id} has no Elastic IP (only an auto-assigned public IP which cannot be released). No action needed.",
+                "execution_id": str(uuid.uuid4()),
+            }
+
+        addr = addrs[0]
+        allocation_id   = addr.get("AllocationId")
+        association_id  = addr.get("AssociationId")
+        public_ip       = addr.get("PublicIp")
+
         # DRY RUN
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
                 "action": "REMOVE_ELASTIC_IP",
                 "allocation_id": allocation_id,
+                "public_ip": public_ip,
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
         try:
+            # Step 1 — Disassociate from instance
+            if association_id:
+                ec2.disassociate_address(AssociationId=association_id)
+
+            # Step 2 — Release the EIP back to AWS pool
             ec2.release_address(AllocationId=allocation_id)
 
             return {
@@ -2145,7 +2177,9 @@ class RemediationExecutor:
                 "execution_id": str(uuid.uuid4()),
                 "action": "REMOVE_ELASTIC_IP",
                 "metadata": {
+                    "instance_id": instance_id,
                     "allocation_id": allocation_id,
+                    "public_ip": public_ip,
                     "region": region
                 }
             }

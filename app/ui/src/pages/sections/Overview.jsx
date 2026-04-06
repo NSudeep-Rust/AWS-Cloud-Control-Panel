@@ -90,6 +90,243 @@ const FindingItem = memo(function FindingItem({ f, i, dark, onNav, setHighlightF
     )
 })
 
+// ── Stable sub-components outside Overview — prevents scroll reset on clock re-render ──
+function Card({ children, style = {}, onClick }) {
+    const [hov, setHov] = useState(false)
+    return (
+        <div onClick={onClick}
+            onMouseEnter={() => onClick && setHov(true)}
+            onMouseLeave={() => onClick && setHov(false)}
+            style={{ background: 'var(--bg2)', border: `1px solid ${hov ? 'rgba(255,153,0,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '12px 14px', boxShadow: hov ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.15s, box-shadow 0.15s', ...style }}>
+            {children}
+        </div>
+    )
+}
+
+function CardLabel({ icon: Icon, label, action }) {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                {Icon && <Icon size={11} color="#FF9900" />}
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</span>
+            </div>
+            {action}
+        </div>
+    )
+}
+
+function StatTile({ label, value, sub, valueColor = 'var(--text)', icon: Icon, onClick }) {
+    const [hov, setHov] = useState(false)
+    return (
+        <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+            style={{ background: 'var(--bg2)', border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s', boxShadow: hov && onClick ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 72 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
+                {Icon && <Icon size={12} color="var(--text3)" strokeWidth={1.7} />}
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: valueColor, fontFamily: 'monospace', lineHeight: 1 }}>{value}</div>
+            {sub && <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>{sub}</div>}
+        </div>
+    )
+}
+
+function Sparkline({ data }) {
+    if (!data || data.length < 2) return <div style={{ height: 24, display: 'flex', alignItems: 'center' }}><span style={{ fontSize: 10, color: 'var(--text3)' }}>No trend data</span></div>
+    const vals = data.map(d => d.risk_score || 0), max = Math.max(...vals, 1), W = 170, H = 28
+    const pts = vals.map((v, i) => `${(i / (vals.length - 1)) * W},${H - (v / max) * (H - 3) - 1}`).join(' ')
+    return (
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
+            <polyline points={pts} fill="none" stroke="#FF9900" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {vals.map((v, i) => { const x = (i / (vals.length - 1)) * W, y = H - (v / max) * (H - 3) - 1; return <circle key={i} cx={x} cy={y} r="2.5" fill="#FF9900" opacity={i === vals.length - 1 ? 1 : 0.3} /> })}
+        </svg>
+    )
+}
+
+function RiskDial({ score, color, dark }) {
+    const r = 30, circ = 2 * Math.PI * r, dash = (Math.min(score || 0, 100) / 100) * circ
+    return (
+        <svg width="78" height="78" viewBox="0 0 78 78" style={{ display: 'block' }}>
+            <circle cx="39" cy="39" r={r} fill="none" stroke={dark ? 'rgba(255,255,255,0.07)' : 'rgba(35,47,62,0.08)'} strokeWidth="8" />
+            <circle cx="39" cy="39" r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 39 39)" style={{ transition: 'stroke-dasharray 1s ease' }} />
+            <text x="39" y="35" textAnchor="middle" fontSize="14" fontWeight="800" fill={color} fontFamily="monospace">{score ?? '—'}</text>
+            <text x="39" y="47" textAnchor="middle" fontSize="7" fill="var(--text3)" fontWeight="600" letterSpacing="0.5">RISK SCORE</text>
+        </svg>
+    )
+}
+
+function SevBar({ label, count, color, total, dark }) {
+    const pct = total > 0 ? (count / total) * 100 : 0
+    return (
+        <div style={{ marginBottom: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: 0.4 }}>{label}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>{count}</span>
+            </div>
+            <div style={{ height: 3, borderRadius: 2, background: dark ? 'rgba(255,255,255,0.07)' : 'rgba(35,47,62,0.08)' }}>
+                <div style={{ height: '100%', borderRadius: 2, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
+            </div>
+        </div>
+    )
+}
+
+// ── Canvas radar — top-level component (hooks-safe) ─────────────────────────
+const RADAR_REGIONS = [
+    { id: 'us-east-1', c: '#FF9900' }, { id: 'us-east-2', c: '#FF9900' }, { id: 'us-west-2', c: '#FF9900' },
+    { id: 'eu-west-1', c: '#0972d3' }, { id: 'eu-central-1', c: '#0972d3' }, { id: 'eu-north-1', c: '#0972d3' },
+    { id: 'ap-northeast-1', c: '#1d8102' }, { id: 'ap-southeast-1', c: '#1d8102' }, { id: 'ap-south-1', c: '#1d8102' },
+]
+const RADAR_MSGS = [
+    'Initializing AWS session...',
+    'Scanning IAM users & roles...',
+    'Checking S3 bucket policies...',
+    'Probing EC2 security groups...',
+    'Evaluating VPC flow logs...',
+    'Checking CloudTrail status...',
+    'Scanning EBS encryption...',
+    'Analyzing KMS rotation...',
+    'Cross-referencing findings...',
+]
+const RADAR_BLIPS = [
+    { a: 0.45, r: 0.52, c: '#FF9900' }, { a: 1.1, r: 0.68, c: '#FF9900' },
+    { a: 1.8, r: 0.41, c: '#0972d3' }, { a: 2.4, r: 0.75, c: '#0972d3' },
+    { a: 3.0, r: 0.58, c: '#1d8102' }, { a: 3.7, r: 0.44, c: '#1d8102' },
+    { a: 4.3, r: 0.7,  c: '#FF9900' }, { a: 5.0, r: 0.36, c: '#1d8102' },
+    { a: 5.6, r: 0.62, c: '#0972d3' },
+]
+
+function ScanningDisplay({ elapsed, radarFact }) {
+    const canvasRef = useRef(null)
+    const rafRef = useRef(null)
+    const angleRef = useRef(0)
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const ctx = canvas.getContext('2d')
+        const SIZE = 120
+        canvas.width = SIZE
+        canvas.height = SIZE
+        const cx = SIZE / 2, cy = SIZE / 2, R = SIZE / 2 - 4
+
+        function draw() {
+            ctx.clearRect(0, 0, SIZE, SIZE)
+
+            // Background circle
+            ctx.beginPath()
+            ctx.arc(cx, cy, R, 0, Math.PI * 2)
+            ctx.fillStyle = 'rgba(255,153,0,0.04)'
+            ctx.fill()
+            ctx.strokeStyle = 'rgba(255,153,0,0.35)'
+            ctx.lineWidth = 1.2
+            ctx.stroke()
+
+            // Inner grid rings
+            ;[0.33, 0.66].forEach(f => {
+                ctx.beginPath()
+                ctx.arc(cx, cy, R * f, 0, Math.PI * 2)
+                ctx.strokeStyle = 'rgba(255,153,0,0.12)'
+                ctx.lineWidth = 0.7
+                ctx.stroke()
+            })
+
+            // Cross-hairs
+            ctx.beginPath()
+            ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy)
+            ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R)
+            ctx.strokeStyle = 'rgba(255,153,0,0.1)'
+            ctx.lineWidth = 0.7
+            ctx.stroke()
+
+            // Sweep trail
+            const sweepAngle = angleRef.current
+            const TRAIL = Math.PI * 1.1
+            for (let t = 0; t < 40; t++) {
+                const trailA = sweepAngle - (TRAIL * t / 40)
+                const alpha = (1 - t / 40) * 0.18
+                ctx.beginPath()
+                ctx.moveTo(cx, cy)
+                ctx.arc(cx, cy, R - 1, trailA - 0.08, trailA + 0.001)
+                ctx.closePath()
+                ctx.fillStyle = `rgba(255,153,0,${alpha})`
+                ctx.fill()
+            }
+
+            // Radar arm
+            ctx.beginPath()
+            ctx.moveTo(cx, cy)
+            ctx.lineTo(cx + Math.cos(sweepAngle) * R, cy + Math.sin(sweepAngle) * R)
+            ctx.strokeStyle = 'rgba(255,153,0,0.95)'
+            ctx.lineWidth = 1.8
+            ctx.shadowColor = '#FF9900'
+            ctx.shadowBlur = 8
+            ctx.stroke()
+            ctx.shadowBlur = 0
+
+            // Blips
+            RADAR_BLIPS.forEach(b => {
+                const bx = cx + Math.cos(b.a) * R * b.r
+                const by = cy + Math.sin(b.a) * R * b.r
+                let diff = (sweepAngle - b.a) % (Math.PI * 2)
+                if (diff < 0) diff += Math.PI * 2
+                const alpha = diff < 1.4 ? Math.max(0, 1 - diff / 1.4) : 0
+                ctx.beginPath()
+                ctx.arc(bx, by, alpha > 0.05 ? 3.5 : 2, 0, Math.PI * 2)
+                ctx.fillStyle = b.c
+                ctx.shadowColor = b.c
+                ctx.shadowBlur = alpha > 0.05 ? 8 * alpha : 0
+                ctx.globalAlpha = alpha > 0.05 ? (0.3 + alpha * 0.7) : 0.25
+                ctx.fill()
+                ctx.globalAlpha = 1
+                ctx.shadowBlur = 0
+            })
+
+            // Center dot
+            ctx.beginPath()
+            ctx.arc(cx, cy, 4.5, 0, Math.PI * 2)
+            ctx.fillStyle = '#FF9900'
+            ctx.shadowColor = '#FF9900'
+            ctx.shadowBlur = 10
+            ctx.fill()
+            ctx.shadowBlur = 0
+
+            angleRef.current = (sweepAngle + 0.038) % (Math.PI * 2)
+            rafRef.current = requestAnimationFrame(draw)
+        }
+
+        draw()
+        return () => cancelAnimationFrame(rafRef.current)
+    }, [])
+
+    return (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '8px 14px', overflow: 'hidden' }}>
+            <style>{`@keyframes regionPulse { 0%,100%{opacity:0.55} 50%{opacity:1} }`}</style>
+            <canvas ref={canvasRef} style={{ width: 120, height: 120, flexShrink: 0 }} />
+            <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>Scanning your account...</div>
+                <div style={{ fontSize: 9, color: '#FF9900', fontFamily: 'monospace', fontWeight: 600,
+                    padding: '2px 8px', background: 'rgba(255,153,0,0.07)', borderRadius: 4,
+                    border: '1px solid rgba(255,153,0,0.2)', whiteSpace: 'nowrap' }}>
+                    ▶ {RADAR_MSGS[radarFact % RADAR_MSGS.length]}
+                </div>
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace', fontWeight: 600 }}>
+                {elapsed}s elapsed · 9 regions
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 3, width: '100%' }}>
+                {RADAR_REGIONS.map((r, i) => (
+                    <div key={r.id} style={{
+                        fontSize: 7.5, fontFamily: 'monospace', color: r.c,
+                        background: `${r.c}0d`, border: `1px solid ${r.c}30`,
+                        borderRadius: 3, padding: '2px 3px', textAlign: 'center',
+                        animation: `regionPulse 2s ease ${i * 0.22}s infinite`,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{r.id}</div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 export default function Overview({ onNav, dark }) {
     const { account } = useAuth()
 
@@ -113,6 +350,7 @@ export default function Overview({ onNav, dark }) {
     const [loadingRisk, setLoadingRisk] = useState(true)
     const [loadingAlerts, setLoadingAlerts] = useState(true)
     const [monitorStatus, setMonitorStatus] = useState(null)
+    const [monitorToggling, setMonitorToggling] = useState(false)
     const [time, setTime] = useState(new Date())
 
     // Radar animation state (local to Overview card only)
@@ -185,6 +423,21 @@ export default function Overview({ onNav, dark }) {
         catch { setMonitorStatus(null) }
     }
 
+    async function toggleMonitor() {
+        if (monitorToggling) return
+        setMonitorToggling(true)
+        try {
+            if (monitorRunning) {
+                await axios.post(`${API}/api/threats/monitor/stop`)
+            } else {
+                const awsAccountId = isIam ? account?.parent_aws_account_id : account?.aws_account_id
+                await axios.post(`${API}/api/threats/monitor/start`, { account_id: awsAccountId })
+            }
+            // Give backend a moment then refresh status
+            setTimeout(() => { fetchMonitorStatus(); setMonitorToggling(false) }, 800)
+        } catch { setMonitorToggling(false) }
+    }
+
     function triggerScan() {
         if (dbId == null || scanning) return
         startScan({ dbId, awsId, cacheKey })
@@ -214,85 +467,7 @@ export default function Overview({ onNav, dark }) {
                 : riskScore <= 80 ? '#e67e22'
                     : '#d13212'
 
-    // ── Sub-components ─────────────────────────────────────────────
-
-    function Card({ children, style = {}, onClick }) {
-        const [hov, setHov] = useState(false)
-        return (
-            <div onClick={onClick}
-                onMouseEnter={() => onClick && setHov(true)}
-                onMouseLeave={() => onClick && setHov(false)}
-                style={{ background: 'var(--bg2)', border: `1px solid ${hov ? 'rgba(255,153,0,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '12px 14px', boxShadow: hov ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.15s, box-shadow 0.15s', ...style }}>
-                {children}
-            </div>
-        )
-    }
-
-    function CardLabel({ icon: Icon, label, action }) {
-        return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {Icon && <Icon size={11} color="#FF9900" />}
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</span>
-                </div>
-                {action}
-            </div>
-        )
-    }
-
-    function StatTile({ label, value, sub, valueColor = 'var(--text)', icon: Icon, onClick }) {
-        const [hov, setHov] = useState(false)
-        return (
-            <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-                style={{ background: 'var(--bg2)', border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s', boxShadow: hov && onClick ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 72 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
-                    {Icon && <Icon size={12} color="var(--text3)" strokeWidth={1.7} />}
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: valueColor, fontFamily: 'monospace', lineHeight: 1 }}>{value}</div>
-                {sub && <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>{sub}</div>}
-            </div>
-        )
-    }
-
-    function Sparkline({ data }) {
-        if (!data || data.length < 2) return <div style={{ height: 24, display: 'flex', alignItems: 'center' }}><span style={{ fontSize: 10, color: 'var(--text3)' }}>No trend data</span></div>
-        const vals = data.map(d => d.risk_score || 0), max = Math.max(...vals, 1), W = 170, H = 28
-        const pts = vals.map((v, i) => `${(i / (vals.length - 1)) * W},${H - (v / max) * (H - 3) - 1}`).join(' ')
-        return (
-            <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
-                <polyline points={pts} fill="none" stroke="#FF9900" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                {vals.map((v, i) => { const x = (i / (vals.length - 1)) * W, y = H - (v / max) * (H - 3) - 1; return <circle key={i} cx={x} cy={y} r="2.5" fill="#FF9900" opacity={i === vals.length - 1 ? 1 : 0.3} /> })}
-            </svg>
-        )
-    }
-
-    function RiskDial({ score, color }) {
-        const r = 30, circ = 2 * Math.PI * r, dash = (Math.min(score || 0, 100) / 100) * circ
-        return (
-            <svg width="78" height="78" viewBox="0 0 78 78" style={{ display: 'block' }}>
-                <circle cx="39" cy="39" r={r} fill="none" stroke={dark ? 'rgba(255,255,255,0.07)' : 'rgba(35,47,62,0.08)'} strokeWidth="8" />
-                <circle cx="39" cy="39" r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 39 39)" style={{ transition: 'stroke-dasharray 1s ease' }} />
-                <text x="39" y="35" textAnchor="middle" fontSize="14" fontWeight="800" fill={color} fontFamily="monospace">{score ?? '—'}</text>
-                <text x="39" y="47" textAnchor="middle" fontSize="7" fill="var(--text3)" fontWeight="600" letterSpacing="0.5">RISK SCORE</text>
-            </svg>
-        )
-    }
-
-    function SevBar({ label, count, color, total }) {
-        const pct = total > 0 ? (count / total) * 100 : 0
-        return (
-            <div style={{ marginBottom: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: 0.4 }}>{label}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>{count}</span>
-                </div>
-                <div style={{ height: 3, borderRadius: 2, background: dark ? 'rgba(255,255,255,0.07)' : 'rgba(35,47,62,0.08)' }}>
-                    <div style={{ height: '100%', borderRadius: 2, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
-                </div>
-            </div>
-        )
-    }
+    // (Sub-components moved above Overview — stable references fix scroll reset bug)
 
     function FindingRow({ finding, idx }) {
         const sev = SEV[finding.severity] || SEV.LOW
@@ -338,73 +513,6 @@ export default function Overview({ onNav, dark }) {
         )
     }
 
-    // ── Beautiful scanning animation — pulse waves + live log ────────
-    function ScanningDisplay() {
-        const SCAN_MSGS = [
-            'Initializing AWS session...',
-            'Scanning IAM users & roles...',
-            'Checking S3 bucket policies...',
-            'Probing EC2 security groups...',
-            'Evaluating VPC flow logs...',
-            'Checking CloudTrail status...',
-            'Scanning EBS encryption...',
-            'Analyzing KMS key rotation...',
-            'Cross-referencing findings...',
-        ]
-        return (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '8px 16px' }}>
-                {/* Pulse wave rings */}
-                <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
-                    {/* 3 expanding rings */}
-                    {[0, 1, 2].map(i => (
-                        <div key={i} style={{
-                            position: 'absolute',
-                            inset: 0,
-                            borderRadius: '50%',
-                            border: `2px solid rgba(255,153,0,${0.7 - i * 0.22})`,
-                            animation: `overviewPulseRing 2s ease-out ${i * 0.55}s infinite`,
-                        }} />
-                    ))}
-                    {/* Core circle */}
-                    <div style={{
-                        position: 'absolute', inset: 30,
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(255,153,0,0.25) 0%, rgba(255,153,0,0.05) 100%)',
-                        border: '2px solid #FF9900',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                        <Search size={18} color="#FF9900" />
-                    </div>
-                </div>
-
-                {/* Live scan message */}
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                        Scanning your account...
-                    </div>
-                    <div style={{ fontSize: 10, color: '#FF9900', fontFamily: 'monospace', fontWeight: 600 }}>
-                        {SCAN_MSGS[radarFact % SCAN_MSGS.length]}
-                    </div>
-                </div>
-
-                {/* Elapsed + region chips */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace' }}>
-                        {elapsed}s elapsed
-                    </div>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        {['Primary', 'Secondary', 'EU-West', 'APAC', 'EU-Central', 'EU-North'].map((label, i) => (
-                            <span key={label} style={{ fontSize: 9, color: 'var(--text3)', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 3, padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF9900', display: 'inline-block', animation: `pulse 1.5s ease ${i * 0.2}s infinite` }} />
-                                {label}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RENDER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -414,7 +522,7 @@ export default function Overview({ onNav, dark }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Security Overview</h1>
+                        <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>CloudShield Command Center</h1>
                         {isIam && (
                             <span style={{ fontSize: 9, fontWeight: 700, color: '#0972d3', background: 'rgba(9,114,211,0.1)', border: '1px solid rgba(9,114,211,0.25)', borderRadius: 4, padding: '2px 7px', letterSpacing: 0.4 }}>IAM USER</span>
                         )}
@@ -509,15 +617,16 @@ export default function Overview({ onNav, dark }) {
 
                 {/* Windows Defender-style toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>{monitorRunning ? 'ON' : 'OFF'}</span>
-                    <div onClick={() => onNav('threats')} title="Go to Threat Monitor" style={{
-                        width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
-                        background: monitorRunning ? '#067340' : (dark ? '#3d4449' : '#d5dbdb'),
+                    <button onClick={() => onNav('threats')} style={{ fontSize: 10, color: 'var(--text3)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}>View</button>
+                    <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>{monitorToggling ? '…' : monitorRunning ? 'ON' : 'OFF'}</span>
+                    <div onClick={toggleMonitor} title={monitorRunning ? 'Stop Monitor' : 'Start Monitor'} style={{
+                        width: 44, height: 24, borderRadius: 12, cursor: monitorToggling ? 'wait' : 'pointer',
+                        background: monitorToggling ? '#f59e0b' : monitorRunning ? '#067340' : (dark ? '#3d4449' : '#d5dbdb'),
                         position: 'relative', transition: 'background 0.3s ease',
                         border: `1.5px solid ${monitorRunning ? 'rgba(6,115,64,0.4)' : 'rgba(35,47,62,0.15)'}`,
                         boxShadow: monitorRunning ? '0 0 8px rgba(6,115,64,0.3)' : 'none',
+                        opacity: monitorToggling ? 0.7 : 1,
                     }}>
-                        {/* Thumb */}
                         <div style={{
                             position: 'absolute', top: 2,
                             left: monitorRunning ? 22 : 2,
@@ -543,15 +652,15 @@ export default function Overview({ onNav, dark }) {
                         ? <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,153,0,0.2)', borderTopColor: '#FF9900', animation: 'spin 0.7s linear infinite' }} /></div>
                         : (riskData && riskData.risk_score != null)
                             ? <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
-                                <div style={{ marginBottom: 4, marginTop: 4 }}><RiskDial score={riskData.risk_score} color={scoreColor} /></div>
+                                <div style={{ marginBottom: 4, marginTop: 4 }}><RiskDial score={riskData.risk_score} color={scoreColor} dark={dark} /></div>
                                 <span style={{ fontSize: 10, fontWeight: 700, color: scoreColor, background: `${scoreColor}18`, border: `1px solid ${scoreColor}28`, borderRadius: 4, padding: '2px 10px', letterSpacing: 0.6 }}>{riskLevel}</span>
                                 <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4, textAlign: 'center' }}>{riskData.active_high_findings ?? 0} active high issues</div>
                                 {hasScan && totalFindings > 0 && (
                                     <div style={{ width: '100%', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                                        <SevBar label="CRITICAL" count={criticalCount} color="#d13212" total={totalFindings} />
-                                        <SevBar label="HIGH" count={highCount} color="#e67e22" total={totalFindings} />
-                                        <SevBar label="MEDIUM" count={mediumCount} color="#f59e0b" total={totalFindings} />
-                                        <SevBar label="LOW" count={lowCount} color="#0972d3" total={totalFindings} />
+                                        <SevBar label="CRITICAL" count={criticalCount} color="#d13212" total={totalFindings} dark={dark} />
+                                        <SevBar label="HIGH" count={highCount} color="#e67e22" total={totalFindings} dark={dark} />
+                                        <SevBar label="MEDIUM" count={mediumCount} color="#f59e0b" total={totalFindings} dark={dark} />
+                                        <SevBar label="LOW" count={lowCount} color="#0972d3" total={totalFindings} dark={dark} />
                                     </div>
                                 )}
                             </div>
@@ -579,8 +688,8 @@ export default function Overview({ onNav, dark }) {
                         </div>
                     )}
 
-                    {/* SCANNING — pulse wave animation */}
-                    {scanning && <ScanningDisplay />}
+                    {/* SCANNING — canvas radar animation */}
+                    {scanning && <ScanningDisplay elapsed={elapsed} radarFact={radarFact} />}
 
                     {/* ERROR */}
                     {scanStatus === 'error' && (
@@ -599,11 +708,7 @@ export default function Overview({ onNav, dark }) {
                                 flex: 1,
                                 overflowY: 'auto',
                                 minHeight: 0,
-                                // Stable scroll — no JS scroll loop that fights user input
-                                // 🔥 FIX START
-                                height: 0,
                                 overscrollBehavior: 'contain',
-                                // 🔥 FIX END
                             }}
                         >
                             {visibleFindings.map((f, i) => (
