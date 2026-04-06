@@ -2,10 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\api",
-    "\\app\\api\\routes",
     "\\app\\modules",
-    "\\app\\ui"
+    "\\app\\ui",
+    "\\app\\ui\\src"
   ],
   "PreviewInSolutionExplorer": false
 }

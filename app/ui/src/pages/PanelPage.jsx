@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import Overview from '@/pages/sections/Overview'
 import { ScannerSection, ThreatsSection, ExecuteSection, RollbackSection } from '@/pages/sections/Operations'
 import { HistorySection, AnalyticsSection, AlertsSection } from '@/pages/sections/DataSections'
+import { ScanProvider } from '@/context/ScanContext'
 
 const FONT_INJECT = `
 @font-face { font-family: 'Amazon Ember'; src: local('Amazon Ember'), local('AmazonEmber'); }
@@ -31,11 +32,9 @@ export default function PanelPage() {
     const [active, setActive] = useState('overview')
     const [dark, setDark] = useState(() => localStorage.getItem('panel_dark') === 'true')
     const [authChecked, setAuthChecked] = useState(false)
-
-    // ── FIX 1: track previous account id to detect real account switches ──
     const prevAccountIdRef = useRef(null)
 
-    // ── FIX 1: Auth check — no flicker ───────────────────
+    // Auth check — no flicker
     useEffect(() => {
         if (!account) {
             navigate('/setup', { replace: true })
@@ -44,56 +43,35 @@ export default function PanelPage() {
         }
     }, []) // eslint-disable-line
 
-    // ── FIX 2: Block browser back button — robust approach ─
-    // We use history.replaceState to keep URL stable, and intercept
-    // ALL popstate events unconditionally while on this page.
+    // Block browser back button
     useEffect(() => {
         if (!authChecked) return
-
-        // Replace current history entry (no new entry added)
         window.history.replaceState({ panel: true }, '', window.location.href)
-
         function handlePopState() {
-            // Every time back/forward is pressed, push state back
-            // so the URL never changes and the component never unmounts
             window.history.pushState({ panel: true }, '', window.location.href)
         }
-
+        function handleBeforeUnload(e) { e.preventDefault(); e.returnValue = '' }
         window.addEventListener('popstate', handlePopState)
-
-        // Also warn if user tries to close tab/refresh
-        function handleBeforeUnload(e) {
-            e.preventDefault()
-            e.returnValue = ''
-        }
         window.addEventListener('beforeunload', handleBeforeUnload)
-
         return () => {
             window.removeEventListener('popstate', handlePopState)
             window.removeEventListener('beforeunload', handleBeforeUnload)
         }
     }, [authChecked])
 
-    // ── FIX 1: Nuke ALL session scan cache when account changes ──
+    // Clear scan caches from old accounts
     useEffect(() => {
         if (!account) return
-        const currentKey = `last_scan_${account.aws_account_id}`
-
-        // If account actually changed (not just a re-render), clear ALL other cached scans
-        if (prevAccountIdRef.current && prevAccountIdRef.current !== account.aws_account_id) {
-            // Remove every cached scan that isn't for the current account
-            const keysToRemove = Object.keys(sessionStorage).filter(k =>
-                k.startsWith('last_scan_') && k !== currentKey
-            )
-            keysToRemove.forEach(k => sessionStorage.removeItem(k))
+        const awsId = account.aws_account_id || account.parent_aws_account_id
+        if (prevAccountIdRef.current && prevAccountIdRef.current !== awsId) {
+            Object.keys(sessionStorage).forEach(k => {
+                if (k.startsWith('scan_v')) sessionStorage.removeItem(k)
+            })
         }
+        prevAccountIdRef.current = awsId
+    }, [account?.aws_account_id, account?.parent_aws_account_id])
 
-        prevAccountIdRef.current = account.aws_account_id
-    }, [account?.aws_account_id])
-
-    useEffect(() => {
-        localStorage.setItem('panel_dark', dark)
-    }, [dark])
+    useEffect(() => { localStorage.setItem('panel_dark', dark) }, [dark])
 
     const handleNav = useCallback((section) => setActive(section), [])
 
@@ -103,7 +81,8 @@ export default function PanelPage() {
     const theme = dark ? darkTheme : lightTheme
 
     return (
-        <>
+        // ── ScanProvider wraps EVERYTHING so scan state persists across nav ──
+        <ScanProvider>
             <style>{FONT_INJECT}</style>
             <style>{`
                 :root {
@@ -131,26 +110,24 @@ export default function PanelPage() {
                 ::-webkit-scrollbar { width: 4px; height: 4px; }
                 ::-webkit-scrollbar-track { background: transparent; }
                 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-                @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes spin    { to{transform:rotate(360deg)} }
-                @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.4} }
-                @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+                @keyframes fadeUp   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes spin     { to{transform:rotate(360deg)} }
+                @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.4} }
+                @keyframes radarSweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                @keyframes radarBlip { 0%{opacity:0} 25%{opacity:1} 60%{opacity:0.5} 100%{opacity:0} }
+                @keyframes overviewPulseRing { 0%{transform:scale(0.6);opacity:0.9} 100%{transform:scale(1.8);opacity:0} }
             `}</style>
 
             <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
                 <Sidebar active={active} onNav={handleNav} dark={dark} onToggleDark={() => setDark(d => !d)} />
                 <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)', minHeight: 0 }}>
-                    <div
-                        style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px', animation: 'fadeUp 0.3s ease both' }}
-                        // ── FIX 1: key forces FULL remount of Overview when account changes ──
-                        // This guarantees no stale state can leak from a previous account
-                        key={`${active}-${account?.aws_account_id}`}
-                    >
+                    {/* NOTE: key removed — we don't remount sections on nav so scan stays alive */}
+                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px', animation: 'fadeUp 0.3s ease both' }}>
                         <Section onNav={handleNav} dark={dark} />
                     </div>
                 </main>
             </div>
-        </>
+        </ScanProvider>
     )
 }
 

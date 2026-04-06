@@ -1,0 +1,152 @@
+// ScanContext.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// Global scan state shared between Overview and Scanner sections.
+// The actual axios POST lives here so it survives navigation.
+// Both pages subscribe to the same state — no duplication, no cancellation.
+// ─────────────────────────────────────────────────────────────────────────────
+import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
+import axios from 'axios'
+
+const API = 'http://localhost:8000'
+
+const SCAN_REGIONS = [
+    'us-east-1',
+    'us-west-2',
+    'eu-west-1',
+    'ap-northeast-1',
+    'eu-central-1',
+    'eu-north-1',
+]
+
+const ScanCtx = createContext(null)
+
+export function ScanProvider({ children }) {
+    // status: 'idle' | 'scanning' | 'done' | 'error'
+    const [status, setStatus] = useState('idle')
+    const [findings, setFindings] = useState([])
+    const [scanId, setScanId] = useState(null)
+    const [elapsed, setElapsed] = useState(0)
+    const [scanLineIdx, setScanLineIdx] = useState(0)
+    const [factIdx, setFactIdx] = useState(0)
+    const [factVisible, setFactVisible] = useState(true)
+
+    // Which account triggered the scan (cache key)
+    const [scanMeta, setScanMeta] = useState(null) // { awsId, dbId, cacheKey }
+
+    // Finding to highlight in Scanner when navigating from Overview
+    const [highlightFindingId, setHighlightFindingId] = useState(null)
+
+    const timerRef = useRef(null)
+    const lineRef = useRef(null)
+    const factRef = useRef(null)
+    const abortRef = useRef(null)  // AbortController
+
+    // ── Clock ──────────────────────────────────────────────────────
+    useEffect(() => {
+        if (status === 'scanning') {
+            timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+        } else {
+            clearInterval(timerRef.current)
+        }
+        return () => clearInterval(timerRef.current)
+    }, [status])
+
+    // ── Scan line rotation ─────────────────────────────────────────
+    useEffect(() => {
+        if (status !== 'scanning') { clearInterval(lineRef.current); return }
+        lineRef.current = setInterval(() => {
+            setScanLineIdx(i => (i + 1) % 20)
+        }, 1100)
+        return () => clearInterval(lineRef.current)
+    }, [status])
+
+    // ── Fact rotation ──────────────────────────────────────────────
+    useEffect(() => {
+        if (status !== 'scanning') { clearInterval(factRef.current); return }
+        factRef.current = setInterval(() => {
+            setFactVisible(false)
+            setTimeout(() => {
+                setFactIdx(i => (i + 1) % 12)
+                setFactVisible(true)
+            }, 400)
+        }, 4000)
+        return () => clearInterval(factRef.current)
+    }, [status])
+
+    // ── Start scan ─────────────────────────────────────────────────
+    const startScan = useCallback(async ({ dbId, awsId, cacheKey }) => {
+        if (status === 'scanning') return   // already running — do nothing
+
+        // Cancel any prior request
+        if (abortRef.current) abortRef.current.abort()
+        const ctrl = new AbortController()
+        abortRef.current = ctrl
+
+        setStatus('scanning')
+        setFindings([])
+        setScanId(null)
+        setElapsed(0)
+        setScanLineIdx(0)
+        setFactIdx(0)
+        setFactVisible(true)
+        setScanMeta({ awsId, dbId, cacheKey })
+
+        try {
+            const r = await axios.post(
+                `${API}/api/scan/`,
+                { account_id: dbId, mode: 'DRY_RUN', regions: [] },
+                { signal: ctrl.signal }
+            )
+            const data = r.data?.data || r.data
+            const found = data?.findings || []
+            const id = data?.scan_id
+
+            setFindings(found)
+            setScanId(id)
+            setStatus('done')
+
+            // Write to sessionStorage so both pages see the cache
+            try {
+                sessionStorage.setItem(cacheKey, JSON.stringify({
+                    scan_id: id, findings: found, aws_id: awsId, db_id: dbId
+                }))
+            } catch { }
+        } catch (err) {
+            if (axios.isCancel(err) || err?.name === 'CanceledError') {
+                setStatus('idle')
+            } else {
+                setStatus('error')
+            }
+        }
+    }, [status])
+
+    // ── Stop scan ──────────────────────────────────────────────────
+    const stopScan = useCallback(() => {
+        if (abortRef.current) abortRef.current.abort()
+        clearInterval(timerRef.current)
+        clearInterval(lineRef.current)
+        clearInterval(factRef.current)
+        setStatus('idle')
+    }, [])
+
+    // ── Reset ──────────────────────────────────────────────────────
+    const resetScan = useCallback(() => {
+        stopScan()
+        setFindings([])
+        setScanId(null)
+        setElapsed(0)
+        setScanMeta(null)
+    }, [stopScan])
+
+    const value = {
+        status, findings, scanId, elapsed,
+        scanLineIdx, factIdx, factVisible,
+        scanMeta, SCAN_REGIONS,
+        highlightFindingId, setHighlightFindingId,
+        startScan, stopScan, resetScan,
+    }
+
+    return <ScanCtx.Provider value={value}>{children}</ScanCtx.Provider>
+}
+
+export const useScan = () => useContext(ScanCtx)
