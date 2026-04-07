@@ -60,6 +60,7 @@ class RemediationExecutor:
             "DELETE_UNUSED_IAM_USER": self._handle_delete_unused_iam_user,
             "STOP_EC2_INSTANCE": self._handle_stop_ec2_instance,
             "TERMINATE_EC2_INSTANCE": self._handle_terminate_ec2_instance,
+            "FORCE_TERMINATE_EC2_INSTANCE": self._handle_force_terminate_ec2_instance,
             "REVOKE_UNRESTRICTED_SSH":self._handle_revoke_unrestricted_ssh,
             "REVOKE_UNRESTRICTED_RDP":self._handle_revoke_unrestricted_rdp,
             "ENFORCE_IMDSV2":self._handle_enforce_imdsv2,
@@ -69,7 +70,7 @@ class RemediationExecutor:
             "ENABLE_RDS_DELETION_PROTECTION":self._handle_enable_rds_deletion_protection,
             "DISABLE_STALE_ACCESS_KEY":self._handle_disable_stale_access_key,
             "SET_LOG_GROUP_RETENTION":self._handle_set_log_group_retention,
-                     
+            "DELETE_DEFAULT_VPC":     self._handle_delete_default_vpc,
         }
 
 
@@ -2371,58 +2372,260 @@ class RemediationExecutor:
     def _handle_terminate_ec2_instance(self, finding, remediation):
 
         instance_id = finding.get("resource_id")
-        region = finding.get("region")
-
-        ec2 = self.aws_session.session.client("ec2", region_name=region)
+        region      = finding.get("region")
 
         # -------------------------
-        # SAFETY CHECK
-        # -------------------------
-        desc = ec2.describe_instances(InstanceIds=[instance_id])
-        state = desc["Reservations"][0]["Instances"][0]["State"]["Name"]
-
-        if state != "stopped":
-            return {
-                "status": "SKIPPED",
-                "reason": "Instance must be stopped before termination",
-                "instance_id": instance_id
-            }
-
-        # -------------------------
-        # DRY RUN
+        # DRY RUN — no AWS calls
         # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
-                "status": "DRY_RUN",
-                "action": "TERMINATE_EC2_INSTANCE",
-                "instance_id": instance_id,
+                "status":        "DRY_RUN",
+                "action":        "TERMINATE_EC2_INSTANCE",
+                "instance_id":   instance_id,
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
                 "metadata": {
                     "instance_id": instance_id,
-                    "region": region
+                    "region":      region,
+                    "note":        "Instance will be permanently terminated. Termination protection will be disabled automatically if needed."
                 }
             }
 
+        # -------------------------
+        # LIVE
+        # -------------------------
         try:
-            ec2.terminate_instances(InstanceIds=[instance_id])
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            # ── Step 1: verify instance exists & is stopped ─────────────────
+            try:
+                desc  = ec2.describe_instances(InstanceIds=[instance_id])
+                rsvns = desc.get("Reservations", [])
+                if not rsvns:
+                    return {
+                        "status":        "FAILED",
+                        "action":        "TERMINATE_EC2_INSTANCE",
+                        "reason":        f"Instance {instance_id} not found in region {region}",
+                        "resource_id":   instance_id,
+                        "resource_name": instance_id,
+                    }
+                instance = rsvns[0]["Instances"][0]
+                state    = instance["State"]["Name"]
+            except ClientError as e:
+                return {
+                    "status":        "FAILED",
+                    "action":        "TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Could not describe instance — {e.response['Error']['Message']}",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            if state not in ("stopped", "stopping"):
+                return {
+                    "status":        "SKIPPED",
+                    "action":        "TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Instance is in state '{state}'. It must be stopped before termination.",
+                    "instance_id":   instance_id,
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            # ── Step 2: disable termination protection if enabled ───────────
+            protection_disabled = False
+            try:
+                attr = ec2.describe_instance_attribute(
+                    InstanceId=instance_id,
+                    Attribute="disableApiTermination"
+                )
+                if attr.get("DisableApiTermination", {}).get("Value", False):
+                    print(f"⚠️  {instance_id}: Termination protection ON — disabling automatically")
+                    ec2.modify_instance_attribute(
+                        InstanceId=instance_id,
+                        DisableApiTermination={"Value": False}
+                    )
+                    protection_disabled = True
+                    print(f"✅  {instance_id}: Termination protection disabled")
+            except ClientError as e:
+                # If we can't describe/modify the attribute, report a clear error
+                code = e.response["Error"]["Code"]
+                msg  = e.response["Error"]["Message"]
+                return {
+                    "status":        "FAILED",
+                    "action":        "TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Could not disable termination protection ({code}): {msg}",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            # ── Step 3: terminate ───────────────────────────────────────────
+            try:
+                ec2.terminate_instances(InstanceIds=[instance_id])
+            except ClientError as e:
+                code = e.response["Error"]["Code"]
+                msg  = e.response["Error"]["Message"]
+                return {
+                    "status":        "FAILED",
+                    "action":        "TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Termination failed ({code}): {msg}. Check ec2:TerminateInstances IAM permission.",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
 
             return {
-                "status": "EXECUTED",
-                "execution_id": str(uuid.uuid4()),
-                "timestamp": datetime.utcnow().isoformat(),
-                "action": "TERMINATE_EC2_INSTANCE",
-                "instance_id": instance_id,
+                "status":        "EXECUTED",
+                "execution_id":  str(uuid.uuid4()),
+                "timestamp":     datetime.utcnow().isoformat(),
+                "action":        "TERMINATE_EC2_INSTANCE",
+                "instance_id":   instance_id,
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
                 "metadata": {
-                    "instance_id": instance_id,
-                    "region": region,
-                    "previous_state": "stopped"
+                    "instance_id":          instance_id,
+                    "region":               region,
+                    "previous_state":       "stopped",
+                    "protection_disabled":  protection_disabled,
                 }
             }
 
         except Exception as e:
             return {
-                "status": "FAILED",
-                "action": "TERMINATE_EC2_INSTANCE",
-                "reason": str(e)
+                "status":        "FAILED",
+                "action":        "TERMINATE_EC2_INSTANCE",
+                "reason":        str(e),
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
+            }
+
+    # =========================================================
+    # FORCE TERMINATE RUNNING EC2 (direct — no stop-first)
+    # Handles EC2_INSTANCE_RUNNING_UNMONITORED and similar findings
+    # where the policy requires instant termination of a running instance.
+    # =========================================================
+    def _handle_force_terminate_ec2_instance(self, finding, remediation):
+
+        instance_id = finding.get("resource_id")
+        region      = finding.get("region")
+
+        # -------------------------
+        # DRY RUN — no AWS calls
+        # -------------------------
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status":        "DRY_RUN",
+                "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                "instance_id":   instance_id,
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
+                "metadata": {
+                    "instance_id": instance_id,
+                    "region":      region,
+                    "note":        "Running instance will be directly terminated. Termination protection disabled automatically if needed."
+                }
+            }
+
+        # -------------------------
+        # LIVE
+        # -------------------------
+        try:
+            ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+            # ── Step 1: verify instance exists & is in a terminable state ────────
+            try:
+                desc  = ec2.describe_instances(InstanceIds=[instance_id])
+                rsvns = desc.get("Reservations", [])
+                if not rsvns:
+                    return {
+                        "status":        "FAILED",
+                        "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                        "reason":        f"Instance {instance_id} not found in region {region}",
+                        "resource_id":   instance_id,
+                        "resource_name": instance_id,
+                    }
+                instance = rsvns[0]["Instances"][0]
+                state    = instance["State"]["Name"]
+            except ClientError as e:
+                return {
+                    "status":        "FAILED",
+                    "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Could not describe instance — {e.response['Error']['Message']}",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            # Allow termination from running, stopping, stopped, pending
+            if state in ("terminated", "shutting-down"):
+                return {
+                    "status":        "SKIPPED",
+                    "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Instance is already in state '{state}'",
+                    "instance_id":   instance_id,
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            # ── Step 2: disable termination protection if enabled ──────────────
+            protection_disabled = False
+            try:
+                attr = ec2.describe_instance_attribute(
+                    InstanceId=instance_id,
+                    Attribute="disableApiTermination"
+                )
+                if attr.get("DisableApiTermination", {}).get("Value", False):
+                    print(f"⚠️  {instance_id}: Termination protection ON — disabling automatically")
+                    ec2.modify_instance_attribute(
+                        InstanceId=instance_id,
+                        DisableApiTermination={"Value": False}
+                    )
+                    protection_disabled = True
+                    print(f"✅  {instance_id}: Termination protection disabled")
+            except ClientError as e:
+                code = e.response["Error"]["Code"]
+                msg  = e.response["Error"]["Message"]
+                return {
+                    "status":        "FAILED",
+                    "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Could not disable termination protection ({code}): {msg}",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            # ── Step 3: terminate the running instance directly ───────────────
+            try:
+                ec2.terminate_instances(InstanceIds=[instance_id])
+            except ClientError as e:
+                code = e.response["Error"]["Code"]
+                msg  = e.response["Error"]["Message"]
+                return {
+                    "status":        "FAILED",
+                    "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                    "reason":        f"Termination failed ({code}): {msg}. Check ec2:TerminateInstances IAM permission.",
+                    "resource_id":   instance_id,
+                    "resource_name": instance_id,
+                }
+
+            return {
+                "status":        "EXECUTED",
+                "execution_id":  str(uuid.uuid4()),
+                "timestamp":     datetime.utcnow().isoformat(),
+                "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                "instance_id":   instance_id,
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
+                "metadata": {
+                    "instance_id":         instance_id,
+                    "region":              region,
+                    "previous_state":      state,
+                    "protection_disabled": protection_disabled,
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status":        "FAILED",
+                "action":        "FORCE_TERMINATE_EC2_INSTANCE",
+                "reason":        str(e),
+                "resource_id":   instance_id,
+                "resource_name": instance_id,
             }
 
     # =========================================================
@@ -3223,3 +3426,319 @@ class RemediationExecutor:
                 result["metadata"] = {}
 
             return result
+
+    # =========================================================
+    # DELETE DEFAULT VPC — cascade deletes all dependencies
+    # =========================================================
+    def _handle_delete_default_vpc(self, finding, remediation):
+        vpc_id  = finding.get("resource_id")
+        region  = finding.get("region")
+
+        if not vpc_id or not region:
+            return {
+                "status":   "FAILED",
+                "reason":   "Missing vpc_id or region in finding",
+                "metadata": {}
+            }
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+        # ── 1. Collect snapshot of everything for DRY_RUN and rollback ──────
+        try:
+            subnets = ec2.describe_subnets(
+                Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
+            )["Subnets"]
+
+            route_tables = ec2.describe_route_tables(
+                Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
+            )["RouteTables"]
+
+            igws = ec2.describe_internet_gateways(
+                Filters=[{"Name": "attachment.vpc-id", "Values": [vpc_id]}]
+            )["InternetGateways"]
+
+            nat_gateways = ec2.describe_nat_gateways(
+                Filters=[
+                    {"Name": "vpc-id",  "Values": [vpc_id]},
+                    {"Name": "state",   "Values": ["available", "pending"]},
+                ]
+            )["NatGateways"]
+
+            # Check BOTH requester and accepter sides — this VPC could be on either end
+            peering_req = ec2.describe_vpc_peering_connections(
+                Filters=[
+                    {"Name": "requester-vpc-info.vpc-id", "Values": [vpc_id]},
+                    {"Name": "status-code",               "Values": ["active", "pending-acceptance"]},
+                ]
+            )["VpcPeeringConnections"]
+            peering_acc = ec2.describe_vpc_peering_connections(
+                Filters=[
+                    {"Name": "accepter-vpc-info.vpc-id",  "Values": [vpc_id]},
+                    {"Name": "status-code",               "Values": ["active", "pending-acceptance"]},
+                ]
+            )["VpcPeeringConnections"]
+            # Deduplicate by connection ID (could appear on both sides if queried broadly)
+            _peering_map = {p["VpcPeeringConnectionId"]: p for p in peering_req + peering_acc}
+            peering = list(_peering_map.values())
+
+            sgs = ec2.describe_security_groups(
+                Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
+            )["SecurityGroups"]
+
+            vpc_detail = ec2.describe_vpcs(VpcIds=[vpc_id])["Vpcs"][0]
+
+        except Exception as e:
+            return {
+                "status":   "FAILED",
+                "reason":   f"Failed to collect VPC inventory: {e}",
+                "metadata": {}
+            }
+
+        # Build human-readable summary
+        non_main_rts = [rt for rt in route_tables if not any(a.get("Main") for a in rt.get("Associations", []))]
+
+        summary_lines = [
+            f"VPC: {vpc_id} ({vpc_detail.get('CidrBlock', '?')}) in {region}",
+            f"  {len(subnets)} subnet(s) to delete",
+            f"  {len(igws)} internet gateway(s) to detach & delete",
+            f"  {len(nat_gateways)} NAT gateway(s) to delete",
+            f"  {len(non_main_rts)} non-main route table(s) to delete",
+            f"  {len(peering)} VPC peering connection(s) to delete",
+            f"  {len([s for s in sgs if s['GroupName'] != 'default'])} non-default security group(s) to delete",
+        ]
+
+        # ── DRY RUN — describe what would happen, no AWS calls ─────────────
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DELETE_DEFAULT_VPC",
+                "vpc_id": vpc_id,
+                "region": region,
+                "summary": "\n".join(summary_lines),
+                "would_delete": {
+                    "subnets":        [s["SubnetId"] for s in subnets],
+                    "internet_gateways": [g["InternetGatewayId"] for g in igws],
+                    "nat_gateways":   [n["NatGatewayId"] for n in nat_gateways],
+                    "route_tables":   [r["RouteTableId"] for r in non_main_rts],
+                    "peering":        [p["VpcPeeringConnectionId"] for p in peering],
+                },
+                "metadata": {
+                    "vpc_id":        vpc_id,
+                    "region":        region,
+                    "cidr_block":    vpc_detail.get("CidrBlock"),
+                    "vpc_snapshot":  make_json_safe(vpc_detail),
+                    "subnets":       make_json_safe(subnets),
+                    "route_tables":  make_json_safe(route_tables),
+                    "igws":          make_json_safe(igws),
+                    "nat_gateways":  make_json_safe(nat_gateways),
+                    "peering":       make_json_safe(peering),
+                }
+            }
+
+        # ── LIVE — cascade delete in correct dependency order ───────────────
+        deleted_log = []
+        errors_log  = []
+
+        # Step 0.5: Revoke all SG ingress/egress rules first.
+        # The default SG has self-referential rules that prevent SG/subnet deletion.
+        # Non-default SGs may reference each other. Clear everything before proceeding.
+        for sg in sgs:
+            sg_id = sg["GroupId"]
+            try:
+                if sg.get("IpPermissions"):
+                    ec2.revoke_security_group_ingress(
+                        GroupId=sg_id, IpPermissions=sg["IpPermissions"]
+                    )
+            except Exception as e:
+                errors_log.append(f"SG ingress clear {sg_id}: {e}")
+            try:
+                if sg.get("IpPermissionsEgress"):
+                    ec2.revoke_security_group_egress(
+                        GroupId=sg_id, IpPermissions=sg["IpPermissionsEgress"]
+                    )
+            except Exception as e:
+                errors_log.append(f"SG egress clear {sg_id}: {e}")
+
+        # Step 1: Delete NAT Gateways (they hold EIPs — must go first)
+        nat_eip_alloc_ids = []
+        for nat in nat_gateways:
+            nat_id = nat["NatGatewayId"]
+            try:
+                # Collect EIP allocation IDs before deleting the NAT
+                for addr in nat.get("NatGatewayAddresses", []):
+                    alloc = addr.get("AllocationId")
+                    if alloc:
+                        nat_eip_alloc_ids.append(alloc)
+
+                ec2.delete_nat_gateway(NatGatewayId=nat_id)
+                deleted_log.append(f"NAT Gateway deleted: {nat_id}")
+            except Exception as e:
+                errors_log.append(f"NAT {nat_id}: {e}")
+
+        # Wait for NAT gateways to finish deleting (they're async)
+        if nat_gateways:
+            max_wait = 120  # 2 min max
+            elapsed  = 0
+            while elapsed < max_wait:
+                try:
+                    remaining = ec2.describe_nat_gateways(
+                        Filters=[
+                            {"Name": "vpc-id", "Values": [vpc_id]},
+                            {"Name": "state",  "Values": ["deleting", "pending"]},
+                        ]
+                    )["NatGateways"]
+                    if not remaining:
+                        break
+                except Exception:
+                    break
+                time.sleep(10)
+                elapsed += 10
+
+        # Step 2: Release NAT EIPs
+        for alloc_id in nat_eip_alloc_ids:
+            try:
+                ec2.release_address(AllocationId=alloc_id)
+                deleted_log.append(f"EIP released: {alloc_id}")
+            except Exception as e:
+                errors_log.append(f"EIP {alloc_id}: {e}")
+
+        # Step 3: Detach and delete Internet Gateway(s)
+        for igw in igws:
+            igw_id = igw["InternetGatewayId"]
+            try:
+                ec2.detach_internet_gateway(InternetGatewayId=igw_id, VpcId=vpc_id)
+                deleted_log.append(f"IGW detached: {igw_id}")
+            except Exception as e:
+                errors_log.append(f"IGW detach {igw_id}: {e}")
+
+            try:
+                ec2.delete_internet_gateway(InternetGatewayId=igw_id)
+                deleted_log.append(f"IGW deleted: {igw_id}")
+            except Exception as e:
+                errors_log.append(f"IGW delete {igw_id}: {e}")
+
+        # Step 3.5: Delete available (detached) network interfaces per subnet.
+        # Leftover ENIs from Lambda, RDS, or ECS tasks block subnet deletion.
+        # SAFETY: only touch ENIs in 'available' state — never force-detach attached ones.
+        for subnet in subnets:
+            subnet_id = subnet["SubnetId"]
+            try:
+                enis = ec2.describe_network_interfaces(
+                    Filters=[
+                        {"Name": "subnet-id", "Values": [subnet_id]},
+                        {"Name": "status",    "Values": ["available"]},
+                    ]
+                )["NetworkInterfaces"]
+                for eni in enis:
+                    eni_id = eni["NetworkInterfaceId"]
+                    try:
+                        ec2.delete_network_interface(NetworkInterfaceId=eni_id)
+                        deleted_log.append(f"ENI deleted: {eni_id}")
+                    except Exception as e:
+                        errors_log.append(f"ENI {eni_id}: {e}")
+            except Exception as e:
+                errors_log.append(f"ENI list for {subnet_id}: {e}")
+
+        # Step 3.7: Delete non-default Network ACLs.
+        # Non-default NACLs associated with subnets can block subnet deletion.
+        try:
+            nacls = ec2.describe_network_acls(
+                Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
+            )["NetworkAcls"]
+            for nacl in nacls:
+                if not nacl.get("IsDefault"):
+                    nacl_id = nacl["NetworkAclId"]
+                    # Disassociate subnets from this NACL before deleting
+                    for assoc in nacl.get("Associations", []):
+                        try:
+                            # Re-associate subnets to the default NACL (required before deleting custom NACL)
+                            default_nacl = next(
+                                (n for n in nacls if n.get("IsDefault")), None
+                            )
+                            if default_nacl:
+                                ec2.replace_network_acl_association(
+                                    AssociationId=assoc["NetworkAclAssociationId"],
+                                    NetworkAclId=default_nacl["NetworkAclId"],
+                                )
+                        except Exception:
+                            pass
+                    try:
+                        ec2.delete_network_acl(NetworkAclId=nacl_id)
+                        deleted_log.append(f"NACL deleted: {nacl_id}")
+                    except Exception as e:
+                        errors_log.append(f"NACL {nacl_id}: {e}")
+        except Exception as e:
+            errors_log.append(f"NACL list: {e}")
+
+        # Step 4: Delete subnets
+        for subnet in subnets:
+            subnet_id = subnet["SubnetId"]
+            try:
+                ec2.delete_subnet(SubnetId=subnet_id)
+                deleted_log.append(f"Subnet deleted: {subnet_id}")
+            except Exception as e:
+                errors_log.append(f"Subnet {subnet_id}: {e}")
+
+        # Step 5: Delete non-main route tables
+        for rt in non_main_rts:
+            rt_id = rt["RouteTableId"]
+            try:
+                ec2.delete_route_table(RouteTableId=rt_id)
+                deleted_log.append(f"Route table deleted: {rt_id}")
+            except Exception as e:
+                errors_log.append(f"RT {rt_id}: {e}")
+
+        # Step 6: Delete VPC peering connections
+        for pc in peering:
+            pc_id = pc["VpcPeeringConnectionId"]
+            try:
+                ec2.delete_vpc_peering_connection(VpcPeeringConnectionId=pc_id)
+                deleted_log.append(f"VPC peering deleted: {pc_id}")
+            except Exception as e:
+                errors_log.append(f"Peering {pc_id}: {e}")
+
+        # Step 7: Delete non-default security groups
+        for sg in sgs:
+            if sg["GroupName"] == "default":
+                continue
+            sg_id = sg["GroupId"]
+            try:
+                ec2.delete_security_group(GroupId=sg_id)
+                deleted_log.append(f"Security group deleted: {sg_id}")
+            except Exception as e:
+                errors_log.append(f"SG {sg_id}: {e}")
+
+        # Step 8: Delete the VPC itself
+        try:
+            ec2.delete_vpc(VpcId=vpc_id)
+            deleted_log.append(f"VPC deleted: {vpc_id}")
+            final_status = "EXECUTED"
+        except Exception as e:
+            errors_log.append(f"VPC delete {vpc_id}: {e}")
+            final_status = "PARTIAL" if deleted_log else "FAILED"
+
+        return {
+            "status":       final_status,
+            "action":       "DELETE_DEFAULT_VPC",
+            "vpc_id":       vpc_id,
+            "region":       region,
+            "deleted":      deleted_log,
+            "errors":       errors_log,
+            "resource_id":  vpc_id,
+            "resource_name": vpc_id,
+            "metadata": {
+                "vpc_id":        vpc_id,
+                "region":        region,
+                "cidr_block":    vpc_detail.get("CidrBlock"),
+                # Full snapshot stored for rollback reconstruction
+                "vpc_snapshot":  make_json_safe(vpc_detail),
+                "subnets":       make_json_safe(subnets),
+                "route_tables":  make_json_safe(route_tables),
+                "igws":          make_json_safe(igws),
+                "nat_gateways":  make_json_safe(nat_gateways),
+                "peering":       make_json_safe(peering),
+                "sgs":           make_json_safe([s for s in sgs if s["GroupName"] != "default"]),
+                "deleted_log":   deleted_log,
+                "errors_log":    errors_log,
+            }
+        }

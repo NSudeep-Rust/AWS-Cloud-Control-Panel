@@ -209,6 +209,9 @@ function Toast({ toast, onDismiss, onNav }) {
 }
 
 // ── Main ToastSystem — mount once inside PanelPage ────────────────────────
+// Severities that trigger popups — MEDIUM and LOW are silently ignored
+const NOTIFY_SEVERITIES = new Set(['CRITICAL', 'HIGH'])
+
 export default function ToastSystem({ onNav }) {
     const { account } = useAuth()
     const [toasts, setToasts] = useState([])
@@ -229,10 +232,12 @@ export default function ToastSystem({ onNav }) {
         }
     }, [])
 
-    // Load seen IDs from sessionStorage
+    // ── Load seen IDs from localStorage (persists across logout/login) ──
+    // FIX: was sessionStorage — got cleared on every logout, causing all
+    // old alerts to re-fire as "new" after every login.
     useEffect(() => {
         try {
-            const raw = sessionStorage.getItem('seen_alert_ids')
+            const raw = localStorage.getItem('seen_alert_ids')
             seenRef.current = new Set(raw ? JSON.parse(raw) : [])
         } catch {
             seenRef.current = new Set()
@@ -245,8 +250,10 @@ export default function ToastSystem({ onNav }) {
         setToasts(prev => prev.filter(t => t.id !== id))
     }, [])
 
-    // ── Fire OS-level system notification (appears over all apps) ──────────
+    // ── Fire OS-level system notification ───────────────────────────────
     const fireNativeNotif = useCallback((alert, displayType) => {
+        // Only fire OS notification for CRITICAL and HIGH
+        if (!NOTIFY_SEVERITIES.has(alert.severity)) return
         if (!('Notification' in window) || Notification.permission !== 'granted') return
         const sevLabel = { CRITICAL: '🔴 CRITICAL', HIGH: '🟠 HIGH', MEDIUM: '🟡 MEDIUM', LOW: '🔵 LOW' }
         const title = `${sevLabel[alert.severity] || '⚠️'} AWS Security Alert`
@@ -254,77 +261,132 @@ export default function ToastSystem({ onNav }) {
         try {
             const notif = new Notification(title, {
                 body,
-                tag: String(alert.id),        // deduplication key
+                tag: String(alert.id),
                 requireInteraction: alert.severity === 'CRITICAL' || alert.severity === 'HIGH',
-                silent: false,                 // use OS sound
+                silent: false,
             })
             notif.onclick = () => {
-                window.focus()                 // bring browser to foreground
+                window.focus()
                 notif.close()
-                onNav('threats')              // navigate to Threats section
+                onNav('threats')
             }
-            notif.onclose = () => notif.close()
         } catch { /* ignore */ }
     }, [onNav])
 
+    // ── Build and show a toast from an alert payload ─────────────────────
+    // Only CRITICAL and HIGH fire popups — MEDIUM/LOW are silently ignored
+    const showAlert = useCallback((alert) => {
+        if (!seenRef.current) return
+        const idStr = String(alert.id)
+        if (seenRef.current.has(idStr)) return   // already seen → skip
+
+        // ── Severity gate: only CRITICAL and HIGH get popups ──────────────
+        if (!NOTIFY_SEVERITIES.has(alert.severity)) {
+            seenRef.current.add(idStr)  // mark seen so it doesn't re-check
+            return
+        }
+
+        seenRef.current.add(idStr)
+        try {
+            // Persist to localStorage so it survives logout/login
+            localStorage.setItem('seen_alert_ids', JSON.stringify([...seenRef.current]))
+        } catch { }
+
+        // Build display strings
+        const parts = (alert.finding_id || alert.type || '').split('-')
+        const typeWords = []
+        for (const p of parts) {
+            if (/^[0-9a-f]{8,}$/i.test(p)) break
+            if (p.startsWith('vpc') || p.startsWith('sg') || p.startsWith('i-') || p.startsWith('snap') || p.startsWith('vol')) break
+            typeWords.push(p.toUpperCase())
+        }
+        const displayType = alert.type || typeWords.slice(0, 4).join('_') || alert.finding_id || 'SECURITY_ALERT'
+        const resourceId  = alert.resource_id || (alert.finding_id || '').slice(0, 26)
+
+        playSound(alert.severity)
+        fireNativeNotif(alert, displayType)
+
+        setToasts(prev => {
+            const newToast = {
+                id:         alert.id,
+                type:       displayType,
+                resourceId: resourceId,
+                message:    alert.message,
+                severity:   alert.severity,
+                _key:       `${alert.id}-${Date.now()}`,
+            }
+            return [newToast, ...prev].slice(0, MAX_TOASTS)
+        })
+    }, [fireNativeNotif])
+
+    // ── ⚡ WebSocket — primary real-time channel ──────────────────────────
+    // Connects to ws://localhost:8000/ws/alerts
+    // When monitor fires an alert → instantly pushed here → toast shown
+    // Total latency: < 200ms (vs 15,000ms with polling)
+    const wsRef = useRef(null)
+
+    const connectWS = useCallback(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) return
+
+        try {
+            const ws = new WebSocket('ws://localhost:8000/ws/alerts')
+            wsRef.current = ws
+
+            ws.onopen = () => {
+                console.log('⚡ Alert WebSocket connected')
+                // Send a ping every 25s to keep connection alive
+                const pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) ws.send('ping')
+                    else clearInterval(pingInterval)
+                }, 25000)
+            }
+
+            ws.onmessage = (evt) => {
+                try {
+                    const payload = JSON.parse(evt.data)
+                    if (payload.event === 'new_alert') {
+                        console.log('⚡ Instant alert received:', payload.severity, payload.type)
+                        showAlert(payload)
+                    }
+                } catch { /* ignore non-JSON */ }
+            }
+
+            ws.onclose = () => {
+                console.log('⚡ Alert WebSocket closed — reconnecting in 5s')
+                setTimeout(connectWS, 5000)   // auto-reconnect
+            }
+
+            ws.onerror = () => {
+                ws.close()   // triggers onclose → reconnect
+            }
+        } catch (e) {
+            console.log('⚡ WebSocket unavailable — falling back to polling')
+        }
+    }, [showAlert])
+
+    useEffect(() => {
+        // Small delay so seenRef loads from localStorage first
+        const t = setTimeout(connectWS, 500)
+        return () => {
+            clearTimeout(t)
+            wsRef.current?.close()
+        }
+    }, [connectWS])
+
+    // ── HTTP polling — fallback / initial load of existing alerts ────────
+    // Runs on mount + every POLL_MS to catch any alerts missed while WS was down
     const poll = useCallback(async () => {
         if (!seenRef.current) return
         try {
-            // No account filter — single-user app, show all alerts
-            const r = await axios.get(`${API}/api/alerts/`)
+            // Pass account_id so we only get THIS account's alerts (not global)
+            const params = dbId ? { account_id: dbId } : {}
+            const r = await axios.get(`${API}/api/alerts/`, { params })
             const alerts = r.data?.data?.alerts || r.data?.alerts || []
-
-            const newAlerts = alerts.filter(a => !seenRef.current.has(String(a.id)))
-            if (newAlerts.length === 0) return
-
-            // Mark as seen
-            newAlerts.forEach(a => seenRef.current.add(String(a.id)))
-            try {
-                sessionStorage.setItem('seen_alert_ids', JSON.stringify([...seenRef.current]))
-            } catch { }
-
-            // Show toasts — highest severity first
-            const sevOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
-            const sorted = [...newAlerts].sort((a, b) =>
-                (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9)
-            )
-
-            // Play sound for the highest severity new alert
-            if (sorted[0]) playSound(sorted[0].severity)
-
-            // Add to toast queue (cap at MAX_TOASTS visible)
-            setToasts(prev => {
-                const combined = [...sorted.map(a => {
-                    const parts = (a.finding_id || '').split('-')
-                    const typeWords = []
-                    for (const p of parts) {
-                        if (/^[0-9a-f]{8,}$/i.test(p)) break
-                        if (p.startsWith('vpc') || p.startsWith('sg') || p.startsWith('i') || p.startsWith('snap') || p.startsWith('vol') || p.startsWith('rtb') || p.startsWith('acl') || p.startsWith('igw') || p.startsWith('subnet') || p.startsWith('eipalloc')) break
-                        typeWords.push(p.toUpperCase())
-                    }
-                    const displayType = typeWords.slice(0, 4).join('_') || a.finding_id
-                    const resourcePart = (a.finding_id || '').replace(/^[a-z-]+-([a-z]+-[0-9]+-)?/, '').slice(0, 26)
-
-                    // Fire OS-level notification for EVERY new alert
-                    fireNativeNotif(a, displayType)
-
-                    return {
-                        id: a.id,
-                        type: displayType,
-                        resourceId: resourcePart || a.finding_id,
-                        message: a.message,
-                        severity: a.severity,
-                        _key: `${a.id}-${Date.now()}`,
-                    }
-                }), ...prev]
-                return combined.slice(0, MAX_TOASTS)
-            })
+            alerts.forEach(a => showAlert(a))
         } catch { /* silent */ }
-    }, [dbId])
+    }, [showAlert, dbId])
 
-    // Poll on mount and every POLL_MS ms
     useEffect(() => {
-        // Small delay so seen IDs load first
         const init = setTimeout(poll, 2000)
         const iv = setInterval(poll, POLL_MS)
         return () => { clearTimeout(init); clearInterval(iv) }

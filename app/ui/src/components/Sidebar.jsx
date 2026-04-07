@@ -5,30 +5,30 @@ import {
     History, BarChart2, Bell, LogOut, Sun, Moon, ChevronRight,
     Shield, RefreshCcw
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const NAV_GROUPS = [
     {
         label: null,
         items: [
-            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+            { id: 'overview',  label: 'Overview',       icon: LayoutDashboard, color: '#0972d3' },
         ]
     },
     {
         label: 'Security',
         items: [
-            { id: 'scanner',   label: 'Scanner',        icon: Search      },
-            { id: 'threats',   label: 'Threat Monitor', icon: ShieldAlert },
-            { id: 'execute',   label: 'Remediation',    icon: Wrench      },
-            { id: 'rollback',  label: 'Rollback',       icon: RotateCcw   },
+            { id: 'scanner',   label: 'Scanner',        icon: Search,      color: '#e07b00' },
+            { id: 'threats',   label: 'Threat Monitor', icon: ShieldAlert, color: '#d13212' },
+            { id: 'execute',   label: 'Remediation',    icon: Wrench,      color: '#1d8102' },
+            { id: 'rollback',  label: 'Rollback',       icon: RotateCcw,   color: '#7953d2' },
         ]
     },
     {
         label: 'Reports',
         items: [
-            { id: 'history',   label: 'History',   icon: History   },
-            { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-            { id: 'alerts',    label: 'Alerts',    icon: Bell      },
+            { id: 'history',   label: 'History',        icon: History,     color: '#0a8a6a' },
+            { id: 'analytics', label: 'Analytics',      icon: BarChart2,   color: '#0972d3' },
+            { id: 'alerts',    label: 'Alerts',         icon: Bell,        color: '#d13212' },
         ]
     },
 ]
@@ -36,10 +36,60 @@ const NAV_GROUPS = [
 export default function Sidebar({ active, onNav, dark, onToggleDark }) {
     const { account, disconnect } = useAuth()
     const navigate = useNavigate()
-    const [hoverId, setHoverId] = useState(null)
+    const [hoverId,    setHoverId]   = useState(null)
+    const [showModal,  setShowModal] = useState(false)
+    const [clearData,  setClearData] = useState(false)
+    const [clearing,   setClearing]  = useState(false)
+    const [alertCounts, setAlertCounts] = useState({ critical: 0, high: 0 })
+    const pollRef = useRef(null)
 
-    function handleDisconnect() { disconnect(); navigate('/setup') }
-    function handleSwitch()     { navigate('/setup') }
+    // Poll live monitor finding counts every 10s for sidebar badges
+    useEffect(() => {
+        const accountDbId = account?.id
+        async function fetchCounts() {
+            try {
+                const params = accountDbId ? `?account_db_id=${accountDbId}` : ''
+                const r = await fetch(`http://localhost:8000/api/live-findings/${params}`)
+                const json = await r.json()
+                const data = json?.data || {}
+                setAlertCounts({
+                    critical: data.critical || 0,
+                    high:     data.high     || 0,
+                })
+            } catch { /* ignore */ }
+        }
+        fetchCounts()
+        pollRef.current = setInterval(fetchCounts, 30000)
+        return () => clearInterval(pollRef.current)
+    }, [account?.id])
+
+    function openDisconnect() { setShowModal(true); setClearData(false) }
+    function cancelDisconnect() { setShowModal(false) }
+    async function confirmDisconnect() {
+        setClearing(true)
+        try {
+            if (clearData) {
+                const API = 'http://localhost:8000'
+                // Get the real AWS account ID (string) to pass to the wipe endpoint
+                const awsId = account?.aws_account_id || account?.account_id
+                if (awsId) {
+                    await fetch(
+                        `${API}/api/session/wipe?account_id=${encodeURIComponent(awsId)}`,
+                        { method: 'DELETE' }
+                    ).catch(() => {})
+                }
+                // Clear seen-alert IDs so toasts reset fresh on next login
+                localStorage.removeItem('seen_alert_ids')
+            }
+        } catch { /* ignore */ } finally {
+            setClearing(false)
+            setShowModal(false)
+            disconnect()
+            navigate('/setup')
+        }
+    }
+
+    function handleSwitch() { navigate('/setup') }
 
     const accountId = account?.aws_account_id || account?.account_id || '—'
     const region    = account?.region || 'us-east-1'
@@ -58,6 +108,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
     const activeCol = '#e07b00'   // AWS orange (slightly darker for contrast on white)
 
     return (
+        <>
         <aside style={{
             width: 224,
             minWidth: 224,
@@ -204,6 +255,8 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                             const Icon = item.icon
                             const isActive = active === item.id
                             const isHov = hoverId === item.id && !isActive
+                            const isAlerts = item.id === 'alerts'
+                            const ic = item.color || '#0972d3'   // section accent colour
                             return (
                                 <button
                                     key={item.id}
@@ -211,27 +264,67 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                                     onMouseEnter={() => setHoverId(item.id)}
                                     onMouseLeave={() => setHoverId(null)}
                                     style={{
-                                        display: 'flex', alignItems: 'center', gap: 9,
-                                        width: '100%', padding: '8px 10px',
-                                        borderRadius: 6, border: 'none', cursor: 'pointer',
-                                        marginBottom: 1,
-                                        background: isActive ? activeBg : isHov ? hoverBg : 'transparent',
-                                        color: isActive ? activeCol : text2,
-                                        fontWeight: isActive ? 700 : 400,
-                                        fontSize: 13,
-                                        transition: 'all 0.1s',
+                                        display: 'flex', alignItems: 'center', gap: 11,
+                                        width: '100%', padding: '6px 8px',
+                                        borderRadius: 9, border: 'none', cursor: 'pointer',
+                                        marginBottom: 2,
+                                        background: isActive
+                                            ? (dark ? `${ic}1a` : `${ic}12`)
+                                            : isHov ? hoverBg : 'transparent',
+                                        transition: 'all 0.14s',
                                         textAlign: 'left',
                                         position: 'relative',
-                                        borderLeft: `3px solid ${isActive ? activeCol : 'transparent'}`,
+                                        outline: isActive ? `1.5px solid ${ic}35` : '1.5px solid transparent',
                                     }}
                                 >
-                                    <Icon
-                                        size={14}
-                                        strokeWidth={isActive ? 2.2 : 1.7}
-                                        color={isActive ? activeCol : dark ? '#8b949e' : '#687078'}
-                                    />
-                                    <span style={{ flex: 1 }}>{item.label}</span>
-                                    {isActive && <ChevronRight size={11} style={{ opacity: 0.45 }} />}
+                                    {/* ── Coloured icon tile ── */}
+                                    <div style={{
+                                        width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                                        background: isActive
+                                            ? ic
+                                            : isHov
+                                                ? `${ic}28`
+                                                : dark ? `${ic}18` : `${ic}14`,
+                                        border: `1.5px solid ${isActive ? ic : ic + '35'}`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.15s',
+                                        boxShadow: isActive ? `0 4px 14px ${ic}55` : isHov ? `0 2px 8px ${ic}30` : 'none',
+                                        transform: isHov ? 'scale(1.06)' : 'scale(1)',
+                                    }}>
+                                        <Icon
+                                            size={16}
+                                            strokeWidth={isActive ? 2.3 : 1.9}
+                                            color={isActive ? '#fff' : ic}
+                                        />
+                                    </div>
+
+                                    {/* ── Label ── */}
+                                    <span style={{
+                                        flex: 1,
+                                        fontSize: 13,
+                                        fontWeight: isActive ? 700 : 600,
+                                        color: isActive ? ic : dark ? '#c9d1d9' : '#232F3E',
+                                        transition: 'color 0.12s',
+                                    }}>{item.label}</span>
+
+                                    {/* ── Alert count bubbles ── */}
+                                    {isAlerts && (alertCounts.critical > 0 || alertCounts.high > 0) && (
+                                        <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
+                                            {alertCounts.critical > 0 && (
+                                                <div style={{ minWidth:18, height:18, borderRadius:'50%', background:'#d13212', color:'#fff', fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', boxShadow:'0 2px 8px rgba(209,50,18,0.55)' }}>
+                                                    {alertCounts.critical > 99 ? '99+' : alertCounts.critical}
+                                                </div>
+                                            )}
+                                            {alertCounts.high > 0 && (
+                                                <div style={{ minWidth:18, height:18, borderRadius:'50%', background:'#e07b00', color:'#fff', fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', boxShadow:'0 2px 8px rgba(224,123,0,0.45)' }}>
+                                                    {alertCounts.high > 99 ? '99+' : alertCounts.high}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {isActive && !(isAlerts && (alertCounts.critical > 0 || alertCounts.high > 0)) && (
+                                        <ChevronRight size={11} style={{ opacity:0.4, color: ic, flexShrink:0 }} />
+                                    )}
                                 </button>
                             )
                         })}
@@ -276,7 +369,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                 </button>
 
                 <button
-                    onClick={handleDisconnect}
+                    onClick={openDisconnect}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 9,
                         width: '100%', padding: '7px 10px', borderRadius: 6,
@@ -292,5 +385,77 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                 </button>
             </div>
         </aside>
+
+        {/* ── Disconnect Confirmation Modal ────────────────────────────── */}
+        {showModal && (
+            <div style={{
+                position:'fixed', inset:0, zIndex:99999,
+                background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+            }} onClick={cancelDisconnect}>
+                <div
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        background: dark ? '#1c2330' : '#ffffff',
+                        border: `1px solid ${dark ? 'rgba(255,255,255,0.1)' : '#d5d9d9'}`,
+                        borderRadius: 12, padding: '28px 32px', width: 380, maxWidth: '90vw',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+                    }}
+                >
+                    {/* Icon + Title */}
+                    <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+                        <div style={{ width:42, height:42, borderRadius:10, background:'rgba(209,50,18,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            <span style={{ fontSize:20 }}>🔌</span>
+                        </div>
+                        <div>
+                            <div style={{ fontSize:16, fontWeight:800, color: dark ? '#e6edf3' : '#0f1111' }}>Disconnect Account?</div>
+                            <div style={{ fontSize:11, color: dark ? '#8b949e' : '#565959', marginTop:2 }}>You can reconnect anytime from the setup page</div>
+                        </div>
+                    </div>
+
+                    {/* Account info */}
+                    <div style={{ background: dark ? 'rgba(255,255,255,0.04)' : '#f6f6f6', borderRadius:8, padding:'10px 14px', marginBottom:20, fontSize:12, color: dark ? '#8b949e' : '#565959' }}>
+                        Disconnecting: <strong style={{ color: dark ? '#e6edf3' : '#0f1111' }}>{account?.aws_account_id || account?.account_id}</strong>
+                        {account?.region && <> · {account.region}</>}
+                    </div>
+
+                    {/* Checkbox */}
+                    <label style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', marginBottom:24, userSelect:'none' }}>
+                        <input
+                            type="checkbox"
+                            checked={clearData}
+                            onChange={e => setClearData(e.target.checked)}
+                            style={{ marginTop:2, accentColor:'#d13212', width:15, height:15, flexShrink:0 }}
+                        />
+                        <div>
+                            <div style={{ fontSize:12.5, fontWeight:700, color: clearData ? '#d13212' : (dark ? '#e6edf3' : '#0f1111') }}>
+                                Delete all session data
+                            </div>
+                            <div style={{ fontSize:11, color: dark ? '#8b949e' : '#8d9191', marginTop:2, lineHeight:1.5 }}>
+                                Wipes all scan history, findings, and security alerts from this session. Cannot be undone.
+                            </div>
+                        </div>
+                    </label>
+
+                    {/* Buttons */}
+                    <div style={{ display:'flex', gap:10 }}>
+                        <button
+                            onClick={cancelDisconnect}
+                            style={{ flex:1, padding:'9px 0', border: `1px solid ${dark ? 'rgba(255,255,255,0.12)' : '#d5d9d9'}`, borderRadius:7, background:'transparent', color: dark ? '#8b949e' : '#565959', fontSize:13, fontWeight:600, cursor:'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={confirmDisconnect}
+                            disabled={clearing}
+                            style={{ flex:1, padding:'9px 0', border:'none', borderRadius:7, background: clearData ? '#d13212' : '#b85c00', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', opacity: clearing ? 0.7 : 1 }}
+                        >
+                            {clearing ? 'Clearing...' : clearData ? '🗑️ Delete & Exit' : '🔌 Disconnect'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </>
     )
 }

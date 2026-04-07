@@ -45,7 +45,30 @@ class EC2Scanner:
                             "resource_id": instance_id,
                             "region": region,
                             "state": state,
-                            "description": "EC2 instance is running (cost optimization opportunity)"
+                            "description": "EC2 instance is running (cost optimization: stop it to reduce spend)"
+                        })
+
+                    # ─────────────────────────────────────────────────────
+                    # EC2 RUNNING → FORCE TERMINATE DIRECTLY
+                    # Always generated for running instances so the user
+                    # can choose to directly terminate rather than stop-first.
+                    # Maps to FORCE_TERMINATE_EC2_INSTANCE in the planner.
+                    # ─────────────────────────────────────────────────────
+                    force_finding_id = f"ec2-running-force-terminate-{instance_id}"
+                    if force_finding_id not in seen_ids:
+                        seen_ids.add(force_finding_id)
+                        findings.append({
+                            "id": force_finding_id,
+                            "type": "EC2_INSTANCE_RUNNING_UNMONITORED",
+                            "severity": "HIGH",
+                            "resource_id": instance_id,
+                            "region": region,
+                            "state": state,
+                            "description": (
+                                f"EC2 instance {instance_id} is running and flagged for direct termination. "
+                                "Use this to terminate a running instance immediately without stopping it first. "
+                                "This is irreversible — the instance cannot be restarted once terminated."
+                            )
                         })
 
 

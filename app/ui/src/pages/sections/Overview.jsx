@@ -426,16 +426,21 @@ export default function Overview({ onNav, dark }) {
     async function toggleMonitor() {
         if (monitorToggling) return
         setMonitorToggling(true)
+        const wasRunning = monitorRunning
+        // OPTIMISTIC: flip immediately so button responds instantly
+        setMonitorStatus(prev => ({ ...(prev || {}), running: !wasRunning }))
         try {
-            if (monitorRunning) {
+            if (wasRunning) {
                 await axios.post(`${API}/api/threats/monitor/stop`)
             } else {
                 const awsAccountId = isIam ? account?.parent_aws_account_id : account?.aws_account_id
                 await axios.post(`${API}/api/threats/monitor/start`, { account_id: awsAccountId })
             }
-            // Give backend a moment then refresh status
-            setTimeout(() => { fetchMonitorStatus(); setMonitorToggling(false) }, 800)
-        } catch { setMonitorToggling(false) }
+            setTimeout(() => { fetchMonitorStatus(); setMonitorToggling(false) }, 500)
+        } catch {
+            setMonitorStatus(prev => ({ ...(prev || {}), running: wasRunning }))
+            setMonitorToggling(false)
+        }
     }
 
     function triggerScan() {

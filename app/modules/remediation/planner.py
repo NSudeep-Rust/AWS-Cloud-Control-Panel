@@ -422,7 +422,53 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
+        # ---------------------------
+        # EC2 RUNNING → FORCE TERMINATE DIRECTLY
+        # This appears alongside EC2_INSTANCE_RUNNING for every running instance.
+        # User chooses: Stop (EC2_INSTANCE_RUNNING) OR Terminate directly (this one).
+        # ---------------------------
+        if finding_type == "EC2_INSTANCE_RUNNING_UNMONITORED":
+            return {
+                "action": "FORCE_TERMINATE_EC2_INSTANCE",
+                "reason": (
+                    "Running EC2 instance is flagged for direct termination. "
+                    "This skips the stop-first step and immediately terminates the instance. "
+                    "Use when you want instant cleanup rather than a graceful shutdown first."
+                ),
+                "recommended_fix": (
+                    "Directly terminate the running instance. "
+                    "This is permanent — AWS does not allow restarting a terminated instance."
+                ),
+                "severity": finding.get("severity")
+            }
+
+        # ---------------------------
+        # DEFAULT VPC EXISTS
+        # ---------------------------
+        if finding_type == "DEFAULT_VPC_EXISTS":
+            return {
+                "action": "DELETE_DEFAULT_VPC",
+                "reason": "Default VPC exists with permissive settings — increases attack surface",
+                "recommended_fix": (
+                    "Delete the default VPC and all its dependencies: subnets, route tables, "
+                    "internet gateway, NAT gateways, and peering connections. "
+                    "AWS best practice is to operate without a default VPC."
+                ),
+                "severity": finding.get("severity"),
+                "steps": [
+                    "1. Snapshot the VPC configuration for rollback",
+                    "2. Delete all NAT gateways and wait for deletion",
+                    "3. Release associated Elastic IPs (NAT)",
+                    "4. Detach and delete Internet Gateway",
+                    "5. Delete all subnets",
+                    "6. Delete non-main route tables",
+                    "7. Delete VPC peering connections",
+                    "8. Delete the VPC itself",
+                ]
+            }
+
         return {
             "action": "NO_ACTION",
             "reason": "No remediation required"
         }
+

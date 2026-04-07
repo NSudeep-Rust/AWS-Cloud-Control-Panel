@@ -3,10 +3,9 @@ import time
 import uuid
 from app.modules.diff_engine.diff_engine import DiffEngine
 from app.database.db import get_db
-from app.database.models import FindingChange
+from app.database.models import FindingChange, Alert, LiveMonitorFinding
 from app.config.security_config import ALERT_SEVERITIES
 from datetime import datetime
-from app.database.models import Alert
 
 # Windows desktop notification (plyer)
 try:
@@ -39,12 +38,14 @@ def _fire_windows_toast(severity: str, finding_id: str, message: str):
 
 class MonitorService:
 
-    def __init__(self, monitor, interval=60):
+    def __init__(self, monitor, interval=15, broadcast_fn=None, account_db_id=None):
         self.monitor = monitor
         self.interval = interval
         self.running = False
         self.thread = None
         self.previous_findings = None
+        self.broadcast_fn = broadcast_fn
+        self.account_db_id = account_db_id   # DB integer id — used to store live findings
 
     def _loop(self):
         print(f"🟢 Monitoring Started at {datetime.utcnow().isoformat()}")
@@ -106,14 +107,31 @@ class MonitorService:
 
                                 if severity in ALERT_SEVERITIES:
                                     severities_triggered.add(severity)
+                                    alert_id = str(uuid.uuid4())
 
                                     alert = Alert(
-                                        id=str(uuid.uuid4()),
+                                        id=alert_id,
                                         finding_id=fid,
                                         message=f"New {severity} issue detected",
                                         severity=severity
                                     )
                                     db.add(alert)
+
+                                    # ⚡ Instant WebSocket push — fires before DB commit
+                                    if self.broadcast_fn:
+                                        try:
+                                            self.broadcast_fn({
+                                                "event":       "new_alert",
+                                                "id":          alert_id,
+                                                "finding_id":  fid,
+                                                "type":        finding.get("type", ""),
+                                                "resource_id": finding.get("resource_id", fid),
+                                                "message":     f"New {severity} issue detected",
+                                                "severity":    severity,
+                                                "timestamp":   datetime.utcnow().isoformat(),
+                                            })
+                                        except Exception as ws_err:
+                                            print(f"⚡ WS push error: {ws_err}")
 
                             db.commit()
                             db.close()
@@ -121,7 +139,6 @@ class MonitorService:
                             # ✅ SMART PRINT + Windows toast
                             if severities_triggered:
                                 print(f"🚨 Alerts generated for: {', '.join(severities_triggered)}")
-                                # Fire one Windows toast per new CRITICAL/HIGH finding
                                 for fid in diff["new"]:
                                     finding = current_map.get(fid)
                                     if not finding:
@@ -141,6 +158,39 @@ class MonitorService:
 
                     except Exception as db_error:
                         print(f"❌ DB ERROR (diff store): {db_error}")
+
+                # ── Save current CRITICAL/HIGH findings to LiveMonitorFinding table ──
+                if self.account_db_id:
+                    try:
+                        db = next(get_db())
+                        # Replace all active (non-dismissed) findings for this account
+                        # so the dashboard always shows what the monitor CURRENTLY sees
+                        db.query(LiveMonitorFinding).filter(
+                            LiveMonitorFinding.account_db_id == self.account_db_id,
+                            LiveMonitorFinding.dismissed == 0
+                        ).delete(synchronize_session=False)
+
+                        for f in current_findings:
+                            if f.get("severity") in ("CRITICAL", "HIGH"):
+                                remediation = f.get("remediation") or {}
+                                db.add(LiveMonitorFinding(
+                                    finding_id         = f.get("id", ""),
+                                    finding_type       = f.get("type", ""),
+                                    severity           = f.get("severity", ""),
+                                    resource_id        = f.get("resource_id", ""),
+                                    region             = f.get("region", "global"),
+                                    account_db_id      = self.account_db_id,
+                                    remediation_action = remediation.get("action", ""),
+                                    remediation_reason = remediation.get("reason", ""),
+                                    dismissed          = 0,
+                                ))
+                        db.commit()
+                        db.close()
+                        crit = sum(1 for f in current_findings if f.get("severity") == "CRITICAL")
+                        high = sum(1 for f in current_findings if f.get("severity") == "HIGH")
+                        print(f"📊 LiveMonitorFindings updated → CRITICAL:{crit} HIGH:{high}")
+                    except Exception as live_err:
+                        print(f"❌ LiveMonitorFinding save error: {live_err}")
 
                 # UPDATE STATE
                 self.previous_findings = current_findings

@@ -103,21 +103,19 @@ def process_execution(request: ExecuteRequest, db: Session):
 
         force_execute = False
 
-        # ── Approval validation ──
+        # ── Approval validation — DB-based (survives hot reloads) ──────────
         if request.approval_token and request.confirm:
-            approved_data = APPROVAL_STORAGE.get(request.approval_token)
-            if not approved_data:
-                print("❌ Invalid approval token")
+            # The first execution already wrote the token to the Execution row.
+            # Validate from DB so it works even after a server restart/reload.
+            pending_exec = db.query(Execution).filter(
+                Execution.approval_token == request.approval_token,
+                Execution.scan_id       == request.scan_id,
+            ).first()
+            if not pending_exec:
+                print("❌ Invalid approval token — not found in DB")
                 return
-            if time.time() - approved_data["timestamp"] > TOKEN_EXPIRY_SECONDS:
-                APPROVAL_STORAGE.pop(request.approval_token, None)
-                print("❌ Token expired")
-                return
-            if approved_data["scan_id"] != request.scan_id:
-                print("❌ Scan mismatch")
-                return
-            if set(approved_data["finding_ids"]) != set(request.finding_ids):
-                print("❌ Finding mismatch")
+            if pending_exec.status not in ("BLOCKED_BY_POLICY", "REQUIRE_APPROVAL", "BLOCKED"):
+                print(f"❌ Token not usable — execution already in state: {pending_exec.status}")
                 return
             force_execute = True
 
@@ -145,11 +143,7 @@ def process_execution(request: ExecuteRequest, db: Session):
             approval_token_value = None
             if result.get("status") in ["BLOCKED_BY_POLICY", "REQUIRE_APPROVAL"] and not force_execute:
                 approval_token_value = str(uuid.uuid4())
-                APPROVAL_STORAGE[approval_token_value] = {
-                    "timestamp": time.time(),
-                    "scan_id": request.scan_id,
-                    "finding_ids": request.finding_ids
-                }
+                # ── Token persisted only in DB now (APPROVAL_STORAGE removed) ──
 
             execution = Execution(
                 execution_id=result.get("execution_id", execution_id),
@@ -164,9 +158,6 @@ def process_execution(request: ExecuteRequest, db: Session):
             )
             db.add(execution)
             db.commit()
-
-        if force_execute:
-            APPROVAL_STORAGE.pop(request.approval_token, None)
 
     except Exception as e:
         print("❌ BACKGROUND ERROR:", str(e))
@@ -238,31 +229,38 @@ def get_executable_findings(scan_id: str = Query(...), db: Session = Depends(get
 # GET /api/execute/executions?scan_id=
 # =========================================================
 @router.get("/executions")
-def list_executions(scan_id: str = Query(None), db: Session = Depends(get_db)):
+def list_executions(
+    scan_id: str = Query(None),
+    include_rolled_back: bool = Query(False),
+    db: Session = Depends(get_db)
+):
     query = db.query(Execution)
     if scan_id:
         query = query.filter(Execution.scan_id == scan_id)
+    # By default exclude ROLLED_BACK executions — they've been recovered
+    # and should not reappear in the Remediation or Rollback sections.
+    if not include_rolled_back:
+        query = query.filter(Execution.status != "ROLLED_BACK")
     rows = query.order_by(Execution.created_at.desc()).all()
 
     result = []
     for row in rows:
-        find_row = db.query(Finding).filter(
-            Finding.id == row.finding_id,
-            Finding.scan_id == row.scan_id
-        ).first()
+        # Look up by finding primary key only — scan_id filter was redundant and
+        # caused silent None when the execution's scan_id differed from Finding's
+        find_row = db.query(Finding).filter(Finding.id == row.finding_id).first()
         result.append({
-            "id": row.id,
-            "execution_id": row.execution_id,
-            "scan_id": row.scan_id,
-            "finding_id": row.finding_id,
-            "action": row.action,
-            "status": row.status,
-            "reason": row.reason,
+            "id":             row.id,
+            "execution_id":   row.execution_id,
+            "scan_id":        row.scan_id,
+            "finding_id":     row.finding_id,
+            "action":         row.action,
+            "status":         row.status,
+            "reason":         row.reason,
             "approval_token": row.approval_token,
-            "resource_name": row.resource_name,
-            "meta": row.meta or {},
-            "created_at": row.created_at.isoformat() if row.created_at else None,
-            "finding_type": find_row.type if find_row else None,
+            "resource_name":  row.resource_name,
+            "meta":           row.meta or {},
+            "created_at":     row.created_at.isoformat() if row.created_at else None,
+            "finding_type":   find_row.type     if find_row else None,
             "finding_severity": find_row.severity if find_row else None,
         })
     return format_response(module="execute", mode="INFO", data={"executions": result})

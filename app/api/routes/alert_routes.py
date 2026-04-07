@@ -66,3 +66,21 @@ def get_alerts(
             "alerts": data,
         }
     )
+
+
+@router.post("/{alert_id}/acknowledge")
+def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):
+    """Soft-acknowledge an alert — removes it from the active list."""
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if not alert:
+        return format_response(module="alerts", mode="WRITE", errors=["Alert not found"])
+
+    db.delete(alert)
+    db.commit()
+
+    return format_response(
+        module="alerts",
+        mode="WRITE",
+        data={"acknowledged": True, "alert_id": alert_id}
+    )
+

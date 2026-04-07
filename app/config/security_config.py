@@ -1,4 +1,4 @@
-﻿"""
+"""
 Global security guardrails for Cloud Security Panel.
 """
 
@@ -43,6 +43,8 @@ ALLOWED_LIVE_ACTIONS = {
     "REMOVE_ELASTIC_IP",
     "STOP_EC2_INSTANCE",
     "TERMINATE_EC2_INSTANCE",
+    "FORCE_TERMINATE_EC2_INSTANCE",
+    "DELETE_DEFAULT_VPC",
     # Logging / Encryption
     "ENABLE_CLOUDTRAIL",
     "START_CLOUDTRAIL_LOGGING",
@@ -72,6 +74,9 @@ SEVERITY_MAP = {
 
     # EC2 / IMDSv1 (NEW)
     "EC2_IMDSV1_ENABLED": "MEDIUM",
+
+    # EC2 Unmonitored Running Instance (NEW)
+    "EC2_INSTANCE_RUNNING_UNMONITORED": "HIGH",
 
     # EBS Snapshot Public (NEW)
     "EBS_SNAPSHOT_PUBLIC": "CRITICAL",
@@ -135,6 +140,7 @@ SEVERITY_MAP = {
     "INTERNET_GATEWAY_ATTACHED": "LOW",
     "UNUSED_SECURITY_GROUP": "MEDIUM",
     "VPC_WITHOUT_NAT_GATEWAY": "LOW",
+    "DEFAULT_VPC_EXISTS":     "MEDIUM",
 
     # RDS (NEW)
     "RDS_PUBLICLY_ACCESSIBLE": "HIGH",

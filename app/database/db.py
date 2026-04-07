@@ -12,10 +12,13 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# Dependency for FastAPI routes (later use)
+# Dependency for FastAPI routes
 def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()   # ← CRITICAL: roll back dirty txn so pool stays clean
+        raise
     finally:
         db.close()

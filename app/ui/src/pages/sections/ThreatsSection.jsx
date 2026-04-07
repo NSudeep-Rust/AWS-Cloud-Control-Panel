@@ -316,14 +316,20 @@ export default function ThreatsSection({ dark }) {
     async function toggle() {
         if (toggling) return
         setToggling(true)
+        const wasRunning = monitorRunning
+        // OPTIMISTIC: flip immediately so the button responds at once
+        setMonitorStatus(prev => ({ ...(prev || {}), running: !wasRunning }))
         try {
-            if (monitorRunning) {
+            if (wasRunning) {
                 await axios.post(`${API}/api/threats/monitor/stop`)
             } else {
                 await axios.post(`${API}/api/threats/monitor/start`, { account_id: awsId })
             }
-            setTimeout(() => { fetchStatus(); setToggling(false) }, 900)
-        } catch { setToggling(false) }
+            setTimeout(() => { fetchStatus(); setToggling(false) }, 500)
+        } catch {
+            setMonitorStatus(prev => ({ ...(prev || {}), running: wasRunning }))
+            setToggling(false)
+        }
     }
 
     async function runThreatAnalysis(sid) {
@@ -606,11 +612,11 @@ export default function ThreatsSection({ dark }) {
                                     ))}
                                     <div style={{
                                         width: 72, height: 72, borderRadius: '50%',
-                                        background: 'radial-gradient(circle, rgba(255,153,0,0.14) 0%, rgba(255,153,0,0.03) 70%)',
+                                        background: '#fff9ee',
                                         border: '2px solid rgba(232,154,0,0.45)',
+                                        boxShadow: 'inset 0 0 24px rgba(255,153,0,0.12)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: 28, animation: 'socGlow 2.5s ease infinite',
-                                        background: '#fff9ee',
                                     }}>🛡️</div>
                                 </div>
                                 <div style={{ textAlign: 'center' }}>

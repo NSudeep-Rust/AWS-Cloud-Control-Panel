@@ -6,26 +6,19 @@ const api = axios.create({ baseURL: BASE })
 
 // ── Accounts API ─────────────────────────────────────────────────
 export const accountsAPI = {
-    // GET /api/accounts/ — list all root accounts
     list: () => api.get('/api/accounts/'),
-
-    // POST /api/accounts/ — create root account
     create: (data) => api.post('/api/accounts/', data),
-
-    // GET /api/accounts/iam-users/ — list all IAM users
-    // ── FIX: This was missing — was why IAM users never showed in Sign In ──
     listIamUsers: () => api.get('/api/accounts/iam-users/'),
-
-    // POST /api/accounts/iam-users/ — create IAM user
     createIamUser: (data) => api.post('/api/accounts/iam-users/', data),
 }
 
-// ── Scan API ────────────────────────────────────────────────────
+// ── Scan API ─────────────────────────────────────────────────────
 export const scanAPI = {
     run: (data) => api.post('/api/scan/', data),
+    findings: (accountId) => api.get('/api/scan/findings', { params: accountId ? { account_id: accountId } : {} }),
 }
 
-// ── Threat API ──────────────────────────────────────────────────
+// ── Threat API ────────────────────────────────────────────────────
 export const threatAPI = {
     analyze: (data) => api.post('/api/threats/', data),
     startMonitor: (data) => api.post('/api/threats/monitor/start', data),
@@ -33,35 +26,54 @@ export const threatAPI = {
     monitorStatus: () => api.get('/api/threats/monitor/status'),
 }
 
-// ── Execute API ─────────────────────────────────────────────────
+// ── Execute API ───────────────────────────────────────────────────
 export const executeAPI = {
     run: (data) => api.post('/api/execute/', data),
+    list: (accountId) => api.get('/api/execute/executions', { params: accountId ? { account_id: accountId } : {} }),
 }
 
-// ── Rollback API ────────────────────────────────────────────────
+// ── Rollback API ──────────────────────────────────────────────────
 export const rollbackAPI = {
     run: (data) => api.post('/api/rollback/', data),
+    list: (accountId) => api.get('/api/rollback/list', { params: accountId ? { account_id: accountId } : {} }),
 }
 
-// ── History API ─────────────────────────────────────────────────
+// ── History API ───────────────────────────────────────────────────
 export const historyAPI = {
-    all: () => api.get('/api/history/'),
-    summary: () => api.get('/api/history/summary'),
+    all: (accountId) => api.get('/api/history/', { params: accountId ? { account_id: accountId } : {} }),
+    summary: (accountId) => api.get('/api/history/summary', { params: accountId ? { account_id: accountId } : {} }),
     byResource: (resourceId) => api.get(`/api/history/resource/${resourceId}`),
 }
 
-// ── Analytics API ───────────────────────────────────────────────
+// ── Analytics API ─────────────────────────────────────────────────
 export const analyticsAPI = {
-    riskScore: () => api.get('/api/analytics/risk-score'),
-    riskTrend: () => api.get('/api/analytics/risk-trend'),
-    auditReport: () => api.get('/api/analytics/audit-report'),
-    policyViolations: () => api.get('/api/analytics/policy-violations'),
-    enforcePolicies: (account_id) => api.post('/api/analytics/enforce-policies', null, { params: { account_id } }),
+    riskScore:        (accountId) => api.get('/api/analytics/risk-score',        { params: accountId ? { account_id: accountId } : {} }),
+    riskTrend:        (accountId) => api.get('/api/analytics/risk-trend',        { params: accountId ? { account_id: accountId } : {} }),
+    auditReport:      (accountId) => api.get('/api/analytics/audit-report',      { params: accountId ? { account_id: accountId } : {} }),
+    policyViolations: (accountId) => api.get('/api/analytics/policy-violations', { params: accountId ? { account_id: accountId } : {} }),
+    breakdown:        (accountId) => api.get('/api/analytics/breakdown',         { params: accountId ? { account_id: accountId } : {} }),
+    enforcePolicies:  (account_id) => api.post('/api/analytics/enforce-policies', null, { params: { account_id } }),
+    complianceScore:  (accountId) => api.get('/api/analytics/compliance-score',  { params: accountId ? { account_id: accountId } : {} }),
 }
 
-// ── Alerts API ──────────────────────────────────────────────────
+// ── Drift Detection API ────────────────────────────────────────────
+export const driftAPI = {
+    get:     (accountId) => api.get('/api/drift/',         { params: accountId ? { account_id: accountId } : {} }),
+    history: (accountId, limit = 10) => api.get('/api/drift/history', { params: { ...(accountId ? { account_id: accountId } : {}), limit } }),
+}
+
+// ── Alerts API ────────────────────────────────────────────────────
 export const alertsAPI = {
-    all: () => api.get('/api/alerts/'),
+    all: (accountId) => api.get('/api/alerts/', { params: accountId ? { account_id: accountId } : {} }),
+    acknowledge: (alertId) => api.post(`/api/alerts/${alertId}/acknowledge`),
+}
+
+// ── Schedule API ──────────────────────────────────────────────────
+export const scheduleAPI = {
+    get:     (accountDbId)         => api.get('/api/schedule/',         { params: { account_db_id: accountDbId } }),
+    save:    (data)                => api.post('/api/schedule/',        data),
+    runNow:  (accountDbId)         => api.post('/api/schedule/run-now', null, { params: { account_db_id: accountDbId } }),
+    disable: (accountDbId)         => api.delete('/api/schedule/',      { params: { account_db_id: accountDbId } }),
 }
 
 export default api

@@ -7,6 +7,7 @@ from app.modules.scanner.rds_scanner import RDSScanner
 from app.modules.scanner.sg_scanner import SGScanner
 from app.modules.scanner.cloudwatch_scanner import CloudWatchScanner
 from app.modules.scanner.iam_extra_scanner import IAMExtraScanner
+from app.modules.scanner.vpc_scanner import VPCScanner
 from app.modules.iam_manager.iam_manager import IAMManager
 from app.config.security_config import SEVERITY_MAP
 import boto3
@@ -39,6 +40,7 @@ class Scanner:
         self.sg_scanner          = SGScanner(aws_session)
         self.cloudwatch_scanner  = CloudWatchScanner(aws_session)
         self.iam_extra_scanner   = IAMExtraScanner(aws_session)
+        self.vpc_scanner         = VPCScanner(aws_session)
 
         self.regions    = self.get_all_regions()
         sts             = self.aws_session.session.client("sts")
@@ -100,6 +102,7 @@ class Scanner:
                 for f in self.network_scanner.scan(region=r)
             ],
             "PublicSG":    lambda: self._scan_public_security_groups_region(region),
+            "VPC":         lambda: self.vpc_scanner.scan(region=region),
         }
 
         # Run all scanner functions for this region concurrently

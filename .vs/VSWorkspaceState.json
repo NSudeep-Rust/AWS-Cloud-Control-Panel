@@ -3,8 +3,13 @@
     "",
     "\\app",
     "\\app\\modules",
+    "\\app\\modules\\remediation",
+    "\\app\\scripts",
     "\\app\\ui",
-    "\\app\\ui\\src"
+    "\\app\\ui\\src",
+    "\\app\\ui\\src\\context",
+    "\\app\\ui\\src\\pages",
+    "\\static"
   ],
   "PreviewInSolutionExplorer": false
 }

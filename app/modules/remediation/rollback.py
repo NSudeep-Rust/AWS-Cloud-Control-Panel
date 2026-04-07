@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from botocore.exceptions import ClientError
 from app.database.db import get_db
 from sqlalchemy.orm import Session
@@ -43,6 +43,15 @@ class RollbackEngine:
         self._log_rollback(db, execution_id, "FAILED")
         return {
             "status": "FAILED",
+            "reason": reason
+        }
+
+    def _not_recoverable(self, db, execution_id, reason):
+        """For actions that are truly irreversible — marks the execution so it
+        never shows the Recover button again, and keeps the finding as 'fixed'."""
+        self._log_rollback(db, execution_id, "NOT_RECOVERABLE")
+        return {
+            "status": "NOT_RECOVERABLE",
             "reason": reason
         }
 
@@ -959,12 +968,10 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
             if action == "REMOVE_ELASTIC_IP":
-
-                return self._success(db, execution_id, {
-                    "status": "ROLLBACK_NOT_SUPPORTED",
-                    "execution_id": execution_id,
-                    "note": "Elastic IP was permanently released and cannot be restored"
-                })
+                return self._not_recoverable(
+                    db, execution_id,
+                    "Elastic IP was permanently released back to the AWS pool and cannot be restored to this account."
+                )
 
             # -----------------------------------
             # DELETE UNUSED IAM USER ROLLBACK
@@ -1047,11 +1054,16 @@ class RollbackEngine:
 
 
             if action == "TERMINATE_EC2_INSTANCE":
+                return self._not_recoverable(
+                    db, execution_id,
+                    "Terminated EC2 instances cannot be restored. AWS does not allow restarting a terminated instance — a new launch is required."
+                )
 
-                return self._success(db, execution_id, {
-                    "status": "ROLLBACK_NOT_SUPPORTED",
-                    "note": "Terminated instance cannot be restored"
-                })
+            if action == "FORCE_TERMINATE_EC2_INSTANCE":
+                return self._not_recoverable(
+                    db, execution_id,
+                    "Force-terminated EC2 instances cannot be restored. The instance was running when terminated — AWS does not support undoing a termination."
+                )
 
 
             # =========================================================
@@ -1334,9 +1346,43 @@ class RollbackEngine:
 
             
             # =====================================================
+            # DELETE DEFAULT VPC rollback — re-create default VPC
+            # =====================================================
+            if action == "DELETE_DEFAULT_VPC":
+                try:
+                    # ── use `row` + `metadata` — same pattern as every other handler ──
+                    region = (
+                        metadata.get("region")
+                        or row.region
+                        or self.aws_session.session.region_name
+                    )
+
+                    ec2 = self.aws_session.session.client("ec2", region_name=region)
+
+                    # AWS has a dedicated API to restore the default VPC in a region
+                    new_vpc = ec2.create_default_vpc()["Vpc"]
+                    new_vpc_id = new_vpc["VpcId"]
+
+                    return self._success(db, execution_id, {
+                        "status":       "ROLLBACK_SUCCESS",
+                        "execution_id": execution_id,
+                        "action":       action,
+                        "region":       region,
+                        "new_vpc_id":   new_vpc_id,
+                        "note": (
+                            "Default VPC re-created via AWS CreateDefaultVpc. "
+                            "AWS automatically restores the default subnets and route tables. "
+                            "NAT gateways and custom peering connections must be re-created manually."
+                        )
+                    })
+                except Exception as e:
+                    return self._fail(db, execution_id, f"VPC rollback failed: {e}")
+
+            # =====================================================
             # UNKNOWN
             # =====================================================
             return self._fail(db, execution_id, f"Rollback not supported for action: {action}")
+
 
         finally:
             db.close()

@@ -8,11 +8,14 @@ from app.modules.remediation.planner import RemediationPlanner
 from app.core.monitor_service import MonitorService
 from app.modules.threat_monitor.threat_monitor import ThreatMonitor
 from app.core.aws_session import AWSSession
-from app.database.models import Account 
+from app.database.models import Account
 from app.api.schemas import MonitorRequest
+from app.api.websocket_manager import ws_manager
+from app.core.fast_watcher import FastWatcher
 from datetime import datetime
 
-monitor_service = None
+monitor_service  = None
+fast_watcher_svc = None   # lightweight 8s watcher
 
 router = APIRouter(
     prefix="/api/threats",
@@ -88,7 +91,7 @@ def run_threat_monitor(request: ThreatRequest, db: Session = Depends(get_db)):
 
 @router.post("/monitor/start")
 def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
-    global monitor_service
+    global monitor_service, fast_watcher_svc
 
     # 1. Get account from DB
     account = db.query(Account).filter(
@@ -105,16 +108,30 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
         secret_key=account.secret_key,
         region_name=account.region
     )
-
     aws.initialize()
-
     print("🔥 MONITOR USING ACCOUNT:", aws.get_account_id())
 
-    # 3. Start monitoring
+    # 3. Start full monitor (runs complete threat scanner every 15s)
     monitor = ThreatMonitor(aws_session=aws)
-    monitor_service = MonitorService(monitor, interval=15)
+    monitor_service = MonitorService(
+        monitor,
+        interval=15,
+        broadcast_fn=ws_manager.broadcast_sync,
+        account_db_id=account.id          # ← pass DB id so live findings are saved
+    )
+    monitor_service.start()
 
-    return {"message": monitor_service.start()}
+    # 4. Start FastWatcher (lightweight 8s checks for critical changes)
+    if fast_watcher_svc:
+        fast_watcher_svc.stop()
+    fast_watcher_svc = FastWatcher(
+        aws_session=aws,
+        broadcast_fn=ws_manager.broadcast_sync,
+        db_fn=get_db
+    )
+    fast_watcher_svc.start()
+
+    return {"message": "Monitoring started (full scan + fast watcher active)"}
 
 
 @router.post("/monitor/stop")

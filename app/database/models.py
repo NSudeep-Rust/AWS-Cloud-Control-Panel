@@ -34,9 +34,10 @@ class Account(Base):
 class Scan(Base):
     __tablename__ = "scans"
 
-    id = Column(String, primary_key=True, index=True)  # UUID
+    id         = Column(String, primary_key=True, index=True)  # UUID
     account_id = Column(Integer, ForeignKey("accounts.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    source     = Column(String, nullable=True, default="MANUAL")  # MANUAL | SCHEDULED
 
     findings = relationship("Finding", back_populates="scan")
 
@@ -139,3 +140,48 @@ class IamUser(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     account = relationship("Account", back_populates="iam_users")
+
+
+# -------------------------
+# 9️⃣ LIVE MONITOR FINDINGS (for Alerts Dashboard — separate from Alert popup table)
+# -------------------------
+class LiveMonitorFinding(Base):
+    """
+    Stores the CURRENT set of CRITICAL/HIGH findings seen by the live threat monitor.
+    Refreshed on every scan cycle. Completely separate from the Alert table
+    which is used for WebSocket toast / Windows-Defender-style popup notifications.
+    """
+    __tablename__ = "live_monitor_findings"
+
+    id                 = Column(Integer, primary_key=True, autoincrement=True)
+    finding_id         = Column(String,  nullable=False, index=True)   # scanner finding ID
+    finding_type       = Column(String,  nullable=False)
+    severity           = Column(String,  nullable=False)               # CRITICAL | HIGH
+    resource_id        = Column(String,  nullable=True)
+    region             = Column(String,  nullable=True, default="global")
+    account_db_id      = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
+    remediation_action = Column(String,  nullable=True)
+    remediation_reason = Column(Text,    nullable=True)
+    dismissed          = Column(Integer, nullable=False, default=0)    # 0=active  1=dismissed
+    detected_at        = Column(DateTime, default=datetime.utcnow)
+
+
+# ──────────────────────────────────────────────────────────────────
+# 🔟 SCHEDULE CONFIG (per-account automated scan schedule)
+# ──────────────────────────────────────────────────────────────────
+class ScheduleConfig(Base):
+    """
+    One row per account.  Stores the user's automated scan schedule.
+    The SchedulerService background thread reads this every minute and fires
+    run_full_scan() when   now >= next_run_at   and   enabled == 1.
+    """
+    __tablename__ = "schedule_configs"
+
+    id             = Column(Integer, primary_key=True, autoincrement=True)
+    account_db_id  = Column(Integer, ForeignKey("accounts.id"), unique=True, nullable=False, index=True)
+    enabled        = Column(Integer, nullable=False, default=0)         # 0=off  1=on
+    interval_hours = Column(Integer, nullable=False, default=24)        # 1 | 6 | 12 | 24
+    last_run_at    = Column(DateTime, nullable=True)
+    next_run_at    = Column(DateTime, nullable=True)
+    created_at     = Column(DateTime, default=datetime.utcnow)
+    updated_at     = Column(DateTime, default=datetime.utcnow)

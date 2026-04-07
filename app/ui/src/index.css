@@ -17,9 +17,9 @@
     --accent3: #067340;
     --danger: #d13212;
     --warn: #f59e0b;
-    --text: #16191f;
-    --text2: #414d5c;
-    --text3: #687078;
+    --text: #0f1923;          /* slightly darker than original #16191f */
+    --text2: #323d4d;         /* was #414d5c — darker for better readability  */
+    --text3: #505a65;         /* was #687078 — noticeably darker, less ghostly */
     --mono: 'Space Mono', monospace;
     --sans: 'DM Sans', sans-serif;
     --radius: 4px;
@@ -29,13 +29,13 @@
     --shadow-lg: 0 4px 20px rgba(0,28,36,0.12);
 }
 
-html, body, #root {
-    height: 100%;
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
+html, body, 
+
+/* Headings: make section titles and card titles noticeably bolder */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
 }
+
 
 ::-webkit-scrollbar {
     width: 4px;
@@ -155,3 +155,5 @@ button {
         transform: translateY(-8px);
     }
 }
+
+

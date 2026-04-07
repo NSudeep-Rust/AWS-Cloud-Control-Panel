@@ -33,6 +33,7 @@ def get_all_history(
             "account_id": scan.account_id,
             "timestamp":  scan.created_at.isoformat() if scan.created_at else None,
             "count":      len(findings),
+            "source":     scan.source or "MANUAL",
             "details": [
                 {
                     "type":        f.type,
