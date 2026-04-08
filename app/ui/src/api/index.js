@@ -76,4 +76,12 @@ export const scheduleAPI = {
     disable: (accountDbId)         => api.delete('/api/schedule/',      { params: { account_db_id: accountDbId } }),
 }
 
+// ── Email Notifications API ───────────────────────────────────────
+export const emailAPI = {
+    getConfig:   (accountId) => api.get('/api/email/config',     { params: accountId ? { account_id: accountId } : {} }),
+    saveConfig:  (data)      => api.post('/api/email/config',    data),
+    sendTest:    (accountId) => api.post('/api/email/test',      null, { params: accountId ? { account_id: accountId } : {} }),
+    sendAlert:   (accountId) => api.post('/api/email/send-alert',null, { params: accountId ? { account_id: accountId } : {} }),
+}
+
 export default api

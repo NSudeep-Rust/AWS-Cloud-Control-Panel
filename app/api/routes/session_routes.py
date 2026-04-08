@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.database.models import (
-    Account, Scan, Finding, Execution, Rollback, Alert, FindingChange
+    Account, Scan, Finding, Execution, Rollback,
+    Alert, FindingChange, LiveMonitorFinding
 )
 
 router = APIRouter(prefix="/api/session", tags=["Session"])
@@ -35,7 +36,11 @@ def wipe_session(
             n = db.query(FindingChange).filter(FindingChange.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["finding_changes"] = n
 
-        # 4. Alerts — no direct account FK; filter by finding_id via Findings/Scans join
+        # 4. LiveMonitorFinding — has direct account_db_id FK (added with Alerts section)
+        n = db.query(LiveMonitorFinding).filter(LiveMonitorFinding.account_db_id == db_id).delete(synchronize_session=False)
+        deleted["live_monitor_findings"] = n
+
+        # 5. Alerts — no direct account FK; filter by finding_id via Findings/Scans join
         if scan_ids:
             finding_ids = [
                 f.id for f in db.query(Finding.id)
@@ -50,7 +55,7 @@ def wipe_session(
         else:
             deleted["alerts"] = 0
 
-        # 5. Executions — has scan_id (String, non-FK)
+        # 6. Executions — has scan_id (String, non-FK)
         if scan_ids:
             # Collect execution IDs so we can delete their rollbacks
             exec_ids = [
@@ -59,7 +64,7 @@ def wipe_session(
                 .all()
             ]
 
-            # 5a. Rollbacks — FK is execution_id (String → executions.id, which is Integer stored as String)
+            # 6a. Rollbacks — FK is execution_id
             if exec_ids:
                 n = db.query(Rollback).filter(
                     Rollback.execution_id.in_(exec_ids)
@@ -68,16 +73,16 @@ def wipe_session(
             else:
                 deleted["rollbacks"] = 0
 
-            # 5b. Delete Executions
+            # 6b. Delete Executions
             n = db.query(Execution).filter(Execution.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["executions"] = n
 
-        # 6. Findings
+        # 7. Findings
         if scan_ids:
             n = db.query(Finding).filter(Finding.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["findings"] = n
 
-        # 7. Scans
+        # 8. Scans
         n = db.query(Scan).filter(Scan.account_id == db_id).delete(synchronize_session=False)
         deleted["scans"] = n
 

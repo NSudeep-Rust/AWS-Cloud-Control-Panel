@@ -339,7 +339,8 @@ export default function Overview({ onNav, dark }) {
     const cacheKey = `scan_v3_${account?.account_type}_${awsId}_${dbId}`
 
     // ── Global scan state (shared with ScannerSection) ─────────────
-    const { status: scanStatus, findings: scanFindings, elapsed, startScan, stopScan, highlightFindingId, setHighlightFindingId } = useScan()
+    const { status: scanStatus, findings: scanFindings, elapsed, startScan, stopScan,
+            restoreFromCache, highlightFindingId, setHighlightFindingId } = useScan()
     const scanning = scanStatus === 'scanning'
 
     // ── Local dashboard state ──────────────────────────────────────
@@ -370,14 +371,17 @@ export default function Overview({ onNav, dark }) {
         return () => clearInterval(radarRef.current)
     }, [scanning])
 
-    // Fetch dashboard APIs on account change
+    // Fetch dashboard APIs on account change + restore last scan from localStorage
     useEffect(() => {
-        Object.keys(sessionStorage).forEach(k => {
-            if (k.startsWith('scan_v') && k !== cacheKey) sessionStorage.removeItem(k)
+        // Clear other accounts' scan caches from localStorage (not sessionStorage)
+        Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('scan_v') && k !== cacheKey) localStorage.removeItem(k)
         })
         setRiskData(null); setRiskTrend([]); setHistory(null);
         setAlerts([]); setMonitorStatus(null)
         setLoadingRisk(true); setLoadingAlerts(true)
+        // Restore last scan so findings stay visible after F5
+        restoreFromCache(cacheKey)
         fetchAll()
     }, [cacheKey])
 

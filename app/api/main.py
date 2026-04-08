@@ -11,6 +11,7 @@ from app.api.routes import session_routes
 from app.api.routes import live_finding_routes
 from app.api.routes import drift_routes
 from app.api.routes import schedule_routes
+from app.api.routes import email_routes
 from app.core.scheduler_service import scheduler_service
 from app.api.websocket_manager import ws_manager
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,6 +54,7 @@ app.include_router(session_routes.router)
 app.include_router(live_finding_routes.router)
 app.include_router(schedule_routes.router)
 app.include_router(drift_routes.router)
+app.include_router(email_routes.router)
 
 @app.get("/")
 def root():

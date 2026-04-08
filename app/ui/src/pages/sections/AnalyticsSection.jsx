@@ -1,7 +1,7 @@
 // AnalyticsSection.jsx — Premium Security Analytics, AWS CloudShield Theme
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { analyticsAPI } from '@/api'
+import { analyticsAPI, emailAPI } from '@/api'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -346,12 +346,13 @@ export function AnalyticsSection({ onNav }) {
   const noData   = !load && !err && !rs?.latest_scan_id && tr.length === 0
 
   const TABS = [
-    { k: 'overview',    label: '📊 Overview'    },
-    { k: 'trend',       label: '📈 Risk Trend'   },
-    { k: 'breakdown',   label: '🔍 Breakdown'    },
-    { k: 'regions',     label: '🌏 Regions'      },
-    { k: 'violations',  label: '⚠️ Violations'   },
-    { k: 'compliance',  label: '🛡️ Compliance'   },
+    { k: 'overview',       label: '📊 Overview'      },
+    { k: 'trend',          label: '📈 Risk Trend'     },
+    { k: 'breakdown',      label: '🔍 Breakdown'      },
+    { k: 'regions',        label: '🌏 Regions'        },
+    { k: 'violations',     label: '⚠️ Violations'     },
+    { k: 'compliance',     label: '🛡️ Compliance'     },
+    { k: 'notifications',  label: '📧 Notifications'  },
   ]
 
   return (
@@ -681,6 +682,11 @@ export function AnalyticsSection({ onNav }) {
           <ComplianceScoreTab cs={cs} />
         )}
 
+        {/* ── 📧 Notifications tab ────────────────────────────────────────────── */}
+        {tab === 'notifications' && (
+          <EmailNotificationsTab accountId={accountId} />
+        )}
+
       </div>
     </div>
   )
@@ -801,5 +807,323 @@ function ComplianceScoreTab({ cs }) {
         )
       })}
     </div>
+  )
+}
+
+// ── Email Notifications Tab ───────────────────────────────────────────────────
+function EmailNotificationsTab({ accountId }) {
+  const BLANK = {
+    smtp_host: 'smtp.gmail.com', smtp_port: 587,
+    smtp_username: '', smtp_password: '', recipient_email: '',
+    sender_name: 'CloudShield Security',
+    enabled: false,
+    notify_on_critical: true, notify_on_scan_complete: true, notify_on_drift: true,
+  }
+  const [form,     setForm]     = useState(BLANK)
+  const [loading,  setLoading]  = useState(true)
+  const [saving,   setSaving]   = useState(false)
+  const [testing,  setTesting]  = useState(false)
+  const [alerting, setAlerting] = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [toast,    setToast]    = useState(null)
+  const [showPwd,  setShowPwd]  = useState(false)
+
+  useEffect(() => {
+    emailAPI.getConfig(accountId)
+      .then(r => {
+        const d = r.data?.data || {}
+        setForm(prev => ({ ...prev, ...d, smtp_password: '' }))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [accountId])
+
+  function set(key, val) { setForm(f => ({ ...f, [key]: val })) }
+
+  function showMsg(ok, msg) {
+    setToast({ ok, msg })
+    setTimeout(() => setToast(null), 6000)
+  }
+
+  // Returns true on success — used by handleTest to chain
+  async function doSave() {
+    setSaving(true); setSaved(false)
+    try {
+      await emailAPI.saveConfig({ ...form, account_id: accountId || null })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)  // FIX 1: auto-dismiss tick
+      return true
+    } catch (err) {
+      showMsg(false, `Save failed: ${err.response?.data?.detail || err.message}`)
+      return false
+    } finally { setSaving(false) }
+  }
+
+  async function handleSave(e) {
+    if (e) e.preventDefault()
+    const ok = await doSave()
+    if (ok) showMsg(true, 'Settings saved successfully!')
+  }
+
+  // FIX 3: auto-save first so test always uses current form values
+  async function handleTest() {
+    setTesting(true)
+    showMsg(null, 'Saving settings then connecting to SMTP...')
+    try {
+      const savedOk = await doSave()
+      if (!savedOk) { setTesting(false); return }
+      const r = await emailAPI.sendTest(accountId)
+      const d = r.data?.data || {}
+      if (d.sent) showMsg(true,  `Test email delivered to ${d.recipient}! Check your inbox.`)
+      else        showMsg(false, `SMTP error: ${d.error || 'Check host/password'}`)
+    } catch (err) {
+      showMsg(false, err.response?.data?.detail || 'Could not reach SMTP server')
+    } finally { setTesting(false) }
+  }
+
+  async function handleAlert() {
+    setAlerting(true)
+    try {
+      const r = await emailAPI.sendAlert(accountId)
+      const d = r.data?.data || {}
+      if (d.sent) showMsg(true,  `Alert email sent — ${d.count} finding(s).`)
+      else        showMsg(false, d.error || 'Send failed. Save settings first.')
+    } catch { showMsg(false, 'Failed to send alert. Save settings first.') }
+    finally { setAlerting(false) }
+  }
+
+  // FIX 2: Custom preset clears host so user can type freely
+  const PRESETS = [
+    { label: 'Gmail',   host: 'smtp.gmail.com',     port: 587 },
+    { label: 'Outlook', host: 'smtp.office365.com',  port: 587 },
+    { label: 'Yahoo',   host: 'smtp.mail.yahoo.com', port: 587 },
+    { label: 'Custom',  host: '__CUSTOM__',           port: 587 },
+  ]
+  const isCustom = !PRESETS.slice(0,3).some(p => p.host === form.smtp_host)
+
+  function autoDetectSmtp(email) {
+    const domain = (email.split('@')[1] || '').toLowerCase()
+    if (domain.includes('gmail'))     { set('smtp_host','smtp.gmail.com');     set('smtp_port',587) }
+    else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live'))
+                                      { set('smtp_host','smtp.office365.com'); set('smtp_port',587) }
+    else if (domain.includes('yahoo')){ set('smtp_host','smtp.mail.yahoo.com');set('smtp_port',587) }
+  }
+
+  const hostDomain   = (form.smtp_host || '').split('.').slice(-2).join('.')
+  const senderDomain = ((form.smtp_username || '').split('@')[1] || '').split('.').slice(-2).join('.')
+  const mismatch = form.smtp_username && form.smtp_host && !isCustom &&
+    !form.smtp_host.includes(senderDomain) && !['office365.com','outlook.com'].includes(senderDomain)
+
+  const inp = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1.5px solid #e5e8ed', fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box', background:'#fff', color:'#0f1111' }
+  const lbl = { fontSize:11.5, fontWeight:700, color:'#565959', marginBottom:5, display:'block', textTransform:'uppercase', letterSpacing:0.5 }
+  const sec = { background:'#fff', borderRadius:12, border:'1.5px solid #e5e8ed', padding:'20px 22px', boxShadow:'0 1px 5px rgba(0,0,0,0.04)' }
+
+  if (loading) return (
+    <div style={{ padding:60, textAlign:'center', color:'#8d9191' }}>
+      <div style={{ width:20, height:20, border:'2.5px solid #e5e8ed', borderTopColor:'#FF9900', borderRadius:'50%', display:'inline-block', animation:'anlSpin 0.8s linear infinite', marginBottom:10 }} />
+      <div style={{ fontSize:13 }}>Loading notification settings...</div>
+    </div>
+  )
+
+  return (
+    <form onSubmit={handleSave} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+      {toast && (
+        <div style={{ padding:'12px 18px', borderRadius:10, fontWeight:600, fontSize:13,
+          background: toast.ok === true ? 'rgba(29,129,2,0.08)' : toast.ok === false ? 'rgba(209,50,18,0.08)' : 'rgba(9,114,211,0.08)',
+          border: `1.5px solid ${toast.ok === true ? 'rgba(29,129,2,0.3)' : toast.ok === false ? 'rgba(209,50,18,0.3)' : 'rgba(9,114,211,0.3)'}`,
+          color: toast.ok === true ? '#1d8102' : toast.ok === false ? '#d13212' : '#0972d3',
+          animation:'anlFade 0.3s ease' }}>
+          {toast.msg}
+        </div>
+      )}
+
+      <div style={{ ...sec, display:'flex', alignItems:'center', gap:16 }}>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:15, fontWeight:800, color:'#0f1111', marginBottom:3 }}>Email Notifications</div>
+          <div style={{ fontSize:12, color:'#8d9191' }}>
+            Receive security alerts, scan summaries, and drift warnings by email.
+            {!form.smtp_username && <span style={{ color:'#c8960c', fontWeight:600 }}> Fill SMTP settings below and Save first.</span>}
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:12, fontWeight:600, color: form.enabled ? '#1d8102' : '#8d9191' }}>
+            {form.enabled ? 'Enabled' : 'Disabled'}
+          </span>
+          <div onClick={() => set('enabled', !form.enabled)}
+            style={{ width:44, height:24, borderRadius:12, cursor:'pointer', position:'relative',
+              background: form.enabled ? '#1d8102' : '#e5e8ed', transition:'background 0.25s', flexShrink:0 }}>
+            <div style={{ position:'absolute', top:2, left: form.enabled ? 22 : 2, width:20, height:20,
+              borderRadius:'50%', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,0.25)', transition:'left 0.25s' }} />
+          </div>
+        </div>
+      </div>
+
+      <div style={sec}>
+        <div style={{ fontSize:13, fontWeight:800, color:'#0f1111', marginBottom:14, paddingBottom:10, borderBottom:'1px solid #f0f0f0' }}>
+          SMTP Server Settings
+        </div>
+
+        <div style={{ display:'flex', gap:6, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
+          <span style={{ fontSize:11, color:'#8d9191' }}>Quick fill:</span>
+          {PRESETS.map(p => {
+            const isSel = p.host === '__CUSTOM__' ? isCustom : form.smtp_host === p.host
+            return (
+              <button key={p.label} type="button"
+                onClick={() => {
+                  if (p.host === '__CUSTOM__') {
+                    setForm(f => ({ ...f, smtp_host: '', smtp_port: 587 }))
+                  } else {
+                    setForm(f => ({ ...f, smtp_host: p.host, smtp_port: p.port }))
+                  }
+                }}
+                style={{ fontSize:11, fontWeight:600, padding:'4px 12px', borderRadius:6,
+                  border: isSel ? '1.5px solid #FF9900' : '1px solid #e5e8ed',
+                  background: isSel ? 'rgba(255,153,0,0.1)' : '#f8f8f8',
+                  color: isSel ? '#FF9900' : '#565959', cursor:'pointer' }}>
+                {p.label}
+              </button>
+            )
+          })}
+          <span style={{ fontSize:10, color:'#adb5bd', marginLeft:4 }}>Port 587=STARTTLS · 465=SSL</span>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 120px', gap:12, marginBottom:12 }}>
+          <div>
+            <label style={lbl}>SMTP Host</label>
+            <input style={inp} value={form.smtp_host} onChange={e => set('smtp_host', e.target.value)}
+              placeholder="smtp.gmail.com" required />
+          </div>
+          <div>
+            <label style={lbl}>Port</label>
+            <input style={inp} type="number" value={form.smtp_port} onChange={e => set('smtp_port', +e.target.value)}
+              placeholder="587" required />
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+          <div>
+            <label style={lbl}>Sender Email (SMTP Username)</label>
+            <input style={inp} type="email" value={form.smtp_username}
+              onChange={e => { set('smtp_username', e.target.value); if (!isCustom) autoDetectSmtp(e.target.value) }}
+              placeholder="yourname@gmail.com" required />
+            {mismatch && (
+              <div style={{ marginTop:5, fontSize:11, color:'#c8960c', fontWeight:600 }}>
+                Warning: SMTP host ({hostDomain}) does not match sender domain ({senderDomain}) - authentication will likely fail.
+              </div>
+            )}
+          </div>
+          <div>
+            <label style={lbl}>App Password <span style={{ fontWeight:400, textTransform:'none', color:'#adb5bd' }}>(not your login)</span></label>
+            <div style={{ position:'relative' }}>
+              <input style={{ ...inp, paddingRight:40 }}
+                type={showPwd ? 'text' : 'password'}
+                value={form.smtp_password}
+                onChange={e => set('smtp_password', e.target.value)}
+                placeholder={form.smtp_host.includes('gmail') ? '16-char Gmail App Password' : 'SMTP / App password'} />
+              <button type="button" onClick={() => setShowPwd(v => !v)}
+                style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', fontSize:14, color:'#8d9191' }}>
+                {showPwd ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {form.smtp_password && form.smtp_host.includes('gmail') && (
+              <div style={{ marginTop:4, fontSize:10.5, fontWeight:600,
+                color: form.smtp_password.replace(/\s/g,'').length === 16 ? '#1d8102' : '#c8960c' }}>
+                {form.smtp_password.replace(/\s/g,'').length === 16
+                  ? 'Correct length (16 chars)'
+                  : `Gmail App Passwords are 16 chars - you have ${form.smtp_password.replace(/\s/g,'').length}`}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div>
+            <label style={lbl}>Recipient Email (alerts sent here)</label>
+            <input style={inp} type="email" value={form.recipient_email}
+              onChange={e => set('recipient_email', e.target.value)}
+              placeholder="security@yourcompany.com" required />
+          </div>
+          <div>
+            <label style={lbl}>Sender Display Name</label>
+            <input style={inp} value={form.sender_name}
+              onChange={e => set('sender_name', e.target.value)}
+              placeholder="CloudShield Security" />
+          </div>
+        </div>
+
+        <div style={{ marginTop:12, padding:'10px 14px', background:'rgba(9,114,211,0.05)', borderRadius:8, borderLeft:'3px solid rgba(9,114,211,0.3)', fontSize:11.5, color:'#3d4f60', lineHeight:1.6 }}>
+          {form.smtp_host?.includes('gmail') && <>
+            Gmail tip: Go to myaccount.google.com/apppasswords and create a 16-char App Password for "Mail". Requires 2FA on your Google account. Do NOT use your login password.
+          </>}
+          {form.smtp_host?.includes('office365') && <>
+            Outlook/365 tip: Use your Microsoft password. If your org enforces Modern Auth, create an App Password at account.microsoft.com/security.
+          </>}
+          {form.smtp_host?.includes('yahoo') && <>
+            Yahoo tip: Generate an App Password at login.yahoo.com/account/security. Requires 2-Step Verification on your Yahoo account.
+          </>}
+          {(!form.smtp_host || isCustom) && <>
+            Custom SMTP: Use your mail server address and credentials. Port 587 = STARTTLS encryption. Port 465 = direct SSL.
+          </>}
+        </div>
+      </div>
+
+      <div style={sec}>
+        <div style={{ fontSize:13, fontWeight:800, color:'#0f1111', marginBottom:14, paddingBottom:10, borderBottom:'1px solid #f0f0f0' }}>
+          Alert Triggers
+        </div>
+        {[
+          { key:'notify_on_critical',     title:'Critical/High Findings',    sub:'Fired by live monitor when CRITICAL or HIGH issues are detected' },
+          { key:'notify_on_scan_complete', title:'Scan Complete Summary',      sub:'Sent after every scan with risk score and severity breakdown' },
+          { key:'notify_on_drift',         title:'Drift Alert (New Findings)', sub:'Sent when a scan finds new findings vs the previous scan' },
+        ].map(row => (
+          <div key={row.key} style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 0', borderBottom:'1px solid #f8f8f8' }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#0f1111' }}>{row.title}</div>
+              <div style={{ fontSize:11, color:'#8d9191', marginTop:2 }}>{row.sub}</div>
+            </div>
+            <div onClick={() => set(row.key, !form[row.key])}
+              style={{ width:40, height:22, borderRadius:11, cursor:'pointer', position:'relative', flexShrink:0,
+                background: form[row.key] ? '#0972d3' : '#e5e8ed', transition:'background 0.2s' }}>
+              <div style={{ position:'absolute', top:2, left: form[row.key] ? 20 : 2, width:18, height:18,
+                borderRadius:'50%', background:'#fff', boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left 0.2s' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
+        <button type="submit" disabled={saving}
+          style={{ padding:'10px 24px', borderRadius:9, border:'none',
+            background: saving ? '#e5e8ed' : 'linear-gradient(135deg,#FF9900,#e07b00)',
+            color: saving ? '#8d9191' : '#0f1111', fontWeight:800, fontSize:13,
+            cursor: saving ? 'wait' : 'pointer', boxShadow: saving ? 'none' : '0 4px 14px rgba(255,153,0,0.4)',
+            transition:'all 0.16s', fontFamily:'Inter,sans-serif' }}>
+          {saving ? 'Saving...' : 'Save Settings'}
+        </button>
+
+        <button type="button" disabled={testing} onClick={handleTest}
+          style={{ padding:'10px 20px', borderRadius:9, border:'1.5px solid #0972d3', background:'transparent',
+            color:'#0972d3', fontWeight:700, fontSize:13, cursor: testing ? 'wait' : 'pointer',
+            transition:'all 0.16s', fontFamily:'Inter,sans-serif' }}>
+          {testing ? 'Testing SMTP...' : 'Send Test Email'}
+        </button>
+
+        <button type="button" disabled={alerting || !form.enabled} onClick={handleAlert}
+          style={{ padding:'10px 20px', borderRadius:9, border:'1.5px solid #d13212', background:'transparent',
+            color:'#d13212', fontWeight:700, fontSize:13,
+            cursor: (alerting || !form.enabled) ? 'not-allowed' : 'pointer',
+            opacity: !form.enabled ? 0.5 : 1, transition:'all 0.16s', fontFamily:'Inter,sans-serif' }}>
+          {alerting ? 'Sending...' : 'Send Alert Now'}
+        </button>
+
+        {saved && <span style={{ fontSize:12, color:'#1d8102', fontWeight:700 }}>Saved</span>}
+      </div>
+
+      <div style={{ fontSize:11, color:'#adb5bd' }}>
+        Send Test Email auto-saves your current form first, then connects to your SMTP server and sends a real verification email.
+      </div>
+
+    </form>
   )
 }

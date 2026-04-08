@@ -80,6 +80,11 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                 }
                 // Clear seen-alert IDs so toasts reset fresh on next login
                 localStorage.removeItem('seen_alert_ids')
+                // Clear cached scan results from localStorage (scan_v* keys)
+                // so findings don't carry over to the next account/session
+                Object.keys(localStorage).forEach(k => {
+                    if (k.startsWith('scan_v')) localStorage.removeItem(k)
+                })
             }
         } catch { /* ignore */ } finally {
             setClearing(false)

@@ -23,6 +23,13 @@ from app.core.aws_session import AWSSession
 from app.modules.scanner.scanner import run_full_scan
 
 
+def get_interval_td(interval_hours: int):
+    """Negative = minutes (e.g. -1 → 1 min, -20 → 20 min). Positive = hours."""
+    if interval_hours < 0:
+        return timedelta(minutes=abs(interval_hours))
+    return timedelta(hours=interval_hours)
+
+
 class SchedulerService:
 
     def __init__(self):
@@ -120,7 +127,7 @@ class SchedulerService:
             cfg = db.query(ScheduleConfig).filter(ScheduleConfig.id == config_id).first()
             if cfg:
                 cfg.last_run_at = datetime.utcnow()
-                cfg.next_run_at = datetime.utcnow() + timedelta(hours=cfg.interval_hours)
+                cfg.next_run_at = datetime.utcnow() + get_interval_td(cfg.interval_hours)
                 cfg.updated_at  = datetime.utcnow()
                 db.commit()
 
@@ -133,7 +140,7 @@ class SchedulerService:
             try:
                 cfg = db.query(ScheduleConfig).filter(ScheduleConfig.id == config_id).first()
                 if cfg:
-                    cfg.next_run_at = datetime.utcnow() + timedelta(hours=cfg.interval_hours)
+                    cfg.next_run_at = datetime.utcnow() + get_interval_td(cfg.interval_hours)
                     cfg.updated_at  = datetime.utcnow()
                     db.commit()
             except Exception:

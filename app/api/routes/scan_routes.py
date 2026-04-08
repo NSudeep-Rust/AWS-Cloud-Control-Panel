@@ -11,7 +11,10 @@ from app.database.db import get_db
 from app.database.models import Scan, Finding
 from app.database.models import Account
 from app.modules.scanner.scanner import run_full_scan
+from app.core.email_service import EmailService
+from app.database.db import SessionLocal
 import uuid
+import threading
 
 
 router = APIRouter(
@@ -93,6 +96,46 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             db.add(finding)
 
         db.commit()
+
+        # ── 📧 Email notifications (fire-and-forget in background) ────────────
+        def _notify(acct_id, acct_name, scan_findings, sid):
+            """Runs in a daemon thread — won't block the HTTP response."""
+            try:
+                bg_db = SessionLocal()
+                cfg   = EmailService.get_config(acct_id, bg_db)
+                if cfg and cfg.enabled:
+                    # Compute quick stats for scan-summary email
+                    sev_map = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+                    for f in scan_findings:
+                        sev_map[f.get("severity", "LOW")] = sev_map.get(f.get("severity", "LOW"), 0) + 1
+                    crit  = sev_map["CRITICAL"]
+                    high  = sev_map["HIGH"]
+                    score = min(100, crit * 15 + high * 8 + sev_map["MEDIUM"] * 3 + sev_map["LOW"])
+                    level = "CRITICAL" if crit > 5 else "HIGH" if crit > 0 or high > 10 else "MEDIUM" if high > 0 else "LOW"
+                    stats = {
+                        "total_findings": len(scan_findings),
+                        "critical": crit, "high": high,
+                        "medium": sev_map["MEDIUM"], "low": sev_map["LOW"],
+                        "risk_score": score, "risk_level": level,
+                    }
+                    EmailService.send_scan_summary(stats, acct_name, cfg)
+
+                    # Drift alert — compare to previous scan
+                    from app.api.routes.drift_routes import get_drift
+                    drift_resp = get_drift(account_id=acct_id, db=bg_db)
+                    drift_data = getattr(drift_resp, "body", None)
+                    if drift_data:
+                        import json
+                        d = json.loads(drift_data).get("data", {})
+                        if d.get("has_drift"):
+                            EmailService.send_drift_alert(d, acct_name, cfg)
+                bg_db.close()
+            except Exception as ex:
+                print(f"[Email] Notification error: {ex}")
+
+        acct_name = account.aws_account_id if account else "Your AWS Account"
+        t = threading.Thread(target=_notify, args=(account.id, acct_name, findings, scan_id), daemon=True)
+        t.start()
 
         # ✅ Debug logs (VERY IMPORTANT)
         print("\n" + "="*55)

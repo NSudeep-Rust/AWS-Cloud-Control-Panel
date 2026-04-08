@@ -105,9 +105,10 @@ export function ScanProvider({ children }) {
             setScanId(id)
             setStatus('done')
 
-            // Write to sessionStorage so both pages see the cache
+            // Write to localStorage so scan survives F5 / Electron window reload
+            // (sessionStorage is cleared on refresh by browser spec)
             try {
-                sessionStorage.setItem(cacheKey, JSON.stringify({
+                localStorage.setItem(cacheKey, JSON.stringify({
                     scan_id: id, findings: found, aws_id: awsId, db_id: dbId
                 }))
             } catch { }
@@ -138,12 +139,30 @@ export function ScanProvider({ children }) {
         setScanMeta(null)
     }, [stopScan])
 
+    // ── Restore from localStorage cache after F5 / Electron reload ──────────
+    // Call this with the current cacheKey from Overview or ScannerSection on mount.
+    // Only restores if the context is still in 'idle' (i.e. no active / fresh scan).
+    const restoreFromCache = useCallback((cacheKey) => {
+        if (status !== 'idle') return  // active or completed scan already in state
+        try {
+            const raw = localStorage.getItem(cacheKey)
+            if (!raw) return
+            const { scan_id, findings: f, aws_id, db_id } = JSON.parse(raw)
+            if (Array.isArray(f) && f.length > 0) {
+                setFindings(f)
+                setScanId(scan_id)
+                setStatus('done')
+                setScanMeta({ awsId: aws_id, dbId: db_id, cacheKey })
+            }
+        } catch { }
+    }, [status])
+
     const value = {
         status, findings, scanId, elapsed,
         scanLineIdx, factIdx, factVisible,
         scanMeta, SCAN_REGIONS,
         highlightFindingId, setHighlightFindingId,
-        startScan, stopScan, resetScan,
+        startScan, stopScan, resetScan, restoreFromCache,
     }
 
     return <ScanCtx.Provider value={value}>{children}</ScanCtx.Provider>

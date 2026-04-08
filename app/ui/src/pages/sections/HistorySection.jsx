@@ -466,8 +466,8 @@ function SchedulePanel({ accountDbId }) {
     }, [accountDbId])
 
     useEffect(() => { loadCfg() }, [loadCfg])
-    // countdown ticker
-    useEffect(() => { const t = setInterval(() => setTick(x=>x+1), 30000); return () => clearInterval(t) }, [])
+    // countdown ticker — every 10s so 1-min interval looks live
+    useEffect(() => { const t = setInterval(() => setTick(x=>x+1), 10000); return () => clearInterval(t) }, [])
 
     async function save(newEnabled, newInterval) {
         if (!accountDbId) return
@@ -498,11 +498,19 @@ function SchedulePanel({ accountDbId }) {
     }
 
     const INTERVALS = [
-        { v:1,  label:'Every 1h'  },
-        { v:6,  label:'Every 6h'  },
-        { v:12, label:'Every 12h' },
-        { v:24, label:'Every 24h' },
+        { v:-1,  label:'Every 1m'  },
+        { v:-20, label:'Every 20m' },
+        { v:1,   label:'Every 1h'  },
+        { v:6,   label:'Every 6h'  },
+        { v:12,  label:'Every 12h' },
+        { v:24,  label:'Every 24h' },
     ]
+
+    // Human-readable interval label from stored value
+    function intervalLabel(v) {
+        const found = INTERVALS.find(i => i.v === v)
+        return found ? found.label : (v < 0 ? `Every ${Math.abs(v)}m` : `Every ${v}h`)
+    }
 
     return (
         <div style={{ marginBottom:16, borderRadius:12, border:'1.5px solid rgba(121,83,210,0.25)', background:'rgba(121,83,210,0.04)', overflow:'hidden' }}>
@@ -513,7 +521,7 @@ function SchedulePanel({ accountDbId }) {
                     <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text)', marginBottom:1 }}>Scheduled Scans</div>
                     <div style={{ fontSize:11, color:'var(--text3)' }}>
                         {enabled && cfg?.next_run_at
-                            ? <>Next scan in <strong style={{color:'#7953d2'}}>{countdown(cfg.next_run_at)}</strong> · Every {cfg.interval_hours}h · Last: {cfg.last_run_at ? relTime(cfg.last_run_at) : 'Never'}</>
+                            ? <>Next scan in <strong style={{color:'#7953d2'}}>{countdown(cfg.next_run_at)}</strong> · {intervalLabel(cfg.interval_hours)} · Last: {cfg.last_run_at ? relTime(cfg.last_run_at) : 'Never'}</>
                             : 'Automatically snapshot your AWS environment on a schedule'}
                     </div>
                 </div>

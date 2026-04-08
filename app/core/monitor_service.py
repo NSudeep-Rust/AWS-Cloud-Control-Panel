@@ -2,9 +2,10 @@ import threading
 import time
 import uuid
 from app.modules.diff_engine.diff_engine import DiffEngine
-from app.database.db import get_db
-from app.database.models import FindingChange, Alert, LiveMonitorFinding
+from app.database.db import get_db, SessionLocal
+from app.database.models import FindingChange, Alert, LiveMonitorFinding, Account
 from app.config.security_config import ALERT_SEVERITIES
+from app.core.email_service import EmailService
 from datetime import datetime
 
 # Windows desktop notification (plyer)
@@ -189,6 +190,31 @@ class MonitorService:
                         crit = sum(1 for f in current_findings if f.get("severity") == "CRITICAL")
                         high = sum(1 for f in current_findings if f.get("severity") == "HIGH")
                         print(f"📊 LiveMonitorFindings updated → CRITICAL:{crit} HIGH:{high}")
+
+                        # 📧 Send critical alert email (fire-and-forget)
+                        crit_high = [
+                            {"type": f.get("type",""), "severity": f.get("severity",""),
+                             "resource_id": f.get("resource_id",""), "region": f.get("region","global")}
+                            for f in current_findings if f.get("severity") in ("CRITICAL", "HIGH")
+                        ]
+                        if crit_high and self.account_db_id:
+                            def _email_alert(acct_id, findings_list):
+                                try:
+                                    em_db = SessionLocal()
+                                    cfg   = EmailService.get_config(acct_id, em_db)
+                                    if cfg and cfg.enabled and cfg.notify_on_critical:
+                                        acct  = em_db.query(Account).filter(Account.id == acct_id).first()
+                                        name  = acct.aws_account_id if acct else "Your AWS Account"
+                                        EmailService.send_critical_alert(findings_list, name, cfg)
+                                    em_db.close()
+                                except Exception as em_err:
+                                    print(f"[Email] Monitor alert error: {em_err}")
+                            threading.Thread(
+                                target=_email_alert,
+                                args=(self.account_db_id, crit_high),
+                                daemon=True
+                            ).start()
+
                     except Exception as live_err:
                         print(f"❌ LiveMonitorFinding save error: {live_err}")
 

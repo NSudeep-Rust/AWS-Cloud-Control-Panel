@@ -57515,5 +57515,43 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-08T04:48:31.992806",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "ca6d15ce-e32c-45c0-9c89-7831f2f37163",
+          "resource_id": "rust3",
+          "region": null,
+          "action": "DETACH_ADMIN_POLICY",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-08T04:48:31.992806"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-08T04:51:17.805604",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "9e2f551e-f958-4f6f-ac77-6cb45cbf0fe1",
+          "resource_id": null,
+          "region": "eu-north-1",
+          "action": "ENABLE_CLOUDTRAIL",
+          "status": "EXECUTED",
+          "snapshot_before": null,
+          "revoked_rules": null,
+          "timestamp": "2026-04-08T04:51:17.805604"
+        }
+      }
+    ]
   }
 ]

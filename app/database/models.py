@@ -184,4 +184,41 @@ class ScheduleConfig(Base):
     last_run_at    = Column(DateTime, nullable=True)
     next_run_at    = Column(DateTime, nullable=True)
     created_at     = Column(DateTime, default=datetime.utcnow)
-    updated_at     = Column(DateTime, default=datetime.utcnow)
+    updated_at     = Column(DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────────────────────
+# 8️⃣  EMAIL NOTIFICATION CONFIG
+# ─────────────────────────────────────────────────────────────
+from sqlalchemy import Boolean
+
+class EmailConfig(Base):
+    """
+    Stores SMTP credentials and notification preferences per account.
+    One row per account (or one global row when account_id is NULL).
+    Password is stored as plain text — for production use a secrets manager.
+    """
+    __tablename__ = "email_configs"
+
+    id                      = Column(Integer, primary_key=True, autoincrement=True)
+    account_id              = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
+
+    # SMTP settings
+    smtp_host               = Column(String, default="smtp.gmail.com")
+    smtp_port               = Column(Integer, default=587)
+    smtp_username           = Column(String, nullable=True)   # sender Gmail / Outlook address
+    smtp_password           = Column(String, nullable=True)   # app-password (not login password)
+    recipient_email         = Column(String, nullable=True)   # where alerts are sent
+    sender_name             = Column(String, default="CloudShield Security")
+
+    # Global toggle
+    enabled                 = Column(Boolean, default=False)
+
+    # Per-event toggles
+    notify_on_critical      = Column(Boolean, default=True)   # live monitor CRITICAL findings
+    notify_on_scan_complete = Column(Boolean, default=True)   # scan finish summary
+    notify_on_drift         = Column(Boolean, default=True)   # drift detected (new findings)
+
+    created_at              = Column(DateTime, default=datetime.utcnow)
+    updated_at              = Column(DateTime, default=datetime.utcnow)
+

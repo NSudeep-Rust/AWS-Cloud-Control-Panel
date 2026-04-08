@@ -106,9 +106,14 @@ export function ScannerSection({ onNav, dark }) {
     const {
         status, findings, elapsed,
         scanLineIdx, factIdx, factVisible,
-        startScan, stopScan,
+        startScan, stopScan, restoreFromCache,
         highlightFindingId, setHighlightFindingId,
     } = useScan()
+
+    // ── On mount: restore last scan from localStorage (survives F5 / Electron reload) ──
+    useEffect(() => {
+        if (cacheKey) restoreFromCache(cacheKey)
+    }, [cacheKey]) // eslint-disable-line
 
     const scanning = status === 'scanning'
     const hasScan = status === 'done'

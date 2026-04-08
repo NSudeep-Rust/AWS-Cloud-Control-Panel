@@ -24,8 +24,21 @@ router = APIRouter(prefix="/api/schedule", tags=["Schedule"])
 
 class ScheduleRequest(BaseModel):
     account_db_id:  int
-    interval_hours: int   = 24   # 1 | 6 | 12 | 24
+    interval_hours: int   = 24   # -1=1min | -20=20min | 1 | 6 | 12 | 24
     enabled:        int   = 1    # 1=on  0=off
+
+
+# ── Interval helper ──────────────────────────────────────────────
+ALLOWED_INTERVALS = (-1, -20, 1, 6, 12, 24)
+
+def get_interval_td(interval_hours: int) -> timedelta:
+    """Convert stored interval value to a timedelta.
+    Negative values = minutes (e.g. -1 → 1 min, -20 → 20 min).
+    Positive values = hours  (e.g.  1 → 1 h,  24 → 24 h).
+    """
+    if interval_hours < 0:
+        return timedelta(minutes=abs(interval_hours))
+    return timedelta(hours=interval_hours)
 
 
 def _serialize(cfg: ScheduleConfig) -> dict:
@@ -59,8 +72,8 @@ def get_schedule(account_db_id: int, db: Session = Depends(get_db)):
 # ── Create / update schedule ──────────────────────────────────────────────────
 @router.post("/")
 def upsert_schedule(body: ScheduleRequest, db: Session = Depends(get_db)):
-    if body.interval_hours not in (1, 6, 12, 24):
-        raise HTTPException(status_code=400, detail="interval_hours must be 1, 6, 12, or 24")
+    if body.interval_hours not in ALLOWED_INTERVALS:
+        raise HTTPException(status_code=400, detail=f"interval_hours must be one of {ALLOWED_INTERVALS}")
 
     account = db.query(Account).filter(Account.id == body.account_db_id).first()
     if not account:
@@ -79,14 +92,14 @@ def upsert_schedule(body: ScheduleRequest, db: Session = Depends(get_db)):
         cfg.updated_at     = datetime.utcnow()
         # Recalculate next_run_at if enabling or changing interval
         if body.enabled:
-            cfg.next_run_at = datetime.utcnow() + timedelta(hours=body.interval_hours)
+            cfg.next_run_at = datetime.utcnow() + get_interval_td(body.interval_hours)
     else:
         # Create new
         cfg = ScheduleConfig(
             account_db_id  = body.account_db_id,
             enabled        = body.enabled,
             interval_hours = body.interval_hours,
-            next_run_at    = datetime.utcnow() + timedelta(hours=body.interval_hours) if body.enabled else None,
+            next_run_at    = datetime.utcnow() + get_interval_td(body.interval_hours) if body.enabled else None,
         )
         db.add(cfg)
 
@@ -115,7 +128,7 @@ def run_now(account_db_id: int, db: Session = Depends(get_db)):
         .first()
     )
     if cfg and cfg.enabled:
-        cfg.next_run_at = datetime.utcnow() + timedelta(hours=cfg.interval_hours)
+        cfg.next_run_at = datetime.utcnow() + get_interval_td(cfg.interval_hours)
         cfg.updated_at  = datetime.utcnow()
         db.commit()
 
