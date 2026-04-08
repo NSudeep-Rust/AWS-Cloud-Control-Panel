@@ -20,8 +20,14 @@ app = FastAPI(title="AWS Cloud Security Panel API", version="0.1.0")
 
 @app.on_event("startup")
 async def on_startup():
-    """Auto-start the scheduler so scheduled scans run even after server restart."""
+    """Auto-create SQLite tables on first run, start background scheduler."""
+    # Create all tables if they don't exist yet (safe on every start)
+    from app.database.base import Base
+    from app.database.db import engine
+    from app.database import models  # noqa: F401 — ensures all models are registered
+    Base.metadata.create_all(bind=engine)
     scheduler_service.start()
+
 
 app.add_middleware(
     CORSMiddleware,

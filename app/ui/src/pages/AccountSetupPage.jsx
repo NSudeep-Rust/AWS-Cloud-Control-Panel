@@ -459,7 +459,7 @@ export default function AccountSetupPage() {
 
                     {/* Footer */}
                     <div style={{ display:'flex', gap:6, justifyContent:'center', marginTop:16 }}>
-                        {['FastAPI', 'PostgreSQL', 'OAS 3.1'].map(b => (
+                        {['FastAPI', 'SQLite', 'OAS 3.1'].map(b => (
                             <span key={b} style={{ fontSize:10, fontFamily:'monospace', color:'#687078',
                                 background:'rgba(35,47,62,0.05)', border:'1px solid rgba(35,47,62,0.11)',
                                 borderRadius:3, padding:'2px 7px' }}>{b}</span>

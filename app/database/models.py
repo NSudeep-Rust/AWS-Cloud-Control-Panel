@@ -4,7 +4,7 @@ from datetime import datetime
 from app.database.base import Base
 from sqlalchemy import PrimaryKeyConstraint
 from sqlalchemy import Column, Integer, String, Text, DateTime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 import uuid
 from sqlalchemy import Enum
 
@@ -82,7 +82,7 @@ class Execution(Base):
     reason = Column(Text)
     approval_token = Column(String)
     resource_name = Column(String)
-    meta = Column("metadata", JSONB)
+    meta = Column("metadata", JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

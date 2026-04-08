@@ -8,33 +8,47 @@ from app.config.security_config import ALERT_SEVERITIES
 from app.core.email_service import EmailService
 from datetime import datetime
 
-# Windows desktop notification (plyer)
+# Windows desktop notification — winotify (shows "AWS CloudShield", not "Python")
+import os as _os
+_ICON_PATH = _os.path.normpath(
+    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.ico")
+)
 try:
-    from plyer import notification as desktop_notif
-    DESKTOP_NOTIF_AVAILABLE = True
+    from winotify import Notification as _WiNotif
+    _NOTIF_BACKEND = "winotify"
 except ImportError:
-    DESKTOP_NOTIF_AVAILABLE = False
+    try:
+        from plyer import notification as desktop_notif
+        _NOTIF_BACKEND = "plyer"
+    except ImportError:
+        _NOTIF_BACKEND = None
 
 
 def _fire_windows_toast(severity: str, finding_id: str, message: str):
-    """Fire a real Windows OS-level desktop notification."""
-    if not DESKTOP_NOTIF_AVAILABLE:
-        return
-    try:
-        sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}
-        title = f"{sev_icon.get(severity, '⚠️')} AWS Security Alert — {severity}"
-        # Shorten finding_id for display
-        short_id = finding_id[:48] if finding_id else "Unknown"
-        body = f"{message}\n{short_id}"
-        desktop_notif.notify(
-            title=title,
-            message=body,
-            app_name="Cloud Security Panel",
-            timeout=10,          # stays 10 seconds on screen
-        )
-        print(f"🔔 Windows toast fired: [{severity}] {short_id}")
-    except Exception as e:
-        print(f"⚠️  Toast error: {e}")
+    """Fire a branded Windows OS toast showing 'AWS CloudShield' (not 'Python')."""
+    sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}
+    title = f"{sev_icon.get(severity, '⚠️')} AWS Security Alert \u2014 {severity}"
+    short_id = finding_id[:48] if finding_id else "Unknown"
+    body = f"{message}\n{short_id}"
+    if _NOTIF_BACKEND == "winotify":
+        try:
+            toast = _WiNotif(
+                app_id="AWS CloudShield",
+                title=title,
+                msg=body[:200],
+                icon=_ICON_PATH if _os.path.exists(_ICON_PATH) else "",
+                duration="short",
+            )
+            toast.show()
+            print(f"🔔 Windows toast fired (winotify): [{severity}] {short_id}")
+        except Exception as e:
+            print(f"⚠️  winotify toast error: {e}")
+    elif _NOTIF_BACKEND == "plyer":
+        try:
+            desktop_notif.notify(title=title, message=body[:200], app_name="AWS CloudShield", timeout=10)
+            print(f"🔔 Windows toast fired (plyer): [{severity}] {short_id}")
+        except Exception as e:
+            print(f"⚠️  plyer toast error: {e}")
 
 
 class MonitorService:

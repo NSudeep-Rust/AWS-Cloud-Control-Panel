@@ -10,27 +10,42 @@ import uuid
 import threading
 from datetime import datetime
 
-# ── Native Windows desktop notification (plyer) ─────────────────────────────
+# Windows desktop notification — winotify (shows "AWS CloudShield", not "Python")
+import os as _os
+_ICON_PATH = _os.path.normpath(
+    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.ico")
+)
 try:
-    from plyer import notification as _desktop_notif
-    _PLYER_OK = True
+    from winotify import Notification as _WiNotif
+    _NOTIF_BACKEND = "winotify"
 except ImportError:
-    _PLYER_OK = False
+    try:
+        from plyer import notification as _desktop_notif
+        _NOTIF_BACKEND = "plyer"
+    except ImportError:
+        _NOTIF_BACKEND = None
 
 def _fire_windows_toast(severity: str, title_text: str, body: str):
-    """Fire a real Windows OS toast — appears over ANY app, even when browser is minimized."""
-    if not _PLYER_OK:
-        return
+    """Fire a branded Windows OS toast showing 'AWS CloudShield' (not 'Python')."""
     sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}
-    try:
-        _desktop_notif.notify(
-            title=f"{sev_icon.get(severity, '⚠️')} AWS Security Alert — {severity}",
-            message=body[:200],
-            app_name="Cloud Security Panel",
-            timeout=12,
-        )
-    except Exception as e:
-        print(f"⚡ Plyer toast error: {e}")
+    title = f"{sev_icon.get(severity, '⚠️')} AWS Security Alert — {severity}"
+    if _NOTIF_BACKEND == "winotify":
+        try:
+            toast = _WiNotif(
+                app_id="AWS CloudShield",
+                title=title,
+                msg=body[:200],
+                icon=_ICON_PATH if _os.path.exists(_ICON_PATH) else "",
+                duration="short",
+            )
+            toast.show()
+        except Exception as e:
+            print(f"⚡ winotify toast error: {e}")
+    elif _NOTIF_BACKEND == "plyer":
+        try:
+            _desktop_notif.notify(title=title, message=body[:200], app_name="AWS CloudShield", timeout=12)
+        except Exception as e:
+            print(f"⚡ plyer toast error: {e}")
 
 
 # Map of event type → (alert_message, severity)
