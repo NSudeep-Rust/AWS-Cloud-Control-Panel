@@ -50,7 +50,7 @@ a = Analysis(
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
-    excludes=["tkinter","matplotlib","numpy","pandas","test"],
+    excludes=["tkinter","matplotlib","numpy","pandas","test","psycopg2","psycopg2_binary","PIL"],
     cipher=block_cipher,
     noarchive=False,
 )
@@ -60,7 +60,7 @@ exe = EXE(
     exclude_binaries=True,
     name="cloudshield-backend",
     debug=False, strip=False, upx=True,
-    console=False,
+    console=True,
     icon="installer/images/icon.ico",
 )
 coll = COLLECT(
