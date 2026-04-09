@@ -1,5 +1,4 @@
 ﻿; CloudShield Setup Script — Inno Setup 6
-; Generates: CloudShield-Setup.exe
 ; Author: NSudeep
 
 #define AppName      "CloudShield"
@@ -34,7 +33,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#AppExeName}
-UninstallDisplayName={#AppName} AWS Control Panel
+UninstallDisplayName={#AppName} - AWS Cloud Control Panel
 LicenseFile=license.txt
 DisableProgramGroupPage=auto
 DisableReadyMemo=no
@@ -42,77 +41,62 @@ ShowTasksTreeLines=yes
 RestartApplications=no
 CloseApplications=yes
 
-; Registry: Add/Remove Programs info
-[Registry]
-Root: HKLM; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "Version"; ValueData: "{#AppVersion}"; Flags: uninsdeletekey
-
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon";   Description: "Create a &Desktop shortcut"; GroupDescription: "Additional icons:"
-Name: "startupentry";  Description: "Launch CloudShield at &Windows startup"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "desktopicon";  Description: "Create a &Desktop shortcut"; GroupDescription: "Additional icons:"
+Name: "startupentry"; Description: "Launch CloudShield at &Windows startup"; GroupDescription: "Startup:"; Flags: unchecked
 
 [Files]
-; Electron shell (main app window)
-Source: "..\dist\electron\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; PyInstaller backend bundle
-Source: "..\dist\cloudshield-backend\*"; DestDir: "{app}\cloudshield-backend"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; Updater executable
-Source: "..\dist\CloudShield-Updater.exe"; DestDir: "{app}"; Flags: ignoreversion
-
-; VERSION file at root of install
-Source: "..\VERSION"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\electron\dist\win-unpacked\*";    DestDir: "{app}";                    Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\cloudshield-backend\*";      DestDir: "{app}\cloudshield-backend"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\CloudShield-Updater.exe";    DestDir: "{app}";                    Flags: ignoreversion
+Source: "..\VERSION";                          DestDir: "{app}";                    Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#AppName}";          Filename: "{app}\{#AppExeName}";       IconFilename: "{app}\{#AppExeName}"
-Name: "{group}\Check for Updates";   Filename: "{app}\CloudShield-Updater.exe"
-Name: "{group}\Uninstall {#AppName}";Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#AppName}";  Filename: "{app}\{#AppExeName}";       Tasks: desktopicon; IconFilename: "{app}\{#AppExeName}"
-
-[Run]
-; Run CloudShield after install
-Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} now"; Flags: nowait postinstall skipifsilent
-
-[UninstallRun]
-; Kill process before uninstalling
-Filename: "{cmd}"; Parameters: "/c taskkill /F /IM CloudShield.exe /IM cloudshield-backend.exe 2>nul"; Flags: runhidden
+Name: "{group}\{#AppName}";           Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
+Name: "{group}\Check for Updates";    Filename: "{app}\CloudShield-Updater.exe"
+Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
+Name: "{commondesktop}\{#AppName}";   Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#AppExeName}"
 
 [Registry]
-; Startup entry
+Root: HKLM; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}";          Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "Version";     ValueData: "{#AppVersion}"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#AppName}"; ValueData: "{app}\{#AppExeName}"; Tasks: startupentry
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "{#AppName}"; Flags: uninsdeletevalue
 
+[Run]
+Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} now"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{cmd}"; Parameters: "/c taskkill /F /IM CloudShield.exe /IM cloudshield-backend.exe 2>nul"; Flags: runhidden
+
 [Code]
+var
+  KillResult: Integer;
+
 function InitializeSetup(): Boolean;
 begin
   Result := True;
-  { Kill any running instances }
-  Exec('cmd.exe', '/c taskkill /F /IM CloudShield.exe /IM cloudshield-backend.exe 2>nul', '',
-       SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('cmd.exe',
+       '/c taskkill /F /IM CloudShield.exe /IM cloudshield-backend.exe 2>nul',
+       '', SW_HIDE, ewWaitUntilTerminated, KillResult);
 end;
 
 function GetUninstallString(): String;
 var
-  sUnInstPath: String;
-  sUnInstallString: String;
+  sPath: String;
+  sStr: String;
 begin
-  sUnInstPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1');
-  sUnInstallString := '';
-  if not RegQueryStringValue(HKLM, sUnInstPath, 'UninstallString', sUnInstallString) then
-    RegQueryStringValue(HKCU, sUnInstPath, 'UninstallString', sUnInstallString);
-  Result := sUnInstallString;
+  sPath := ExpandConstant('Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppId}_is1');
+  sStr := '';
+  if not RegQueryStringValue(HKLM, sPath, 'UninstallString', sStr) then
+    RegQueryStringValue(HKCU, sPath, 'UninstallString', sStr);
+  Result := sStr;
 end;
 
 function IsUpgrade(): Boolean;
 begin
   Result := (GetUninstallString() <> '');
-end;
-
-function InitializeWizard: Boolean;
-begin
-  Result := True;
 end;
