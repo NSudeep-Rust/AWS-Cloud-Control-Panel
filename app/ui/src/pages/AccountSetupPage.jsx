@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Check, Plus, User, Key, Cloud, Eye, EyeOff } from 'lucide-react'
 import { accountsAPI } from '../api/index'
@@ -592,13 +592,38 @@ function FG({ label, required, children }) {
     )
 }
 function FI({ value, onChange, placeholder, type = 'text' }) {
+    const [show, setShow] = useState(false)
+    const base = {
+        background:'rgba(255,255,255,0.85)', border:'1.5px solid rgba(35,47,62,0.18)',
+        borderRadius:6, color:'#16191f', fontSize:13, width:'100%',
+        transition:'border-color 0.15s, box-shadow 0.15s',
+    }
+    if (type !== 'password') return (
+        <input type="text" value={value} onChange={onChange} placeholder={placeholder}
+            style={{ ...base, padding:'8px 11px' }} />
+    )
     return (
-        <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-            style={{ background:'rgba(255,255,255,0.85)', border:'1.5px solid rgba(35,47,62,0.18)',
-                     borderRadius:6, padding:'8px 11px', color:'#16191f', fontSize:13, width:'100%',
-                     transition:'border-color 0.15s, box-shadow 0.15s' }} />
+        <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+            <input type={show ? 'text' : 'password'} value={value} onChange={onChange}
+                placeholder={placeholder}
+                style={{ ...base, padding:'8px 38px 8px 11px', flex:1 }} />
+            <button type="button" tabIndex={-1} onClick={() => setShow(s => !s)}
+                title={show ? 'Hide' : 'Show'}
+                style={{ position:'absolute', right:8, background:'none', border:'none',
+                         cursor:'pointer', padding:4, color:'#687078',
+                         display:'flex', alignItems:'center', borderRadius:4,
+                         transition:'color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color='#FF9900'}
+                onMouseLeave={e => e.currentTarget.style.color='#687078'}>
+                {show
+                    ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+            </button>
+        </div>
     )
 }
+
 function FS({ value, onChange, options, isObjOptions }) {
     return (
         <select value={value} onChange={onChange}
