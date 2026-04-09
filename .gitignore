@@ -89,3 +89,18 @@ installer/output/
 # Backup folders
 backup-*/
 *.bak
+
+# PyInstaller build outputs
+dist/
+build/
+*.spec
+build_log.txt
+build_err.txt
+__pycache__/
+
+# Electron build
+electron/node_modules/
+electron/dist/
+
+# Updater build
+updater/dist/

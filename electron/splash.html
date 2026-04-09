@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:480px; height:320px;
+    background: linear-gradient(135deg, #0a1628 0%, #1a2640 60%, #0f1e35 100%);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    border-radius:16px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color:#fff; overflow:hidden;
+    -webkit-app-region: no-drag;
+    border: 1px solid #FF990033;
+    box-shadow: 0 0 60px rgba(255,153,0,0.15);
+  }
+  .logo { font-size:64px; margin-bottom:12px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  h1 { color:#FF9900; font-size:26px; font-weight:800; letter-spacing:-0.5px; }
+  p  { color:rgba(255,255,255,0.55); font-size:13px; margin-top:6px; }
+  .bar-wrap { width:280px; height:4px; background:#ffffff18; border-radius:4px; margin-top:28px; }
+  .bar { height:4px; border-radius:4px; background: linear-gradient(90deg,#FF9900,#FFc55a);
+         animation: load 2.5s ease forwards; width:0%; }
+  @keyframes load { 0%{width:0%} 70%{width:85%} 100%{width:100%} }
+  .status { color:rgba(255,255,255,0.4); font-size:11px; margin-top:12px; letter-spacing:0.5px; }
+</style>
+</head>
+<body>
+  <div class="logo">🛡️</div>
+  <h1>CloudShield</h1>
+  <p>AWS Cloud Control Panel</p>
+  <div class="bar-wrap"><div class="bar"></div></div>
+  <div class="status">Starting security engine...</div>
+</body>
+</html>
