@@ -54,7 +54,7 @@ function makeIamEntry(u)  { return { ...u, _type: 'iam',  _key: `iam-${u.id}` } 
 
 export default function AccountSetupPage() {
     const navigate = useNavigate()
-    const { connect } = useAuth()
+    const { connect, account } = useAuth()
 
     const [tab,          setTab]          = useState('existing')
     const [entries,      setEntries]      = useState([])
@@ -240,13 +240,13 @@ export default function AccountSetupPage() {
             }} />
 
             {/* ── Back button ── */}
-            <button onClick={() => navigate('/')} style={s.backBtn}
+            <button onClick={() => navigate(account ? '/panel' : '/')} style={s.backBtn}
                 onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor='rgba(255,153,0,0.35)' }}
                 onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.65)'; e.currentTarget.style.borderColor='rgba(35,47,62,0.2)' }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                     <path d="M13 8H3M7 4L3 8L7 12" stroke="#414d5c" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                Back to Home
+                {account ? 'Back to Dashboard' : 'Back to Home'}
             </button>
 
             {/* ── 2-column layout ── */}

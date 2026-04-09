@@ -340,7 +340,8 @@ export default function Overview({ onNav, dark }) {
 
     // ── Global scan state (shared with ScannerSection) ─────────────
     const { status: scanStatus, findings: scanFindings, elapsed, startScan, stopScan,
-            restoreFromCache, highlightFindingId, setHighlightFindingId } = useScan()
+            restoreFromCache, highlightFindingId, setHighlightFindingId,
+            refreshToken } = useScan()
     const scanning = scanStatus === 'scanning'
 
     // ── Local dashboard state ──────────────────────────────────────
@@ -400,6 +401,20 @@ export default function Overview({ onNav, dark }) {
             return () => clearTimeout(t)
         }
     }, [scanStatus])
+
+    // ── Auto-refresh when backend signals execution or scheduled scan ────────
+    // refreshToken increments on: execution_complete, scan_complete (WS events)
+    useEffect(() => {
+        if (refreshToken === 0) return  // skip initial mount
+        // 1s delay: let backend commit findings + executions before re-fetching
+        const t = setTimeout(() => {
+            fetchRiskScore()
+            fetchRiskTrend()
+            fetchAlerts()
+            fetchHistory()
+        }, 1000)
+        return () => clearTimeout(t)
+    }, [refreshToken])
 
     function q(url) { return dbId != null ? `${url}?account_id=${dbId}` : url }
     function fetchAll() { fetchRiskScore(); fetchRiskTrend(); fetchAlerts(); fetchHistory(); fetchMonitorStatus() }

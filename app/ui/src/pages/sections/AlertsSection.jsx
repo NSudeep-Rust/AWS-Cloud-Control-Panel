@@ -264,7 +264,7 @@ function FindingCard({ finding, onDismiss, idx }) {
 
 // ─── Main Section ─────────────────────────────────────────────────────────────
 export function AlertsSection({ onNav }) {
-  const { account } = useAuth()
+  const { account, sessionStart } = useAuth()
 
   const [findings,          setFindings]         = useState([])
   const [monitorStatus,     setMonitorStatus]    = useState(null)
@@ -272,6 +272,7 @@ export function AlertsSection({ onNav }) {
   const [toggling,          setToggling]         = useState(false)
   const [loading,           setLoading]          = useState(true)
   const [filter,            setFilter]           = useState('all')
+  const [sortOrder,         setSortOrder]        = useState('desc')   // 'desc'=newest first, 'asc'=oldest first
   const [lastRefresh,       setLastRefresh]      = useState(null)
   const [drift,             setDrift]            = useState(null)
   const findingPollRef = useRef(null)
@@ -298,11 +299,18 @@ export function AlertsSection({ onNav }) {
       const params = accountDbId ? { account_db_id: accountDbId } : {}
       const r = await axios.get(`${API}/api/live-findings/`, { params })
       const all = r.data?.data?.findings || []
-      setFindings(all)
+      // ── Session filter: only show alerts detected AFTER this session started ──
+      const sessionFiltered = sessionStart
+        ? all.filter(f => {
+            const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
+            return t >= sessionStart
+          })
+        : all
+      setFindings(sessionFiltered)
       setLastRefresh(new Date())
     } catch { /* ignore */ }
     setLoading(false)
-  }, [accountDbId])
+  }, [accountDbId, sessionStart])
 
   useEffect(() => {
     setLoading(true)
@@ -338,7 +346,14 @@ export function AlertsSection({ onNav }) {
 
   const criticalFindings = findings.filter(f => f.severity === 'CRITICAL')
   const highFindings     = findings.filter(f => f.severity === 'HIGH')
-  const displayed = filter==='critical' ? criticalFindings : filter==='high' ? highFindings : findings
+  const baseFiltered = filter==='critical' ? criticalFindings : filter==='high' ? highFindings : findings
+
+  // ── Sort by detected_at ──────────────────────────────────────────────────
+  const displayed = [...baseFiltered].sort((a, b) => {
+    const ta = a.detected_at ? new Date(a.detected_at).getTime() : 0
+    const tb = b.detected_at ? new Date(b.detected_at).getTime() : 0
+    return sortOrder === 'desc' ? tb - ta : ta - tb
+  })
 
   const hasFindings = findings.length > 0
 
@@ -441,8 +456,8 @@ export function AlertsSection({ onNav }) {
             </div>
           </div>
 
-          {/* Filter tabs */}
-          <div style={{ display:'flex', gap:4, marginBottom:16, borderBottom:'1px solid #e5e8ed' }}>
+          {/* Filter tabs + Sort toggle */}
+          <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:16, borderBottom:'1px solid #e5e8ed' }}>
             {[
               { key:'all',      label:`All (${findings.length})`,                  color: filter==='all'?'#0972d3':'#565959' },
               { key:'critical', label:`🚨 Critical (${criticalFindings.length})`,  color: filter==='critical'?'#d13212':'#565959' },
@@ -450,7 +465,20 @@ export function AlertsSection({ onNav }) {
             ].map(t => (
               <button key={t.key} onClick={()=>setFilter(t.key)} style={{ padding:'7px 16px', border:'none', background:'transparent', cursor:'pointer', fontSize:12.5, fontWeight:filter===t.key?700:400, color:t.color, borderBottom:filter===t.key?`2.5px solid ${t.color}`:'2.5px solid transparent', marginBottom:-1, transition:'all 0.12s' }}>{t.label}</button>
             ))}
-            {monitorRunning && <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:5, fontSize:10, color:'#1d8102', padding:'0 4px' }}><span style={{ width:6,height:6,borderRadius:'50%',background:'#1d8102',display:'inline-block',animation:'alBlink 1.5s ease infinite' }} /> Live</div>}
+
+            {/* ── Sort by time toggle ── */}
+            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:6 }}>
+              {monitorRunning && <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:10, color:'#1d8102', paddingRight:8, borderRight:'1px solid #e5e8ed' }}><span style={{ width:6,height:6,borderRadius:'50%',background:'#1d8102',display:'inline-block',animation:'alBlink 1.5s ease infinite' }} /> Live</div>}
+              <button
+                onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')}
+                title={sortOrder === 'desc' ? 'Showing newest first — click for oldest first' : 'Showing oldest first — click for newest first'}
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 11px', borderRadius:6, border:'1px solid #e5e8ed', background:'rgba(9,114,211,0.04)', color:'#0972d3', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', marginBottom:-1, transition:'all 0.12s' }}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(9,114,211,0.10)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(9,114,211,0.04)'}
+              >
+                {sortOrder === 'desc' ? '⬇ Newest First' : '⬆ Oldest First'}
+              </button>
+            </div>
           </div>
 
           {/* 🔄 Drift: New Since Last Scan banner */}

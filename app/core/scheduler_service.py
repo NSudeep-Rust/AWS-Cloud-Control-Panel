@@ -21,6 +21,7 @@ from app.database.db import get_db
 from app.database.models import Account, Scan, Finding, ScheduleConfig
 from app.core.aws_session import AWSSession
 from app.modules.scanner.scanner import run_full_scan
+from app.api.websocket_manager import ws_manager
 
 
 def get_interval_td(interval_hours: int):
@@ -133,6 +134,15 @@ class SchedulerService:
 
             print(f"⏰ Scheduled scan COMPLETE for account {account.aws_account_id} "
                   f"— {len(findings)} findings — scan_id={scan_id}")
+
+            # ── Notify frontend: new findings available ────────────────────
+            ws_manager.broadcast_sync({
+                "event":          "scan_complete",
+                "scan_id":        scan_id,
+                "account_id":     account.id,
+                "findings_count": len(findings),
+                "source":         "SCHEDULED",
+            })
 
         except Exception as e:
             print(f"❌ Scheduled scan FAILED for account {account_db_id}: {e}")

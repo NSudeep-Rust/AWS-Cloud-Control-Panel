@@ -36,12 +36,72 @@ export function ScanProvider({ children }) {
     // Finding to highlight in Scanner when navigating from Overview
     const [highlightFindingId, setHighlightFindingId] = useState(null)
 
-    const timerRef = useRef(null)
-    const lineRef = useRef(null)
-    const factRef = useRef(null)
-    const abortRef = useRef(null)  // AbortController
+    const timerRef  = useRef(null)
+    const lineRef   = useRef(null)
+    const factRef   = useRef(null)
+    const abortRef  = useRef(null)  // AbortController
+    const wsRef     = useRef(null)  // WebSocket for push events
+    const scanMetaRef = useRef(null) // always up-to-date copy for WS closure
 
-    // ── Clock ──────────────────────────────────────────────────────
+    // Increments every time the backend signals a refresh is needed.
+    // Components subscribe: useEffect(() => { reload() }, [refreshToken])
+    const [refreshToken, setRefreshToken]       = useState(0)
+    // Last scheduled scan info pushed from backend — used by Overview to
+    // reload findings without requiring a full manual scan.
+    const [latestScheduledScan, setLatestScheduledScan] = useState(null)
+
+    // ── WebSocket — receive push events from backend ───────────────
+    useEffect(() => {
+        function connect() {
+            try {
+                const ws = new WebSocket('ws://localhost:8000/ws/alerts')
+                wsRef.current = ws
+
+                ws.onmessage = (e) => {
+                    try {
+                        const msg = JSON.parse(e.data)
+
+                        if (msg.event === 'scan_complete') {
+                            const currentMeta = scanMetaRef.current
+                            // Only auto-inject findings if this event is for the
+                            // currently signed-in account
+                            if (currentMeta && msg.account_id === currentMeta.dbId) {
+                                // Pull the latest findings from the backend and
+                                // inject them into ScanContext so Overview updates
+                                axios.get(`${API}/api/scan/history`)
+                                    .then(r => {
+                                        const latest = r.data?.data?.scans?.[0]
+                                        if (latest && latest.scan_id === msg.scan_id) {
+                                            setFindings(latest.findings || [])
+                                            setScanId(latest.scan_id)
+                                            setStatus('done')
+                                        }
+                                    })
+                                    .catch(() => {})
+                            }
+                            setLatestScheduledScan({
+                                scan_id:        msg.scan_id,
+                                account_id:     msg.account_id,
+                                findings_count: msg.findings_count,
+                            })
+                            setRefreshToken(t => t + 1)
+                        }
+
+                        if (msg.event === 'execution_complete') {
+                            setRefreshToken(t => t + 1)
+                        }
+                    } catch { /* ignore malformed messages */ }
+                }
+
+                ws.onclose  = () => { setTimeout(connect, 3000) } // auto-reconnect
+                ws.onerror  = () => { ws.close() }
+            } catch { /* WS not available during SSR / test */ }
+        }
+        connect()
+        return () => { try { wsRef.current?.close() } catch {} }
+    }, []) // mount-once — closure refs are stable
+
+
     useEffect(() => {
         if (status === 'scanning') {
             timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -90,6 +150,7 @@ export function ScanProvider({ children }) {
         setFactIdx(0)
         setFactVisible(true)
         setScanMeta({ awsId, dbId, cacheKey })
+        scanMetaRef.current = { awsId, dbId, cacheKey }
 
         try {
             const r = await axios.post(
@@ -157,12 +218,21 @@ export function ScanProvider({ children }) {
         } catch { }
     }, [status])
 
+    // ── Inject a scan externally (used by WS handler / tests) ──────
+    const injectScan = useCallback((scan_id, foundList, meta) => {
+        setFindings(foundList)
+        setScanId(scan_id)
+        setStatus('done')
+        if (meta) { setScanMeta(meta); scanMetaRef.current = meta }
+    }, [])
+
     const value = {
         status, findings, scanId, elapsed,
         scanLineIdx, factIdx, factVisible,
         scanMeta, SCAN_REGIONS,
         highlightFindingId, setHighlightFindingId,
-        startScan, stopScan, resetScan, restoreFromCache,
+        refreshToken, latestScheduledScan,
+        startScan, stopScan, resetScan, restoreFromCache, injectScan,
     }
 
     return <ScanCtx.Provider value={value}>{children}</ScanCtx.Provider>

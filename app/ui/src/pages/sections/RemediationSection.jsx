@@ -390,7 +390,7 @@ function ManualCard({ finding }) {
 // ─── Main Section ────────────────────────────────────────────────────────────
 export default function RemediationSection({ dark, onNav }) {
   const { account } = useAuth()
-  const { scanId: ctxScanId } = useScan()
+  const { scanId: ctxScanId, refreshToken } = useScan()
 
   const [scanId, setScanId]           = useState(null)
   const [findings, setFindings]       = useState([])
@@ -401,41 +401,51 @@ export default function RemediationSection({ dark, onNav }) {
   const [filterSvc, setFilterSvc]     = useState('ALL')
   const [searchQ, setSearchQ]         = useState('')
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      let sid = ctxScanId
-      if (!sid) {
-        try {
-          const r = await axios.get(`${API}/api/scan/history`)
-          sid = r.data?.data?.scan_id || r.data?.data?.scans?.[0]?.scan_id
-        } catch { /* ignore */ }
-      }
-      if (!sid) { setLoading(false); return }
-      setScanId(sid)
-      try {
-        // Load both findings and existing executions in parallel
-        const [findingsRes, execsRes] = await Promise.all([
-          axios.get(`${API}/api/execute/findings?scan_id=${sid}`),
-          axios.get(`${API}/api/execute/executions?scan_id=${sid}`).catch(() => ({ data: { data: { executions: [] } } }))
-        ])
-        const findingsList = findingsRes.data?.data?.findings || []
-        const execList     = execsRes.data?.data?.executions  || []
-
-        // Pre-seed executedIds with findings already fixed (EXECUTED or NOT_RECOVERABLE)
-        // This prevents reappearing cards when user navigates back from Rollback
-        const alreadyFixed = new Set(
-          execList
-            .filter(e => e.status === 'EXECUTED' || e.status === 'NOT_RECOVERABLE')
-            .map(e => e.finding_id)
-        )
-        setExecutedIds(alreadyFixed)
-        setFindings(findingsList)
-      } catch { setFindings([]) }
-      setLoading(false)
+  // ── Load findings ──────────────────────────────────────────────────────────────
+  const load = useCallback(async () => {
+    setLoading(true)
+    // Always resolve the LATEST scan, whether manual or scheduled.
+    // ctxScanId = last manual scan from this browser session.
+    // History API = most-recent scan in DB (may be newer scheduled scan).
+    let sid = null
+    try {
+      const hr = await axios.get(`${API}/api/scan/history`)
+      const dbLatest = hr.data?.data?.scans?.[0]?.scan_id
+      // Prefer DB latest (may be a newer scheduled scan) over ctxScanId
+      sid = dbLatest || ctxScanId
+    } catch {
+      sid = ctxScanId
     }
-    load()
+    if (!sid) { setLoading(false); return }
+    setScanId(sid)
+    try {
+      const [findingsRes, execsRes] = await Promise.all([
+        axios.get(`${API}/api/execute/findings?scan_id=${sid}`),
+        axios.get(`${API}/api/execute/executions?scan_id=${sid}`).catch(() => ({ data: { data: { executions: [] } } }))
+      ])
+      const findingsList = findingsRes.data?.data?.findings || []
+      const execList     = execsRes.data?.data?.executions  || []
+      const alreadyFixed = new Set(
+        execList
+          .filter(e => e.status === 'EXECUTED' || e.status === 'NOT_RECOVERABLE')
+          .map(e => e.finding_id)
+      )
+      setExecutedIds(alreadyFixed)
+      setFindings(findingsList)
+    } catch { setFindings([]) }
+    setLoading(false)
   }, [ctxScanId])
+
+  // On mount + whenever ctxScanId changes (new manual scan)
+  useEffect(() => { load() }, [load])
+
+  // Auto-refresh when backend broadcasts execution_complete / scan_complete
+  useEffect(() => {
+    if (refreshToken === 0) return
+    // 1.5s delay so backend finishes committing before we re-fetch
+    const t = setTimeout(() => load(), 1500)
+    return () => clearTimeout(t)
+  }, [refreshToken])
 
   const handleExecuted = useCallback(id => setExecutedIds(s => new Set([...s, id])), [])
 

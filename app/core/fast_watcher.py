@@ -13,7 +13,7 @@ from datetime import datetime
 # Windows desktop notification — winotify (shows "AWS CloudShield", not "Python")
 import os as _os
 _ICON_PATH = _os.path.normpath(
-    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.ico")
+    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.png")
 )
 try:
     from winotify import Notification as _WiNotif
@@ -203,11 +203,17 @@ class FastWatcher:
         """Take a lightweight snapshot of critical state."""
         sess = self.aws_session
         try:
-            iam        = sess.client("iam")
-            ec2        = sess.client("ec2")
-            s3         = sess.client("s3")
-            rds        = sess.client("rds")
-            ct         = sess.client("cloudtrail")
+            # self.aws_session is an AWSSession wrapper — the raw boto3 Session
+            # lives inside .session. Guard against it not being initialized yet.
+            boto_session = sess.session
+            if boto_session is None:
+                print("⚡ FastWatcher: AWS session not initialized yet, skipping snapshot")
+                return None
+            iam        = boto_session.client("iam")
+            ec2        = boto_session.client("ec2")
+            s3         = boto_session.client("s3")
+            rds        = boto_session.client("rds")
+            ct         = boto_session.client("cloudtrail")
         except Exception as e:
             print(f"⚡ FastWatcher: session error — {e}")
             return None

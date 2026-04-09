@@ -34,7 +34,7 @@ const NAV_GROUPS = [
 ]
 
 export default function Sidebar({ active, onNav, dark, onToggleDark }) {
-    const { account, disconnect } = useAuth()
+    const { account, disconnect, sessionStart } = useAuth()
     const navigate = useNavigate()
     const [hoverId,    setHoverId]   = useState(null)
     const [showModal,  setShowModal] = useState(false)
@@ -43,25 +43,37 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
     const [alertCounts, setAlertCounts] = useState({ critical: 0, high: 0 })
     const pollRef = useRef(null)
 
-    // Poll live monitor finding counts every 10s for sidebar badges
+    // Poll live-findings counts — session-filtered (only alerts from this login)
     useEffect(() => {
         const accountDbId = account?.id
+        // Reset badges immediately when session changes
+        setAlertCounts({ critical: 0, high: 0 })
+
         async function fetchCounts() {
             try {
                 const params = accountDbId ? `?account_db_id=${accountDbId}` : ''
-                const r = await fetch(`http://localhost:8000/api/live-findings/${params}`)
+                const r    = await fetch(`http://localhost:8000/api/live-findings/${params}`)
                 const json = await r.json()
-                const data = json?.data || {}
+                const findings = json?.data?.findings || []
+
+                // ── Session filter: ignore anything detected before this sign-in ──
+                const sessionFindings = sessionStart
+                    ? findings.filter(f => {
+                        const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
+                        return t >= sessionStart
+                      })
+                    : findings
+
                 setAlertCounts({
-                    critical: data.critical || 0,
-                    high:     data.high     || 0,
+                    critical: sessionFindings.filter(f => f.severity === 'CRITICAL').length,
+                    high:     sessionFindings.filter(f => f.severity === 'HIGH').length,
                 })
             } catch { /* ignore */ }
         }
         fetchCounts()
         pollRef.current = setInterval(fetchCounts, 30000)
         return () => clearInterval(pollRef.current)
-    }, [account?.id])
+    }, [account?.id, sessionStart])
 
     function openDisconnect() { setShowModal(true); setClearData(false) }
     function cancelDisconnect() { setShowModal(false) }

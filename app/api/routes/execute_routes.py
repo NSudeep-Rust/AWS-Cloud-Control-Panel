@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from app.database.models import Finding, Execution, Account
 from app.database.db import SessionLocal
+from app.api.websocket_manager import ws_manager
 import uuid
 import time
 import json
@@ -159,8 +160,21 @@ def process_execution(request: ExecuteRequest, db: Session):
             db.add(execution)
             db.commit()
 
+        # ── Notify frontend: remediation done, refresh findings ────────────────────
+        account_id = scan_account.account_id if scan_account else None
+        ws_manager.broadcast_sync({
+            "event":      "execution_complete",
+            "scan_id":    request.scan_id,
+            "account_id": account_id,
+        })
+
     except Exception as e:
         print("❌ BACKGROUND ERROR:", str(e))
+        # Still broadcast so frontend knows something happened
+        ws_manager.broadcast_sync({
+            "event":   "execution_complete",
+            "scan_id": request.scan_id,
+        })
 
 
 # =========================================================
