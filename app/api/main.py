@@ -1,4 +1,8 @@
+﻿import sys
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.api.routes import scan_routes
 from app.api.routes import threat_routes
 from app.api.routes import history_routes
@@ -16,14 +20,29 @@ from app.core.scheduler_service import scheduler_service
 from app.api.websocket_manager import ws_manager
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="AWS Cloud Security Panel API", version="0.1.0")
+
+def _get_dist_path() -> Path:
+    """React build directory — works in dev AND PyInstaller bundle."""
+    if getattr(sys, "_MEIPASS", None):
+        return Path(sys._MEIPASS) / "app" / "ui" / "dist"
+    return Path(__file__).parent.parent / "ui" / "dist"
+
+
+app = FastAPI(
+    title="CloudShield API",
+    version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
+
 
 @app.on_event("startup")
 async def on_startup():
     """Auto-create SQLite tables on first run, start background scheduler."""
     from app.database.base import Base
     from app.database.db import engine
-    from app.database import models  # noqa: F401 — ensures all models are registered
+    from app.database import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
     scheduler_service.start()
 
@@ -31,10 +50,12 @@ async def on_startup():
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"http://localhost:\d+",
+    allow_origins=["http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.websocket("/ws/alerts")
 async def ws_alerts(websocket: WebSocket):
@@ -44,6 +65,7 @@ async def ws_alerts(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
+
 
 app.include_router(scan_routes.router)
 app.include_router(threat_routes.router)
@@ -59,9 +81,19 @@ app.include_router(schedule_routes.router)
 app.include_router(drift_routes.router)
 app.include_router(email_routes.router)
 
-@app.get("/")
-def root():
-    return {
-        "status": "API Layer Active",
-        "phase": 2
-    }
+
+_dist = _get_dist_path()
+if _dist.exists():
+    _assets = _dist / "assets"
+    if _assets.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets)), name="vite-assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        """Serve React SPA for all non-API routes (production + Electron)."""
+        index = _dist / "index.html"
+        return FileResponse(str(index))
+else:
+    @app.get("/", include_in_schema=False)
+    def root():
+        return {"status": "API active — run: cd app/ui && npm run build"}
