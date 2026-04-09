@@ -14,18 +14,21 @@ venv/
 env/
 ENV/
 
-# Environment Variables / Secrets
+# Environment Variables / Secrets — NEVER COMMIT THESE
 .env
 .env.*
 *.env
 secrets.py
 aws_credentials.json
 
-# Database
+# Database — contains AWS account IDs, access keys, secret keys
+# Users will have their own database created on first launch
 *.db
 *.sqlite
 *.sqlite3
+security.db
 app/database/*.json
+app/database/history.json
 app/logs/
 
 # Distribution / Build
@@ -48,6 +51,7 @@ app/ui/.vite/
 # IDE / Editor
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
 *~
