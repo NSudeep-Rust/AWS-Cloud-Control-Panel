@@ -18,15 +18,9 @@
 
         action_config = actions_policy.get(action, default_policy)
 
-        # -----------------------------------
-        # 1. Action allowed?
-        # -----------------------------------
         if not action_config.get("allowed", False):
             return self._deny(action, f"Action {action} not allowed by policy")
 
-        # -----------------------------------
-        # 2. Severity check (if defined)
-        # -----------------------------------
         allowed_severities = action_config.get("severities")
 
         if allowed_severities and severity not in allowed_severities:
@@ -35,9 +29,6 @@
                 f"Severity {severity} not allowed for action {action}"
             )
 
-        # -----------------------------------
-        # 3. Resource scope
-        # -----------------------------------
         if resource_control.get("mode") == "RESTRICTED":
             allowed_ids = resource_control.get("allowed_ids", [])
 
@@ -47,9 +38,6 @@
                     f"Resource {resource_id} not allowed"
                 )
 
-        # -----------------------------------
-        # 4. Approval required?
-        # -----------------------------------
         if action_config.get("require_approval"):
             return {
                 "allowed": False,
@@ -57,18 +45,12 @@
                 "reason": f"Action {action} requires approval"
             }
 
-        # -----------------------------------
-        # 5. Sanity checks
-        # -----------------------------------
         sanity = self._sanity_checks(finding, action)
         if not sanity["allowed"]:
             return sanity
 
         return {"allowed": True}
 
-    # -----------------------------------
-    # INTERNAL HELPERS (MISSING BEFORE)
-    # -----------------------------------
 
     def _deny(self, action, reason):
         return {

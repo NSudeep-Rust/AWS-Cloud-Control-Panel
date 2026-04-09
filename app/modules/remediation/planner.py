@@ -10,9 +10,6 @@ class RemediationPlanner:
 
         finding_type = finding.get("type")
 
-        # ---------------------------
-        # Firewall remediation
-        # ---------------------------
         if finding_type == "PUBLIC_SECURITY_GROUP":
             return {
                 "action": "RESTRICT_SECURITY_GROUP",
@@ -21,9 +18,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # Unrestricted SSH (NEW)
-        # ---------------------------
         if finding_type == "SECURITY_GROUP_UNRESTRICTED_SSH":
             return {
                 "action": "REVOKE_UNRESTRICTED_SSH",
@@ -32,9 +26,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # Unrestricted RDP (NEW)
-        # ---------------------------
         if finding_type == "SECURITY_GROUP_UNRESTRICTED_RDP":
             return {
                 "action": "REVOKE_UNRESTRICTED_RDP",
@@ -43,9 +34,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IMDSv1 Enabled (NEW)
-        # ---------------------------
         if finding_type == "EC2_IMDSV1_ENABLED":
             return {
                 "action": "ENFORCE_IMDSV2",
@@ -54,9 +42,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EBS Snapshot Public (NEW)
-        # ---------------------------
         if finding_type == "EBS_SNAPSHOT_PUBLIC":
             return {
                 "action": "MAKE_SNAPSHOT_PRIVATE",
@@ -65,9 +50,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # RDS Publicly Accessible (NEW)
-        # ---------------------------
         if finding_type == "RDS_PUBLICLY_ACCESSIBLE":
             return {
                 "action": "DISABLE_RDS_PUBLIC_ACCESS",
@@ -76,9 +58,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # RDS Backup Disabled (NEW)
-        # ---------------------------
         if finding_type == "RDS_BACKUP_DISABLED":
             return {
                 "action": "ENABLE_RDS_BACKUP",
@@ -87,9 +66,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # RDS Deletion Protection Disabled (NEW)
-        # ---------------------------
         if finding_type == "RDS_DELETION_PROTECTION_DISABLED":
             return {
                 "action": "ENABLE_RDS_DELETION_PROTECTION",
@@ -98,9 +74,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IAM Access Key Not Rotated (NEW)
-        # ---------------------------
         if finding_type == "IAM_ACCESS_KEY_NOT_ROTATED":
             return {
                 "action": "DISABLE_STALE_ACCESS_KEY",
@@ -109,9 +82,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # CloudWatch Log Group No Retention (NEW)
-        # ---------------------------
         if finding_type == "CLOUDWATCH_LOG_GROUP_NO_RETENTION":
             return {
                 "action": "SET_LOG_GROUP_RETENTION",
@@ -120,9 +90,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IAM Unused User
-        # ---------------------------
         if finding_type == "IAM_UNUSED_USER":
             return {
                 "action": "DELETE_UNUSED_IAM_USER",
@@ -131,9 +98,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IAM admin policy remediation
-        # ---------------------------
         if finding_type == "IAM_ADMIN_USER":
             return {
                 "action": "DETACH_ADMIN_POLICY",
@@ -142,9 +106,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # -------------------------
-        # IAM INLINE ADMIN POLICY
-        # -------------------------
         if finding_type == "IAM_INLINE_ADMIN_POLICY":
             return {
                 "action": "REMOVE_INLINE_POLICY",
@@ -153,9 +114,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # -------------------------
-        # IAM WILDCARD POLICY
-        # -------------------------
         if finding_type == "IAM_WILDCARD_POLICY":
             return {
                 "action": "REMOVE_INLINE_WILDCARD_POLICY",
@@ -164,9 +122,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # S3 versioning remediation
-        # ---------------------------
         if finding_type == "S3_VERSIONING_DISABLED":
             return {
                 "action": "ENABLE_S3_VERSIONING",
@@ -175,9 +130,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # S3 Block Public Access
-        # ---------------------------
         if finding_type == "S3_BLOCK_PUBLIC_ACCESS_DISABLED":
             return {
                 "action": "ENABLE_BLOCK_PUBLIC_ACCESS",
@@ -186,9 +138,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # S3 Public ACL remediation
-        # ---------------------------
         if finding_type == "S3_PUBLIC_ACL":
             return {
                 "action": "REMOVE_PUBLIC_S3_ACL",
@@ -197,9 +146,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # S3 Access Logging remediation
-        # ---------------------------
         if finding_type == "S3_ACCESS_LOGGING_DISABLED":
             return {
                 "action": "ENABLE_S3_ACCESS_LOGGING",
@@ -208,9 +154,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IAM MFA
-        # ---------------------------
         if finding_type == "IAM_USER_WITHOUT_MFA":
             return {
                 "action": "ENABLE_MFA",
@@ -219,9 +162,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # Access Key — unused (disable)
-        # ---------------------------
         if finding_type == "IAM_ACCESS_KEY_UNUSED":
             return {
                 "action": "DISABLE_ACCESS_KEY",
@@ -230,9 +170,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # OLD INACTIVE KEY (SAFE DELETE)
-        # ---------------------------
         if finding_type == "IAM_ACCESS_KEY_OLD_INACTIVE":
             return {
                 "action": "DELETE_ACCESS_KEY",
@@ -241,9 +178,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # KMS Key Rotation
-        # ---------------------------
         if finding_type == "KMS_KEY_ROTATION_DISABLED":
             return {
                 "action": "ENABLE_KMS_KEY_ROTATION",
@@ -252,9 +186,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # VPC FLOW
-        # ---------------------------
         if finding_type == "VPC_FLOW_LOGS_DISABLED":
             return {
                 "action": "ENABLE_VPC_FLOW_LOGS",
@@ -263,9 +194,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # UNUSED SECURITY GROUP
-        # ---------------------------
         if finding_type == "UNUSED_SECURITY_GROUP":
             return {
                 "action": "DELETE_UNUSED_SECURITY_GROUP",
@@ -274,9 +202,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # NACL INBOUND
-        # ---------------------------
         if finding_type == "NACL_ALLOW_ALL_INBOUND":
             return {
                 "action": "RESTRICT_NACL_INBOUND",
@@ -285,9 +210,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # NACL OUTBOUND
-        # ---------------------------
         if finding_type == "NACL_ALLOW_ALL_OUTBOUND":
             return {
                 "action": "RESTRICT_NACL_OUTBOUND",
@@ -296,9 +218,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # ROUTE TABLE PUBLIC ROUTE
-        # ---------------------------
         if finding_type == "ROUTE_TABLE_PUBLIC_ROUTE":
             return {
                 "action": "REMOVE_PUBLIC_ROUTE",
@@ -307,9 +226,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # IAM ROLE EXTERNAL TRUST
-        # ---------------------------
         if finding_type == "IAM_ROLE_EXTERNAL_TRUST":
             return {
                 "action": "RESTRICT_ROLE_EXTERNAL_TRUST",
@@ -318,9 +234,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # CLOUDTRAIL DISABLED
-        # ---------------------------
         if finding_type == "CLOUDTRAIL_DISABLED":
             return {
                 "action": "ENABLE_CLOUDTRAIL",
@@ -345,9 +258,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EBS UNENCRYPTED VOLUME
-        # ---------------------------
         if finding_type == "EBS_UNENCRYPTED_VOLUME":
             return {
                 "action": "ENCRYPT_EBS_VOLUME",
@@ -356,9 +266,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 WITHOUT IAM ROLE
-        # ---------------------------
         if finding_type == "EC2_WITHOUT_IAM_ROLE":
             return {
                 "action": "ATTACH_IAM_ROLE_TO_INSTANCE",
@@ -367,9 +274,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 DEFAULT SECURITY GROUP
-        # ---------------------------
         if finding_type == "EC2_DEFAULT_SECURITY_GROUP":
             return {
                 "action": "REPLACE_SECURITY_GROUP",
@@ -378,9 +282,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 ELASTIC IP (PUBLIC)
-        # ---------------------------
         if finding_type == "EC2_PUBLIC_ELASTIC_IP":
             return {
                 "action": "REMOVE_ELASTIC_IP",
@@ -389,9 +290,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 PUBLIC INSTANCE
-        # ---------------------------
         if finding_type == "PUBLIC_EC2_INSTANCE":
             return {
                 "action": "REMOVE_ELASTIC_IP",
@@ -400,9 +298,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 RUNNING → STOP
-        # ---------------------------
         if finding_type == "EC2_INSTANCE_RUNNING":
             return {
                 "action": "STOP_EC2_INSTANCE",
@@ -411,9 +306,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 STOPPED → TERMINATE
-        # ---------------------------
         if finding_type == "EC2_INSTANCE_STOPPED":
             return {
                 "action": "TERMINATE_EC2_INSTANCE",
@@ -422,11 +314,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # EC2 RUNNING → FORCE TERMINATE DIRECTLY
-        # This appears alongside EC2_INSTANCE_RUNNING for every running instance.
-        # User chooses: Stop (EC2_INSTANCE_RUNNING) OR Terminate directly (this one).
-        # ---------------------------
         if finding_type == "EC2_INSTANCE_RUNNING_UNMONITORED":
             return {
                 "action": "FORCE_TERMINATE_EC2_INSTANCE",
@@ -442,9 +329,6 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
-        # ---------------------------
-        # DEFAULT VPC EXISTS
-        # ---------------------------
         if finding_type == "DEFAULT_VPC_EXISTS":
             return {
                 "action": "DELETE_DEFAULT_VPC",

@@ -73,7 +73,6 @@ def get_history_summary(
             if f.severity == "HIGH" or f.severity == "CRITICAL":
                 total_high += 1
 
-        # Count executions for this scan's findings
         finding_ids = [f.id for f in findings]
         if finding_ids:
             executed = (

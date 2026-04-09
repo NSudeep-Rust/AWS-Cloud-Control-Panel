@@ -12,7 +12,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-# After all your routers are registered:
 ui_dist = os.path.join(os.path.dirname(__file__), "../ui/dist")
 if os.path.exists(ui_dist):
     app.mount("/", StaticFiles(directory=ui_dist, html=True), name="ui")

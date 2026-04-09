@@ -28,7 +28,6 @@ class ScheduleRequest(BaseModel):
     enabled:        int   = 1    # 1=on  0=off
 
 
-# ── Interval helper ──────────────────────────────────────────────
 ALLOWED_INTERVALS = (-1, -20, 1, 6, 12, 24)
 
 def get_interval_td(interval_hours: int) -> timedelta:
@@ -53,7 +52,6 @@ def _serialize(cfg: ScheduleConfig) -> dict:
     }
 
 
-# ── GET current schedule ──────────────────────────────────────────────────────
 @router.get("/")
 def get_schedule(account_db_id: int, db: Session = Depends(get_db)):
     cfg = (
@@ -69,7 +67,6 @@ def get_schedule(account_db_id: int, db: Session = Depends(get_db)):
     return format_response(module="schedule", mode="READ", data={"config": _serialize(cfg)})
 
 
-# ── Create / update schedule ──────────────────────────────────────────────────
 @router.post("/")
 def upsert_schedule(body: ScheduleRequest, db: Session = Depends(get_db)):
     if body.interval_hours not in ALLOWED_INTERVALS:
@@ -86,15 +83,12 @@ def upsert_schedule(body: ScheduleRequest, db: Session = Depends(get_db)):
     )
 
     if cfg:
-        # Update existing
         cfg.enabled        = body.enabled
         cfg.interval_hours = body.interval_hours
         cfg.updated_at     = datetime.utcnow()
-        # Recalculate next_run_at if enabling or changing interval
         if body.enabled:
             cfg.next_run_at = datetime.utcnow() + get_interval_td(body.interval_hours)
     else:
-        # Create new
         cfg = ScheduleConfig(
             account_db_id  = body.account_db_id,
             enabled        = body.enabled,
@@ -112,7 +106,6 @@ def upsert_schedule(body: ScheduleRequest, db: Session = Depends(get_db)):
     )
 
 
-# ── Run now ───────────────────────────────────────────────────────────────────
 @router.post("/run-now")
 def run_now(account_db_id: int, db: Session = Depends(get_db)):
     account = db.query(Account).filter(Account.id == account_db_id).first()
@@ -121,7 +114,6 @@ def run_now(account_db_id: int, db: Session = Depends(get_db)):
 
     scheduler_service.run_now(account_db_id)
 
-    # Update last_run_at for the config (if exists)
     cfg = (
         db.query(ScheduleConfig)
         .filter(ScheduleConfig.account_db_id == account_db_id)
@@ -138,7 +130,6 @@ def run_now(account_db_id: int, db: Session = Depends(get_db)):
     )
 
 
-# ── Disable schedule ──────────────────────────────────────────────────────────
 @router.delete("/")
 def disable_schedule(account_db_id: int, db: Session = Depends(get_db)):
     cfg = (

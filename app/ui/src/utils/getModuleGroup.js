@@ -21,21 +21,18 @@ export function getModuleGroup(type = '') {
     if (t.startsWith('CLOUDTRAIL'))                               return 'CloudTrail'
     if (t.startsWith('CLOUDWATCH'))                               return 'CloudWatch'
     if (t.startsWith('KMS'))                                      return 'KMS'
-    // VPC family — MUST come before SECURITY_GROUP/NACL/ROUTE so VPC_FLOW is caught here
     if (
         t.startsWith('VPC') ||
         t.startsWith('INTERNET_GATEWAY') ||
         t.startsWith('PUBLIC_SUBNET') ||
         t === 'DEFAULT_VPC_EXISTS'
     ) return 'VPC'
-    // Firewall: Security Groups + NACLs + unused SGs
     if (
         t.startsWith('SECURITY_GROUP') ||
         t.startsWith('PUBLIC_SECURITY') ||
         t.startsWith('NACL') ||
         t === 'UNUSED_SECURITY_GROUP'
     ) return 'Firewall'
-    // Network: Route tables
     if (t.startsWith('ROUTE'))                                    return 'Network'
 
     return 'Other'

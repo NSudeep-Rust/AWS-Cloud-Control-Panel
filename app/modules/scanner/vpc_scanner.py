@@ -33,7 +33,6 @@ class VPCScanner:
                 vpc_id = vpc["VpcId"]
                 cidr   = vpc.get("CidrBlock", "unknown")
 
-                # Collect associated resource counts for the description
                 subnet_count = len(
                     ec2.describe_subnets(
                         Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
@@ -56,7 +55,6 @@ class VPCScanner:
                         f"with {subnet_count} subnet(s) and {igw_count} IGW(s). "
                         "AWS best practice is to delete the default VPC to reduce attack surface."
                     ),
-                    # Extra metadata passed through to executor
                     "cidr_block":    cidr,
                     "subnet_count":  subnet_count,
                     "igw_count":     igw_count,

@@ -13,6 +13,7 @@ from app.database.models import Account
 from app.modules.scanner.scanner import run_full_scan
 from app.core.email_service import EmailService
 from app.database.db import SessionLocal
+from app.modules.reporter.html_reporter import HTMLReporter
 import uuid
 import threading
 
@@ -40,7 +41,6 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
     )
 
     try:
-        # ✅ Initialize AWS session
         account = db.query(Account).filter(
             Account.id == request.account_id
         ).first()
@@ -51,7 +51,6 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
                 mode=effective_mode,
                 errors=["Invalid account_id"]
             )
-        # ✅ AWS session (DYNAMIC)
         aws_session = AWSSession(
             profile_name=account.profile_name,
             role_arn=account.role_arn,
@@ -62,12 +61,10 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         aws_session.initialize()
         print("USING AWS PROFILE:", account.profile_name)
 
-        # ✅ Scanner
         scanner = Scanner(aws_session)
 
         findings = run_full_scan(aws_session, source="API")
 
-        # ✅ Store scan
         scan_id = str(uuid.uuid4())
 
         scan = Scan(
@@ -78,7 +75,6 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         db.add(scan)
         db.commit()
 
-        # ✅ Store findings
         for f in findings:
             finding = Finding(
                 id=f.get("id"),
@@ -97,30 +93,35 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
 
         db.commit()
 
-        # ── 📧 Email notifications (fire-and-forget in background) ────────────
         def _notify(acct_id, acct_name, scan_findings, sid):
             """Runs in a daemon thread — won't block the HTTP response."""
             try:
                 bg_db = SessionLocal()
                 cfg   = EmailService.get_config(acct_id, bg_db)
-                if cfg and cfg.enabled:
-                    # Compute quick stats for scan-summary email
-                    sev_map = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-                    for f in scan_findings:
-                        sev_map[f.get("severity", "LOW")] = sev_map.get(f.get("severity", "LOW"), 0) + 1
-                    crit  = sev_map["CRITICAL"]
-                    high  = sev_map["HIGH"]
-                    score = min(100, crit * 15 + high * 8 + sev_map["MEDIUM"] * 3 + sev_map["LOW"])
-                    level = "CRITICAL" if crit > 5 else "HIGH" if crit > 0 or high > 10 else "MEDIUM" if high > 0 else "LOW"
-                    stats = {
-                        "total_findings": len(scan_findings),
-                        "critical": crit, "high": high,
-                        "medium": sev_map["MEDIUM"], "low": sev_map["LOW"],
-                        "risk_score": score, "risk_level": level,
-                    }
-                    EmailService.send_scan_summary(stats, acct_name, cfg)
 
-                    # Drift alert — compare to previous scan
+                sev_map = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+                for f in scan_findings:
+                    k = f.get("severity", "LOW")
+                    sev_map[k] = sev_map.get(k, 0) + 1
+                crit  = sev_map["CRITICAL"]
+                high  = sev_map["HIGH"]
+                score = min(100, crit * 15 + high * 8 + sev_map["MEDIUM"] * 3 + sev_map["LOW"])
+                level = ("CRITICAL" if crit > 5 else
+                         "HIGH"     if crit > 0 or high > 10 else
+                         "MEDIUM"   if high > 0 else "LOW")
+                stats = {
+                    "total_findings": len(scan_findings),
+                    "critical": crit, "high": high,
+                    "medium": sev_map["MEDIUM"], "low": sev_map["LOW"],
+                    "risk_score": score, "risk_level": level,
+                }
+
+                report_url = HTMLReporter.generate(sid, scan_findings, stats, acct_name)
+
+                if cfg and cfg.enabled:
+                    EmailService.send_scan_summary(stats, acct_name, cfg,
+                                                   report_url=report_url)
+
                     from app.api.routes.drift_routes import get_drift
                     drift_resp = get_drift(account_id=acct_id, db=bg_db)
                     drift_data = getattr(drift_resp, "body", None)
@@ -137,14 +138,12 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         t = threading.Thread(target=_notify, args=(account.id, acct_name, findings, scan_id), daemon=True)
         t.start()
 
-        # ✅ Debug logs (VERY IMPORTANT)
         print("\n" + "="*55)
         print("🌐 API SCAN STARTED")
         print("="*55)
 
         print(f"👤 Profile: {account.profile_name}")
 
-        # results
         print(f"📊 API FINAL TOTAL: {len(findings)}")
         print(f"🔍 SAMPLE: {findings[:2]}")
 
@@ -199,4 +198,19 @@ def get_scan_history(account_id: int, limit: int = 5, db: Session = Depends(get_
         )
     except Exception as e:
         return format_response(module="scanner", mode="READ", errors=[str(e)])
-
+
+
+@router.get("/report/{scan_id}")
+def view_scan_report(scan_id: str):
+    """Serve the saved HTML report for a scan directly in the browser.
+    Used by the in-app 'View Report' button — no localhost dependency."""
+    from fastapi.responses import HTMLResponse, JSONResponse
+    path = HTMLReporter.get_path(scan_id)
+    if path is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"Report for scan '{scan_id}' not found. "
+                               "It may not have been generated yet."}
+        )
+    return HTMLResponse(content=path.read_text(encoding="utf-8"), status_code=200)
+

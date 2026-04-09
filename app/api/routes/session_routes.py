@@ -1,4 +1,3 @@
-# session_routes.py — Wipe all session data for an account
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database.db import get_db
@@ -20,7 +19,6 @@ def wipe_session(
     Deletion order respects FK constraints. Account row is KEPT so user can reconnect.
     """
     try:
-        # 1. Resolve account row
         account = db.query(Account).filter(Account.aws_account_id == account_id).first()
         if not account:
             return {"status": "ok", "message": "Account not found — nothing to wipe"}
@@ -28,19 +26,15 @@ def wipe_session(
         db_id = account.id      # integer PK used by Scan FK
         deleted = {}
 
-        # 2. Collect scan IDs for this account
         scan_ids = [s.id for s in db.query(Scan.id).filter(Scan.account_id == db_id).all()]
 
-        # 3. FindingChange — references scan_id string
         if scan_ids:
             n = db.query(FindingChange).filter(FindingChange.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["finding_changes"] = n
 
-        # 4. LiveMonitorFinding — has direct account_db_id FK (added with Alerts section)
         n = db.query(LiveMonitorFinding).filter(LiveMonitorFinding.account_db_id == db_id).delete(synchronize_session=False)
         deleted["live_monitor_findings"] = n
 
-        # 5. Alerts — no direct account FK; filter by finding_id via Findings/Scans join
         if scan_ids:
             finding_ids = [
                 f.id for f in db.query(Finding.id)
@@ -55,16 +49,13 @@ def wipe_session(
         else:
             deleted["alerts"] = 0
 
-        # 6. Executions — has scan_id (String, non-FK)
         if scan_ids:
-            # Collect execution IDs so we can delete their rollbacks
             exec_ids = [
                 str(e.id) for e in db.query(Execution.id)
                 .filter(Execution.scan_id.in_(scan_ids))
                 .all()
             ]
 
-            # 6a. Rollbacks — FK is execution_id
             if exec_ids:
                 n = db.query(Rollback).filter(
                     Rollback.execution_id.in_(exec_ids)
@@ -73,16 +64,13 @@ def wipe_session(
             else:
                 deleted["rollbacks"] = 0
 
-            # 6b. Delete Executions
             n = db.query(Execution).filter(Execution.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["executions"] = n
 
-        # 7. Findings
         if scan_ids:
             n = db.query(Finding).filter(Finding.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["findings"] = n
 
-        # 8. Scans
         n = db.query(Scan).filter(Scan.account_id == db_id).delete(synchronize_session=False)
         deleted["scans"] = n
 
@@ -93,5 +81,4 @@ def wipe_session(
     except Exception as e:
         db.rollback()
         print(f"❌ Wipe failed for {account_id}: {e}")
-        # Still return ok so disconnect always completes on the frontend
         return {"status": "partial", "error": str(e), "message": "Some data may not have been deleted"}

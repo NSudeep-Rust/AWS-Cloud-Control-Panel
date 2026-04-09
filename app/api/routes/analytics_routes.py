@@ -80,19 +80,14 @@ def calculate_risk_score(
     active_medium = sum(1 for f in findings if f.severity == "MEDIUM" and f.id not in executed_finding_ids)
     active_low    = sum(1 for f in findings if f.severity == "LOW"    and f.id not in executed_finding_ids)
 
-    # ── Weighted score (0-100) ────────────────────────────────────────────
-    # Weights per severity, each capped so one type can't dominate the entire scale.
-    # Max contribution: CRITICAL=55, HIGH=25, MEDIUM=15, LOW=5 → total cap 100
     crit_pts  = min(55, active_critical * 1.2)
     high_pts  = min(25, active_high     * 0.5)
     med_pts   = min(15, active_medium   * 0.3)
     low_pts   = min( 5, active_low      * 0.1)
-    # Remediation credit: every fixed finding lowers score (up to -20)
     remed_credit = min(20, remediated * 2)
 
     risk_score = max(0, round(crit_pts + high_pts + med_pts + low_pts - remed_credit))
 
-    # ── Level thresholds (count-based first, score as fallback) ──────────
     level = (
         "CRITICAL" if active_critical > 40 or risk_score > 85 else
         "HIGH"     if active_critical > 20 or active_high > 40 or risk_score > 60 else
@@ -355,7 +350,6 @@ def enforce_policies(account_id: int, db: Session = Depends(get_db)):
                            data={"total_violations": len(violations), "enforcement_actions": results})
 
 
-# ── NEW: Rich breakdown endpoint ────────────────────────────────────────────
 @router.get("/breakdown")
 def get_breakdown(
     account_id: Optional[int] = Query(None),
@@ -387,7 +381,6 @@ def get_breakdown(
             region_counts[(f.region or "global").lower()] += 1
             type_counts[(f.type or "unknown").lower()]    += 1
 
-        # executions for this scan
         execs = db.query(Execution).filter(Execution.scan_id == scan.id).all()
         total_exec += len(execs)
 
@@ -402,12 +395,9 @@ def get_breakdown(
             "remediations": len(execs),
         })
 
-    # rollbacks
     total_roll = db.query(Rollback).count()
 
-    # top 8 finding types
     top_types = sorted(type_counts.items(), key=lambda x: x[1], reverse=True)[:8]
-    # top 8 regions
     top_regions = sorted(region_counts.items(), key=lambda x: x[1], reverse=True)[:10]
 
     return format_response(
@@ -431,7 +421,6 @@ def get_breakdown(
 
 
 
-# ── Compliance Score (CIS / PCI / NIST Scorecards) ─────────────────────────
 @router.get("/compliance-score")
 def get_compliance_score(
     account_id: Optional[int] = Query(None),
@@ -461,15 +450,12 @@ def get_compliance_score(
     engine     = PolicyEngine()
     violations = engine.evaluate(findings_dicts)
 
-    # IDs of policies that have at least 1 violation
     violated_ids = {v["policy_id"] for v in violations}
 
-    # Count violations per policy (for affected_count in UI)
     violation_count: dict = {}
     for v in violations:
         violation_count[v["policy_id"]] = violation_count.get(v["policy_id"], 0) + 1
 
-    # Framework definitions: which substring to look for in policy["framework"]
     FRAMEWORKS = [
         {"key": "cis",  "label": "CIS AWS Benchmark",     "match": "CIS",  "icon": "🛡️"},
         {"key": "pci",  "label": "PCI DSS",               "match": "PCI",  "icon": "💳"},
@@ -478,7 +464,6 @@ def get_compliance_score(
 
     scorecards = []
     for fw in FRAMEWORKS:
-        # Policies that belong to this framework
         fw_policies = [p for p in POLICIES if fw["match"] in p.get("framework", "")]
         if not fw_policies:
             continue
@@ -513,7 +498,6 @@ def get_compliance_score(
             "rules":      rules,
         })
 
-    # Overall score = average across frameworks
     overall_pct = round(sum(s["score_pct"] for s in scorecards) / len(scorecards)) if scorecards else 0
 
     return format_response(
@@ -526,5 +510,4 @@ def get_compliance_score(
     )
 
 
-# End of analytics routes
 

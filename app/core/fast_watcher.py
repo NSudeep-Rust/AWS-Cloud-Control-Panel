@@ -1,16 +1,9 @@
-# fast_watcher.py
-# Lightweight AWS change detector — runs every 8 seconds.
-# Only checks specific high-signal APIs instead of running a full scan.
-# Detects: new IAM users, admin policy attachments, open SG rules, public S3 buckets.
-# When a change is found, fires immediately via the broadcast_fn callback
-# AND fires a native Windows desktop notification (appears over any app).
 
 import time
 import uuid
 import threading
 from datetime import datetime
 
-# Windows desktop notification — winotify (shows "AWS CloudShield", not "Python")
 import os as _os
 _ICON_PATH = _os.path.normpath(
     _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.png")
@@ -48,7 +41,6 @@ def _fire_windows_toast(severity: str, title_text: str, body: str):
             print(f"⚡ plyer toast error: {e}")
 
 
-# Map of event type → (alert_message, severity)
 CRITICAL_CHECKS = {
     "iam_admin_users":           ("New admin IAM user detected",          "CRITICAL"),
     "iam_admin_policies":        ("Admin policy attached to IAM entity",    "CRITICAL"),
@@ -189,7 +181,6 @@ class FastWatcher:
         self.db_fn        = db_fn          # callable() -> SQLAlchemy session or None
         self._running     = False
         self._thread      = None
-        # State snapshots — detect diffs
         self._prev = {
             "iam_admin_users":   None,
             "open_ssh_sg":       None,
@@ -203,8 +194,6 @@ class FastWatcher:
         """Take a lightweight snapshot of critical state."""
         sess = self.aws_session
         try:
-            # self.aws_session is an AWSSession wrapper — the raw boto3 Session
-            # lives inside .session. Guard against it not being initialized yet.
             boto_session = sess.session
             if boto_session is None:
                 print("⚡ FastWatcher: AWS session not initialized yet, skipping snapshot")
@@ -242,22 +231,18 @@ class FastWatcher:
             "timestamp":   datetime.utcnow().isoformat(),
         }
 
-        # 1️⃣ Native Windows OS toast — fires over ANY app, browser can be minimized
         _fire_windows_toast(
             severity=severity,
             title_text=f"{check_key}: {resource_id}",
             body=message,
         )
 
-        # 2️⃣ Instant WebSocket push → browser toast (even when browser is minimized,
-        #    Chrome fires it as a Windows notification via Web Notifications API)
         if self.broadcast_fn:
             try:
                 self.broadcast_fn(payload)
             except Exception as e:
                 print(f"⚡ WS broadcast error: {e}")
 
-        # Persist to DB
         if self.db_fn:
             try:
                 from app.database.models import Alert
@@ -276,42 +261,36 @@ class FastWatcher:
     def _diff(self, current):
         prev = self._prev
 
-        # IAM admin users — new entries
         if prev["iam_admin_users"] is not None:
             new_admins = current["iam_admin_users"] - prev["iam_admin_users"]
             for (uname, policy) in new_admins:
                 self._fire("IAM_ADMIN_USER", uname,
                            f"Admin policy attached to user '{uname}'", "CRITICAL")
 
-        # Open SSH SGs — newly opened
         if prev["open_ssh_sg"] is not None:
             new_ssh = current["open_ssh_sg"] - prev["open_ssh_sg"]
             for sg_id in new_ssh:
                 self._fire("SECURITY_GROUP_UNRESTRICTED_SSH", sg_id,
                            f"Security group {sg_id} now allows unrestricted SSH (0.0.0.0/0:22)", "CRITICAL")
 
-        # Open RDP SGs
         if prev["open_rdp_sg"] is not None:
             new_rdp = current["open_rdp_sg"] - prev["open_rdp_sg"]
             for sg_id in new_rdp:
                 self._fire("SECURITY_GROUP_UNRESTRICTED_RDP", sg_id,
                            f"Security group {sg_id} now allows unrestricted RDP (0.0.0.0/0:3389)", "CRITICAL")
 
-        # Public S3 buckets — newly exposed
         if prev["public_s3"] is not None:
             new_public = current["public_s3"] - prev["public_s3"]
             for bucket in new_public:
                 self._fire("S3_BLOCK_PUBLIC_ACCESS_DISABLED", bucket,
                            f"S3 bucket '{bucket}' has public access enabled", "CRITICAL")
 
-        # Public RDS
         if prev["public_rds"] is not None:
             new_public_rds = current["public_rds"] - prev["public_rds"]
             for db_id in new_public_rds:
                 self._fire("RDS_PUBLICLY_ACCESSIBLE", db_id,
                            f"RDS instance '{db_id}' is now publicly accessible", "HIGH")
 
-        # CloudTrail disabled — state changed from True → False
         if prev["cloudtrail_ok"] is True and current["cloudtrail_ok"] is False:
             self._fire("CLOUDTRAIL_DISABLED", "cloudtrail",
                        "CloudTrail logging has been DISABLED — audit trail gap!", "CRITICAL")
@@ -323,7 +302,6 @@ class FastWatcher:
                 snap = self._snapshot()
                 if snap is not None:
                     self._diff(snap)
-                    # ── Update prev state ──────────────────────────────
                     for k in self._prev:
                         if k in snap:
                             self._prev[k] = snap[k]

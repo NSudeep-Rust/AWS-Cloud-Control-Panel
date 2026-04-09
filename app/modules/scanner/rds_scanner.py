@@ -26,9 +26,6 @@ class RDSScanner:
         for db in databases:
             db_id = db["DBInstanceIdentifier"]
 
-            # -------------------------
-            # RDS PUBLICLY ACCESSIBLE
-            # -------------------------
             if db.get("PubliclyAccessible"):
                 finding_id = f"rds-publicly-accessible-{db_id}"
                 if finding_id not in seen_ids:
@@ -42,9 +39,6 @@ class RDSScanner:
                         "description": f"RDS instance '{db_id}' is publicly accessible"
                     })
 
-            # -------------------------
-            # RDS BACKUP DISABLED
-            # -------------------------
             if db.get("BackupRetentionPeriod", 0) == 0:
                 finding_id = f"rds-backup-disabled-{db_id}"
                 if finding_id not in seen_ids:
@@ -58,9 +52,6 @@ class RDSScanner:
                         "description": f"RDS instance '{db_id}' has automated backups disabled"
                     })
 
-            # -------------------------
-            # RDS DELETION PROTECTION DISABLED
-            # -------------------------
             if not db.get("DeletionProtection", False):
                 finding_id = f"rds-deletion-protection-disabled-{db_id}"
                 if finding_id not in seen_ids:

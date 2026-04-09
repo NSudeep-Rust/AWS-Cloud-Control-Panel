@@ -15,10 +15,6 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-# ── How many threads to use ─────────────────────────────────────────────────
-# Outer: 1 task per region + 3 global tasks, all run concurrently.
-# Inner: sub-scanners per region. Capped at 5 to prevent AWS ThrottlingException.
-#        (Previously len(scanner_map)=9 → 9×9=81 concurrent calls → throttled→ slow)
 MAX_WORKERS       = 12   # outer pool — handles all region + global tasks
 INNER_MAX_WORKERS = 5    # inner pool — sub-scanners within one region
 
@@ -52,7 +48,6 @@ class Scanner:
     def get_all_regions(self):
         return self.aws_session.get_all_regions()
 
-    # ── Public-SG scan (was inline in scan()) ─────────────────────────────
     def _scan_public_security_groups_region(self, region):
         """Return PUBLIC_SECURITY_GROUP findings for a single region."""
         results = []
@@ -88,7 +83,6 @@ class Scanner:
                         })
         return results
 
-    # ── Per-region concurrent worker ──────────────────────────────────────
     def _scan_region(self, region):
         """Run ALL region-scoped scanners for one region and return findings."""
         findings = []
@@ -107,9 +101,6 @@ class Scanner:
             "VPC":         lambda: self.vpc_scanner.scan(region=region),
         }
 
-        # Run all scanner functions for this region concurrently
-        # Cap at INNER_MAX_WORKERS (5) to prevent AWS ThrottlingException from
-        # too many simultaneous API calls (was len(scanner_map)=9 → throttled)
         with ThreadPoolExecutor(max_workers=INNER_MAX_WORKERS) as inner:
             futures = {inner.submit(fn): name for name, fn in scanner_map.items()}
             for fut in as_completed(futures):
@@ -121,7 +112,6 @@ class Scanner:
 
         return findings
 
-    # ── Main scan entry-point ─────────────────────────────────────────────
     def scan(self, region=None):
         """
         Run FULL AWS security scan (all modules) concurrently.
@@ -129,21 +119,17 @@ class Scanner:
         """
         all_findings = []
 
-        # ── Define all top-level tasks ────────────────────────────────────
         tasks = {}
 
-        # Global scanners (no region needed)
         tasks["IAM"]      = lambda: self.iam_manager.audit()
         tasks["IAMExtra"] = lambda: self.iam_extra_scanner.scan()
         tasks["S3"]       = lambda: [
             {**f, "region": "global"} for f in self.s3_scanner.scan()
         ]
 
-        # One task per region (each spawns its own inner pool)
         for r in self.regions:
             tasks[f"region:{r}"] = (lambda _r=r: self._scan_region(_r))
 
-        # ── Run all tasks concurrently ────────────────────────────────────
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as outer:
             futures = {outer.submit(fn): name for name, fn in tasks.items()}
             for fut in as_completed(futures):
@@ -155,13 +141,11 @@ class Scanner:
                 except Exception as e:
                     print(f"[ERROR] Task '{name}' failed: {e}")
 
-        # ── Post-process ──────────────────────────────────────────────────
         for f in all_findings:
             if not f.get("region"):
                 f["region"] = "global"
             f["account_id"] = self.account_id
 
-        # Deduplicate by finding id
         unique = {}
         for f in all_findings:
             key = f.get("id")

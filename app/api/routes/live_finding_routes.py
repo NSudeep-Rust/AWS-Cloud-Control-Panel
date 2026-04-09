@@ -16,7 +16,6 @@ from app.api.response_formatter import format_response
 router = APIRouter(prefix="/api/live-findings", tags=["LiveFindings"])
 
 
-# ── GET all active findings for an account ────────────────────────────────────
 @router.get("/")
 def get_live_findings(account_db_id: int = None, db: Session = Depends(get_db)):
     """Return all non-dismissed live monitor findings, optionally filtered by account."""
@@ -25,7 +24,6 @@ def get_live_findings(account_db_id: int = None, db: Session = Depends(get_db)):
         q = q.filter(LiveMonitorFinding.account_db_id == account_db_id)
 
     rows = q.order_by(
-        # CRITICAL first, then by detection time descending
         LiveMonitorFinding.severity.desc(),
         LiveMonitorFinding.detected_at.desc()
     ).all()
@@ -57,7 +55,6 @@ def get_live_findings(account_db_id: int = None, db: Session = Depends(get_db)):
     )
 
 
-# ── Dismiss (soft-delete) a single finding ────────────────────────────────────
 @router.delete("/{finding_id}")
 def dismiss_live_finding(finding_id: int, db: Session = Depends(get_db)):
     """Mark a live monitor finding as dismissed (won't appear in the panel)."""
@@ -69,7 +66,6 @@ def dismiss_live_finding(finding_id: int, db: Session = Depends(get_db)):
     return format_response(module="live_findings", mode="DELETE", data={"dismissed": finding_id})
 
 
-# ── Clear all findings for an account (on monitor stop) ──────────────────────
 @router.delete("/clear/all")
 def clear_live_findings(account_db_id: int = None, db: Session = Depends(get_db)):
     """Remove all non-dismissed findings for an account."""

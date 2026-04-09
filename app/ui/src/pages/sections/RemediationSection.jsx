@@ -7,13 +7,11 @@ import { getServiceTag } from '@/utils/getModuleGroup'
 
 const API = 'http://localhost:8000'
 
-// Actions that are irreversible — show a danger checkbox before allowing execute
 const DANGER_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE', 'FORCE_TERMINATE_EC2_INSTANCE',
   'DELETE_DEFAULT_VPC', 'DELETE_UNUSED_IAM_USER', 'DELETE_ACCESS_KEY',
 ])
 
-// Actions where rollback is impossible — inform user BEFORE they execute
 const NOT_ROLLBACKABLE_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE', 'FORCE_TERMINATE_EC2_INSTANCE',
   'REMOVE_ELASTIC_IP', 'DELETE_DEFAULT_VPC',
@@ -38,7 +36,6 @@ function svcIcon(type) {
 function fmtType(t)   { return (t||'Unknown').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) }
 function fmtAction(a) { return (a||'Unknown').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) }
 
-// ─── Empty state ────────────────────────────────────────────────────────────
 function EmptyPipeline() {
   const STEPS = [
     { icon:'🔍', label:'DETECT',  sub:'Scan findings',    color:'#e07b00' },
@@ -85,7 +82,6 @@ function EmptyPipeline() {
   )
 }
 
-// ─── FindingCard — 2-step: Dry Run → Execute ────────────────────────────────
 function FindingCard({ finding, scanId, onExecuted }) {
   const ac = accent(finding.severity)
   const icon = svcIcon(finding.type)
@@ -100,10 +96,8 @@ function FindingCard({ finding, scanId, onExecuted }) {
   const [errorReason, setErrorReason] = useState('')
   const pollRef = useRef(null)
 
-  // cleanup on unmount
   useEffect(() => () => clearInterval(pollRef.current), [])
 
-  // smooth exit when done
   useEffect(() => {
     if (phase === 'done') {
       setExiting(true)
@@ -127,17 +121,14 @@ function FindingCard({ finding, scanId, onExecuted }) {
     e.stopPropagation()
     setPhase('executing')
     try {
-      // Step 1: kick off the LIVE execution
       await axios.post(`${API}/api/execute/`, {
         scan_id: scanId, finding_ids: [finding.id], mode: 'LIVE'
       })
 
-      // Step 2: poll for result, auto-confirming if backend asks for approval
       let attempts = 0
       const confirmed = new Set()
       pollRef.current = setInterval(async () => {
         attempts++
-        // 45 × 2s = 90s total timeout
         if (attempts > 45) {
           clearInterval(pollRef.current)
           setErrorReason('Execution timed out — AWS did not respond within 90 seconds.')
@@ -146,7 +137,6 @@ function FindingCard({ finding, scanId, onExecuted }) {
         }
         try {
           const r = await axios.get(`${API}/api/execute/executions?scan_id=${scanId}`)
-          // Newest execution for this finding (multiple may exist after re-runs)
           const all = (r.data?.data?.executions || [])
             .filter(ex => ex.finding_id === finding.id)
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -161,7 +151,6 @@ function FindingCard({ finding, scanId, onExecuted }) {
             setErrorReason(mine.reason || 'Execution failed — check AWS permissions.')
             setPhase('error'); return
           }
-          // Backend requires approval — user already confirmed via danger checkbox, so auto-confirm
           if (mine.status === 'REQUIRE_APPROVAL' && mine.approval_token && !confirmed.has(mine.approval_token)) {
             confirmed.add(mine.approval_token)
             attempts = 0 // reset clock after confirmation
@@ -347,7 +336,6 @@ function FindingCard({ finding, scanId, onExecuted }) {
   )
 }
 
-// ─── Manual finding card ─────────────────────────────────────────────────────
 function ManualCard({ finding }) {
   const ac = accent(finding.severity)
   const icon = svcIcon(finding.type)
@@ -388,7 +376,6 @@ function ManualCard({ finding }) {
   )
 }
 
-// ─── Main Section ────────────────────────────────────────────────────────────
 export default function RemediationSection({ dark, onNav }) {
   const { account } = useAuth()
   const { scanId: ctxScanId, refreshToken } = useScan()
@@ -402,17 +389,12 @@ export default function RemediationSection({ dark, onNav }) {
   const [filterSvc, setFilterSvc]     = useState('ALL')
   const [searchQ, setSearchQ]         = useState('')
 
-  // ── Load findings ──────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true)
-    // Always resolve the LATEST scan, whether manual or scheduled.
-    // ctxScanId = last manual scan from this browser session.
-    // History API = most-recent scan in DB (may be newer scheduled scan).
     let sid = null
     try {
       const hr = await axios.get(`${API}/api/scan/history`)
       const dbLatest = hr.data?.data?.scans?.[0]?.scan_id
-      // Prefer DB latest (may be a newer scheduled scan) over ctxScanId
       sid = dbLatest || ctxScanId
     } catch {
       sid = ctxScanId
@@ -437,13 +419,10 @@ export default function RemediationSection({ dark, onNav }) {
     setLoading(false)
   }, [ctxScanId])
 
-  // On mount + whenever ctxScanId changes (new manual scan)
   useEffect(() => { load() }, [load])
 
-  // Auto-refresh when backend broadcasts execution_complete / scan_complete
   useEffect(() => {
     if (refreshToken === 0) return
-    // 1.5s delay so backend finishes committing before we re-fetch
     const t = setTimeout(() => load(), 1500)
     return () => clearTimeout(t)
   }, [refreshToken])
@@ -453,7 +432,6 @@ export default function RemediationSection({ dark, onNav }) {
   const autoFindings   = findings.filter(f => f.remediation_type === 'AUTO' && !executedIds.has(f.id))
   const manualFindings = findings.filter(f => f.remediation_type === 'MANUAL')
 
-  // Build unique service tags from active tab findings using canonical mapping
   const uniqueSvcs = [...new Set(
     (tab === 'auto' ? autoFindings : manualFindings).map(f => getServiceTag(f.type))
   )].sort()
@@ -461,7 +439,6 @@ export default function RemediationSection({ dark, onNav }) {
   function applyFilters(list) {
     return list.filter(f => {
       if (filterSev !== 'ALL' && (f.severity||'').toUpperCase() !== filterSev) return false
-      // Use canonical getServiceTag for match — fixes broken .includes() mismatches
       if (filterSvc !== 'ALL' && getServiceTag(f.type) !== filterSvc) return false
       if (searchQ.trim()) {
         const q = searchQ.toLowerCase()

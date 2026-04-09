@@ -35,7 +35,6 @@ export default function PanelPage() {
     const [authChecked, setAuthChecked] = useState(false)
     const prevAccountIdRef = useRef(null)
 
-    // Auth check — no flicker
     useEffect(() => {
         if (!account) {
             navigate('/setup', { replace: true })
@@ -44,7 +43,6 @@ export default function PanelPage() {
         }
     }, []) // eslint-disable-line
 
-    // Block browser back button
     useEffect(() => {
         if (!authChecked) return
         window.history.replaceState({ panel: true }, '', window.location.href)
@@ -60,7 +58,6 @@ export default function PanelPage() {
         }
     }, [authChecked])
 
-    // Clear scan caches from old accounts
     useEffect(() => {
         if (!account) return
         const awsId = account.aws_account_id || account.parent_aws_account_id

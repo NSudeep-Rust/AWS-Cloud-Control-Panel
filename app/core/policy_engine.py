@@ -15,7 +15,6 @@ endpoint exposes to the Analytics → Violations tab.
 
 POLICIES = [
 
-    # ── IAM ──────────────────────────────────────────────────────────────────
     {
         "id":          "IAM-001",
         "name":        "MFA Required for All IAM Users",
@@ -97,7 +96,6 @@ POLICIES = [
         "remediation": "Delete or disable IAM users that show no recent login activity.",
     },
 
-    # ── Network / Security Groups ─────────────────────────────────────────────
     {
         "id":          "NET-001",
         "name":        "No Unrestricted SSH Access (Port 22)",
@@ -168,7 +166,6 @@ POLICIES = [
         "remediation": "Enable VPC Flow Logs on all VPCs, publishing to CloudWatch Logs or S3.",
     },
 
-    # ── S3 ────────────────────────────────────────────────────────────────────
     {
         "id":          "S3-001",
         "name":        "S3 Public Access Block Must Be Enabled",
@@ -200,7 +197,6 @@ POLICIES = [
         "remediation": "Enable server access logging on the S3 bucket and direct logs to a separate audit bucket.",
     },
 
-    # ── CloudTrail / Logging ──────────────────────────────────────────────────
     {
         "id":          "LOG-001",
         "name":        "CloudTrail Must Be Enabled",
@@ -232,7 +228,6 @@ POLICIES = [
         "remediation": "Set a retention policy (e.g. 90 days) on the CloudWatch log group.",
     },
 
-    # ── Encryption ────────────────────────────────────────────────────────────
     {
         "id":          "ENC-001",
         "name":        "EBS Volumes Must Be Encrypted",
@@ -290,7 +285,6 @@ class PolicyEngine:
     """
 
     def __init__(self):
-        # Build a lookup: type_string → [list of matching policies]
         self._type_map: dict = {}
         for policy in POLICIES:
             for t in policy["matching_types"]:

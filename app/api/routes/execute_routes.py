@@ -20,13 +20,9 @@ router = APIRouter(prefix="/api/execute", tags=["Execute"])
 
 TOKEN_EXPIRY_SECONDS = 300
 
-# Finding types that require manual intervention (cannot be auto-executed)
 MANUAL_TYPES = {'IAM_USER_WITHOUT_MFA'}
 
 
-# =========================================================
-# 🔥 LOAD FINDINGS FROM DB
-# =========================================================
 def load_findings_from_db(db: Session, scan_id: str):
     rows = db.query(Finding).filter(Finding.scan_id == scan_id).all()
     findings = []
@@ -44,9 +40,6 @@ def load_findings_from_db(db: Session, scan_id: str):
     return findings
 
 
-# =========================================================
-# 🔥 BACKGROUND EXECUTION (LIVE mode only)
-# =========================================================
 def process_execution(request: ExecuteRequest, db: Session):
     db = SessionLocal()
     try:
@@ -104,10 +97,7 @@ def process_execution(request: ExecuteRequest, db: Session):
 
         force_execute = False
 
-        # ── Approval validation — DB-based (survives hot reloads) ──────────
         if request.approval_token and request.confirm:
-            # The first execution already wrote the token to the Execution row.
-            # Validate from DB so it works even after a server restart/reload.
             pending_exec = db.query(Execution).filter(
                 Execution.approval_token == request.approval_token,
                 Execution.scan_id       == request.scan_id,
@@ -120,7 +110,6 @@ def process_execution(request: ExecuteRequest, db: Session):
                 return
             force_execute = True
 
-        # ── Execution loop ──
         for finding in selected_findings:
             execution_id = str(uuid.uuid4())
             print("\n\u27a1\ufe0f Executing:", finding.get("id"))
@@ -133,7 +122,6 @@ def process_execution(request: ExecuteRequest, db: Session):
             else:
                 result = executor.execute(finding)
 
-            # 🔥 Safety guard: execute() now always returns dict, but guard anyway
             if result is None:
                 result = {"status": "FAILED", "reason": "Executor returned no result", "metadata": {}}
 
@@ -148,7 +136,6 @@ def process_execution(request: ExecuteRequest, db: Session):
             approval_token_value = None
             if result.get("status") in ["BLOCKED_BY_POLICY", "REQUIRE_APPROVAL"] and not force_execute:
                 approval_token_value = str(uuid.uuid4())
-                # \u2500\u2500 Token persisted only in DB now (APPROVAL_STORAGE removed) \u2500\u2500
 
             execution = Execution(
                 execution_id=result.get("execution_id", execution_id),
@@ -164,7 +151,6 @@ def process_execution(request: ExecuteRequest, db: Session):
             db.add(execution)
             db.commit()
 
-        # ── Notify frontend: remediation done, refresh findings ────────────────────
         account_id = scan_account.account_id if scan_account else None
         ws_manager.broadcast_sync({
             "event":      "execution_complete",
@@ -177,8 +163,6 @@ def process_execution(request: ExecuteRequest, db: Session):
         import traceback
         traceback.print_exc()
 
-        # 🔥 CRITICAL FIX: Write FAILED rows to DB so frontend sees terminal status
-        # instead of polling for 90s and showing a misleading timeout message.
         try:
             for finding in selected_findings:
                 failed_exec = Execution(
@@ -197,16 +181,12 @@ def process_execution(request: ExecuteRequest, db: Session):
         except Exception as db_err:
             print("\u274c Could not write FAILED rows to DB:", str(db_err))
 
-        # Still broadcast so frontend refreshes
         ws_manager.broadcast_sync({
             "event":   "execution_complete",
             "scan_id": request.scan_id,
         })
 
 
-# =========================================================
-# POST /api/execute/  — DRY_RUN sync, LIVE async
-# =========================================================
 @router.post("/")
 def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
 
@@ -215,7 +195,6 @@ def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks, db: 
         return format_response(module="execute", mode=request.mode, errors=["Invalid scan_id"])
 
     if request.mode == "DRY_RUN":
-        # ── Synchronous: return plan immediately, no AWS calls ──
         selected = [f for f in findings if f.get("id") in request.finding_ids]
         if not selected:
             return format_response(module="execute", mode="DRY_RUN", errors=["No matching findings"])
@@ -238,7 +217,6 @@ def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks, db: 
         return format_response(module="execute", mode="DRY_RUN", data={"plans": plans})
 
     else:
-        # ── Async live execution ──
         background_tasks.add_task(process_execution, request, db)
         return format_response(
             module="execute", mode=request.mode,
@@ -246,9 +224,6 @@ def execute_fix(request: ExecuteRequest, background_tasks: BackgroundTasks, db: 
         )
 
 
-# =========================================================
-# GET /api/execute/findings?scan_id=
-# =========================================================
 @router.get("/findings")
 def get_executable_findings(scan_id: str = Query(...), db: Session = Depends(get_db)):
     findings_raw = load_findings_from_db(db, scan_id)
@@ -266,9 +241,6 @@ def get_executable_findings(scan_id: str = Query(...), db: Session = Depends(get
     return format_response(module="execute", mode="INFO", data={"findings": result, "total": len(result)})
 
 
-# =========================================================
-# GET /api/execute/executions?scan_id=
-# =========================================================
 @router.get("/executions")
 def list_executions(
     scan_id: str = Query(None),
@@ -278,16 +250,12 @@ def list_executions(
     query = db.query(Execution)
     if scan_id:
         query = query.filter(Execution.scan_id == scan_id)
-    # By default exclude ROLLED_BACK executions — they've been recovered
-    # and should not reappear in the Remediation or Rollback sections.
     if not include_rolled_back:
         query = query.filter(Execution.status != "ROLLED_BACK")
     rows = query.order_by(Execution.created_at.desc()).all()
 
     result = []
     for row in rows:
-        # Look up by finding primary key only — scan_id filter was redundant and
-        # caused silent None when the execution's scan_id differed from Finding's
         find_row = db.query(Finding).filter(Finding.id == row.finding_id).first()
         result.append({
             "id":             row.id,

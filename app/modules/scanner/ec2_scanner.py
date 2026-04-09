@@ -27,9 +27,6 @@ class EC2Scanner:
                 instance_id = instance["InstanceId"]
                 public_ip = instance.get("PublicIpAddress")
 
-                # -------------------------
-                # EC2 RUNNING INSTANCE
-                # -------------------------
                 state = instance.get("State", {}).get("Name")
 
                 if state == "running":
@@ -48,12 +45,6 @@ class EC2Scanner:
                             "description": "EC2 instance is running (cost optimization: stop it to reduce spend)"
                         })
 
-                    # ─────────────────────────────────────────────────────
-                    # EC2 RUNNING → FORCE TERMINATE DIRECTLY
-                    # Always generated for running instances so the user
-                    # can choose to directly terminate rather than stop-first.
-                    # Maps to FORCE_TERMINATE_EC2_INSTANCE in the planner.
-                    # ─────────────────────────────────────────────────────
                     force_finding_id = f"ec2-running-force-terminate-{instance_id}"
                     if force_finding_id not in seen_ids:
                         seen_ids.add(force_finding_id)
@@ -72,9 +63,6 @@ class EC2Scanner:
                         })
 
 
-                # -------------------------
-                # EC2 STOPPED INSTANCE
-                # -------------------------
                 if state == "stopped":
                     finding_id = f"ec2-stopped-{instance_id}"
 
@@ -91,9 +79,6 @@ class EC2Scanner:
                             "description": "EC2 instance is stopped (cleanup opportunity)"
                         })
 
-                # -------------------------
-                # PUBLIC EC2
-                # -------------------------
                 if public_ip:
                     finding_id = f"ec2-public-instance-{instance_id}"
 
@@ -109,9 +94,6 @@ class EC2Scanner:
                             "description": "EC2 instance has a public IP address"
                         })
 
-                # -------------------------
-                # EC2 without IAM role
-                # -------------------------
                 if "IamInstanceProfile" not in instance:
                     finding_id = f"ec2-no-iam-role-{instance_id}"
 
@@ -126,9 +108,6 @@ class EC2Scanner:
                             "description": "EC2 instance does not have an IAM role attached"
                         })
 
-                # -------------------------
-                # DEFAULT SG
-                # -------------------------
                 for sg in instance.get("SecurityGroups", []):
                     if sg.get("GroupName") == "default":
                         finding_id = f"ec2-default-sg-{instance_id}"
@@ -145,9 +124,6 @@ class EC2Scanner:
                                 "description": "EC2 instance is using the default security group"
                             })
 
-                # -------------------------
-                # TERMINATION PROTECTION
-                # -------------------------
                 try:
                     attr = ec2.describe_instance_attribute(
                         InstanceId=instance_id,
@@ -173,9 +149,6 @@ class EC2Scanner:
                 except Exception as e:
                     print(f"Termination protection error ({instance_id}):", str(e))
 
-                # -------------------------
-                # EBS UNENCRYPTED
-                # -------------------------
                 for device in instance.get("BlockDeviceMappings", []):
                     ebs = device.get("Ebs")
 
@@ -207,9 +180,6 @@ class EC2Scanner:
                     except Exception as e:
                         print(f"EBS error ({volume_id}):", str(e))
         
-        # -------------------------
-        # UNUSED ELASTIC IP (GLOBAL SAFE FIX)
-        # -------------------------
         try:
             eip_addresses = ec2.describe_addresses().get("Addresses", [])
 
@@ -218,7 +188,6 @@ class EC2Scanner:
                 allocation_id = addr.get("AllocationId")
                 public_ip = addr.get("PublicIp")
 
-                # detect UNUSED properly
                 if not addr.get("AssociationId"):
 
                     finding_id = f"ec2-unused-eip-{allocation_id}"

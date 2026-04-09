@@ -36,7 +36,6 @@ class IAMExtraScanner:
                         status = key["Status"]
                         create_date = key["CreateDate"]
 
-                        # Only check ACTIVE keys
                         if status != "Active":
                             continue
 

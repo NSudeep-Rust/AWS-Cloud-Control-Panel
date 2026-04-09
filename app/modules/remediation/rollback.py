@@ -80,9 +80,6 @@ class RollbackEngine:
                 row.resource_name
             )
 
-            # =====================================================
-            # IAM ROLLBACK (ADMIN POLICY)
-            # =====================================================
             if action == "DETACH_ADMIN_POLICY":
 
                 try:
@@ -104,9 +101,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # INLINE POLICY DELETE ROLLBACK
-            # -----------------------------------
             if action == "REMOVE_INLINE_POLICY":
 
                 inner = extract_metadata(row)
@@ -144,9 +138,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # =====================================================
-            # SECURITY GROUP ROLLBACK
-            # =====================================================
             if action == "RESTRICT_SECURITY_GROUP":
 
                 inner = extract_metadata(row)
@@ -178,9 +169,6 @@ class RollbackEngine:
                     "execution_id": execution_id
                 })
         
-            # -----------------------------------
-            # S3 VERSIONING ROLLBACK
-            # -----------------------------------
             if action == "ENABLE_S3_VERSIONING":
 
                 inner = extract_metadata(row)
@@ -214,9 +202,6 @@ class RollbackEngine:
                 })
 
 
-            # -----------------------------------
-            # S3 BLOCK PUBLIC ACCESS ROLLBACK
-            # -----------------------------------
             if action == "ENABLE_BLOCK_PUBLIC_ACCESS":
 
                 inner = extract_metadata(row)
@@ -241,9 +226,6 @@ class RollbackEngine:
                     "restored_config": previous_config
                 })
 
-            # -----------------------------------
-            # S3 PUBLIC ACL ROLLBACK
-            # -----------------------------------
             if action == "REMOVE_PUBLIC_S3_ACL":
 
                 inner = extract_metadata(row)
@@ -275,9 +257,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # S3_Access_Logging
-            # -----------------------------------
 
             if action == "ENABLE_S3_ACCESS_LOGGING":
 
@@ -286,15 +265,11 @@ class RollbackEngine:
                 bucket_name = inner.get("bucket_name")
                 previous_logging = inner.get("previous_logging")
 
-                # ✅ STEP 1 — NEW (extract these)
                 log_bucket = inner.get("target_bucket")
                 previous_policy = inner.get("previous_policy")
 
                 s3 = self.aws_session.session.client("s3")
 
-                # -----------------------------------
-                # Restore logging
-                # -----------------------------------
                 if previous_logging:
                     s3.put_bucket_logging(
                         Bucket=bucket_name,
@@ -303,15 +278,11 @@ class RollbackEngine:
                         }
                     )
                 else:
-                    # disable logging
                     s3.put_bucket_logging(
                         Bucket=bucket_name,
                         BucketLoggingStatus={}
                     )
 
-                # -----------------------------------
-                # Restore bucket policy (STEP 2 — NEW)
-                # -----------------------------------
                 if log_bucket:
                     try:
                         if previous_policy:
@@ -331,9 +302,6 @@ class RollbackEngine:
                 })
 
 
-            # -----------------------------------
-            # IAM ACCESS KEY ROLLBACK
-            # -----------------------------------
             if action == "DISABLE_ACCESS_KEY":
 
                 inner = extract_metadata(row)
@@ -366,9 +334,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # -----------------------------------
-            # DELETE ACCESS KEY ROLLBACK
-            # -----------------------------------
             if action == "DELETE_ACCESS_KEY":
 
                 inner = extract_metadata(row)
@@ -383,8 +348,6 @@ class RollbackEngine:
                 iam = self.aws_session.session.client("iam")
 
                 try:
-                    # ⚠️ IMPORTANT:
-                    # Deleted key CANNOT be restored → create new one
 
                     new_key = iam.create_access_key(UserName=user_name)["AccessKey"]
 
@@ -402,9 +365,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # KMS KEY ROTATION ROLLBACK
-            # -----------------------------------
             if action == "ENABLE_KMS_KEY_ROTATION":
 
                 inner = extract_metadata(row)
@@ -421,13 +381,11 @@ class RollbackEngine:
                 kms = self.aws_session.session.client("kms")
 
                 try:
-                    # Restore previous state
                     if previous_state is True:
                         kms.enable_key_rotation(KeyId=key_id)
                     else:
                         kms.disable_key_rotation(KeyId=key_id)
 
-                    # Verify
                     current = kms.get_key_rotation_status(KeyId=key_id)
 
                     return self._success(db, execution_id, {
@@ -442,9 +400,6 @@ class RollbackEngine:
 
     
 
-            # -----------------------------------
-            # VPC FLOW LOGS ROLLBACK
-            # -----------------------------------
 
             if action == "ENABLE_VPC_FLOW_LOGS":
 
@@ -470,9 +425,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # DELETE UNUSED SG ROLLBACK
-            # -----------------------------------
 
             if action == "DELETE_UNUSED_SECURITY_GROUP":
 
@@ -480,7 +432,6 @@ class RollbackEngine:
 
                 sg = inner.get("security_group")
 
-                # 🔥 FIX: region fallback (critical)
                 region = (
                     metadata.get("region") or
                     inner.get("region") or
@@ -500,7 +451,6 @@ class RollbackEngine:
                 ec2 = self.aws_session.session.client("ec2", region_name=region)
 
                 try:
-                    # recreate SG
                     response = ec2.create_security_group(
                         GroupName=sg["GroupName"],
                         Description=sg["Description"],
@@ -509,9 +459,6 @@ class RollbackEngine:
 
                     new_sg_id = response["GroupId"]
 
-                    # ----------------------------
-                    # ✅ INGRESS
-                    # ----------------------------
                     if sg.get("IpPermissions"):
                         try:
                             ec2.authorize_security_group_ingress(
@@ -522,9 +469,6 @@ class RollbackEngine:
                             if "InvalidPermission.Duplicate" not in str(e):
                                 raise
 
-                    # ----------------------------
-                    # ✅ EGRESS
-                    # ----------------------------
                     if sg.get("IpPermissionsEgress"):
                         try:
                             ec2.revoke_security_group_egress(
@@ -555,9 +499,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # INLINE WILDCARD POLICY ROLLBACK
-            # -----------------------------------
             if action == "REMOVE_INLINE_WILDCARD_POLICY":
 
                 inner = extract_metadata(row)
@@ -610,7 +551,6 @@ class RollbackEngine:
                         "CidrBlock": rule.get("CidrBlock"),
                     }
 
-                    # ✅ FIX for your error
                     if rule.get("PortRange"):
                         params["PortRange"] = rule["PortRange"]
 
@@ -639,7 +579,6 @@ class RollbackEngine:
                         "CidrBlock": rule.get("CidrBlock"),
                     }
 
-                    # ✅ FIX for your error
                     if rule.get("PortRange"):
                         params["PortRange"] = rule["PortRange"]
 
@@ -671,9 +610,6 @@ class RollbackEngine:
                     "route_table_id": route_table_id
                 })
 
-            # -----------------------------------
-            # IAM ROLE TRUST ROLLBACK
-            # -----------------------------------
             if action == "RESTRICT_ROLE_EXTERNAL_TRUST":
 
                 inner = extract_metadata(row)
@@ -713,7 +649,6 @@ class RollbackEngine:
 
                 inner = extract_metadata(row)
 
-                # ✅ FIX 1: Robust extraction
                 trail_name = inner.get("trail_name") or metadata.get("trail_name")
 
                 bucket_name = inner.get("bucket_name") or metadata.get("bucket_name")
@@ -728,11 +663,9 @@ class RollbackEngine:
 
          
 
-                # ✅ FIX 2: Region fallback
                 if not region or region == "global":
                     region = self.aws_session.session.region_name or "us-east-1"
 
-                # ✅ FIX 3: Defensive validation (VERY IMPORTANT)
                 if not trail_name:
                     return self._fail(db, execution_id, "Missing trail_name in rollback metadata")
 
@@ -740,13 +673,10 @@ class RollbackEngine:
                 s3 = self.aws_session.session.client("s3")
 
                 try:
-                    # stop logging
                     cloudtrail.stop_logging(Name=trail_name)
 
-                    # delete trail
                     cloudtrail.delete_trail(Name=trail_name)
 
-                    # ✅ delete bucket ONLY if WE created it
                     if bucket_created and bucket_name:
 
                         paginator = s3.get_paginator("list_objects_v2")
@@ -760,7 +690,6 @@ class RollbackEngine:
                                     Delete={"Objects": delete_keys}
                                 )
 
-                        # now delete bucket
                         s3.delete_bucket(Bucket=bucket_name)
 
                     return self._success(db, execution_id, {
@@ -770,7 +699,6 @@ class RollbackEngine:
                     })
 
                 except Exception as e:
-                    # ✅ FIX 4: Correct error message
                     return self._fail(db, execution_id, f"CloudTrail rollback failed: {str(e)}")
 
             if action == "START_CLOUDTRAIL_LOGGING":
@@ -828,9 +756,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # EBS ENCRYPTION ROLLBACK
-            # -----------------------------------
             if action == "ENCRYPT_EBS_VOLUME":
 
                 inner = extract_metadata(row)
@@ -847,17 +772,11 @@ class RollbackEngine:
                 ec2 = self.aws_session.session.client("ec2", region_name=region)
 
                 try:
-                    # -------------------------
-                    # STEP 1 — STOP INSTANCE
-                    # -------------------------
                     ec2.stop_instances(InstanceIds=[instance_id])
 
                     waiter = ec2.get_waiter("instance_stopped")
                     waiter.wait(InstanceIds=[instance_id])
 
-                    # -------------------------
-                    # STEP 2 — DETACH NEW (encrypted) volume
-                    # -------------------------
                     ec2.detach_volume(
                         VolumeId=new_volume_id,
                         InstanceId=instance_id,
@@ -868,23 +787,14 @@ class RollbackEngine:
                     vol_waiter = ec2.get_waiter("volume_available")
                     vol_waiter.wait(VolumeIds=[new_volume_id])
 
-                    # -------------------------
-                    # STEP 3 — ATTACH ORIGINAL volume
-                    # -------------------------
                     ec2.attach_volume(
                         VolumeId=original_volume_id,
                         InstanceId=instance_id,
                         Device=device
                     )
 
-                    # -------------------------
-                    # STEP 4 — START INSTANCE
-                    # -------------------------
                     ec2.start_instances(InstanceIds=[instance_id])
 
-                    # -------------------------
-                    # STEP 5 — DELETE new volume (optional cleanup)
-                    # -------------------------
                     try:
                         ec2.delete_volume(VolumeId=new_volume_id)
                     except:
@@ -899,9 +809,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # EC2 IAM ROLE ROLLBACK
-            # -----------------------------------
             if action == "ATTACH_IAM_ROLE_TO_INSTANCE":
 
                 inner = extract_metadata(row)
@@ -927,9 +834,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, str(e))
 
-            # -----------------------------------
-            # REPLACE SECURITY GROUP ROLLBACK
-            # -----------------------------------
             if action == "REPLACE_SECURITY_GROUP":
 
                 inner = extract_metadata(row)
@@ -945,13 +849,11 @@ class RollbackEngine:
                 ec2 = self.aws_session.session.client("ec2", region_name=region)
 
                 try:
-                    # restore old SGs
                     ec2.modify_instance_attribute(
                         InstanceId=instance_id,
                         Groups=previous_sgs
                     )
 
-                    # delete newly created SG
                     if new_sg:
                         try:
                             ec2.delete_security_group(GroupId=new_sg)
@@ -973,9 +875,6 @@ class RollbackEngine:
                     "Elastic IP was permanently released back to the AWS pool and cannot be restored to this account."
                 )
 
-            # -----------------------------------
-            # DELETE UNUSED IAM USER ROLLBACK
-            # -----------------------------------
             if action == "DELETE_UNUSED_IAM_USER":
 
                 inner = extract_metadata(row)
@@ -990,10 +889,8 @@ class RollbackEngine:
                 try:
                     user_name = backup["user"]["UserName"]
 
-                    # recreate user
                     iam.create_user(UserName=user_name)
 
-                    # restore login profile (password reset required)
                     if backup.get("login_profile"):
                         iam.create_login_profile(
                             UserName=user_name,
@@ -1001,7 +898,6 @@ class RollbackEngine:
                             PasswordResetRequired=True
                         )
 
-                    # restore inline policies
                     for p in backup.get("inline_policies", []):
                         iam.put_user_policy(
                             UserName=user_name,
@@ -1009,14 +905,12 @@ class RollbackEngine:
                             PolicyDocument=json.dumps(p["document"])
                         )
 
-                    # restore attached policies
                     for p in backup.get("attached_policies", []):
                         iam.attach_user_policy(
                             UserName=user_name,
                             PolicyArn=p["PolicyArn"]
                         )
 
-                    # restore groups
                     for g in backup.get("groups", []):
                         iam.add_user_to_group(
                             UserName=user_name,
@@ -1066,9 +960,6 @@ class RollbackEngine:
                 )
 
 
-            # =========================================================
-            # REVOKE UNRESTRICTED SSH — ROLLBACK (re-authorize the rule)
-            # =========================================================
             if action == "REVOKE_UNRESTRICTED_SSH":
                 inner = extract_metadata(row)
                 resource_id = inner.get("resource_id")
@@ -1096,9 +987,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # REVOKE UNRESTRICTED RDP — ROLLBACK (re-authorize the rule)
-            # =========================================================
             if action == "REVOKE_UNRESTRICTED_RDP":
                 inner = extract_metadata(row)
                 resource_id = inner.get("resource_id")
@@ -1126,9 +1014,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # ENFORCE IMDSv2 — ROLLBACK (restore IMDSv1 optional)
-            # =========================================================
             if action == "ENFORCE_IMDSV2":
                 inner = extract_metadata(row)
                 instance_id = inner.get("instance_id")
@@ -1157,9 +1042,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # MAKE SNAPSHOT PRIVATE — ROLLBACK (re-make public)
-            # =========================================================
             if action == "MAKE_SNAPSHOT_PRIVATE":
                 inner = extract_metadata(row)
                 snapshot_id = inner.get("snapshot_id")
@@ -1188,9 +1070,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # DISABLE RDS PUBLIC ACCESS — ROLLBACK (re-enable public)
-            # =========================================================
             if action == "DISABLE_RDS_PUBLIC_ACCESS":
                 inner = extract_metadata(row)
                 db_id = inner.get("db_id")
@@ -1217,9 +1096,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # ENABLE RDS BACKUP — ROLLBACK (restore previous retention)
-            # =========================================================
             if action == "ENABLE_RDS_BACKUP":
                 inner = extract_metadata(row)
                 db_id = inner.get("db_id")
@@ -1248,9 +1124,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # ENABLE RDS DELETION PROTECTION — ROLLBACK (disable it)
-            # =========================================================
             if action == "ENABLE_RDS_DELETION_PROTECTION":
                 inner = extract_metadata(row)
                 db_id = inner.get("db_id")
@@ -1277,9 +1150,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # DISABLE STALE ACCESS KEY — ROLLBACK (re-enable the key)
-            # =========================================================
             if action == "DISABLE_STALE_ACCESS_KEY":
                 inner = extract_metadata(row)
                 user_name = inner.get("user_name")
@@ -1309,9 +1179,6 @@ class RollbackEngine:
                     return self._fail(db, execution_id, str(e))
 
 
-            # =========================================================
-            # SET LOG GROUP RETENTION — ROLLBACK (delete retention policy)
-            # =========================================================
             if action == "SET_LOG_GROUP_RETENTION":
                 inner = extract_metadata(row)
                 log_group_name = inner.get("log_group_name")
@@ -1325,7 +1192,6 @@ class RollbackEngine:
 
                 try:
                     if previous_retention_days is None:
-                        # Was "never expire" — delete the policy to restore that
                         logs.delete_retention_policy(logGroupName=log_group_name)
                     else:
                         logs.put_retention_policy(
@@ -1345,12 +1211,8 @@ class RollbackEngine:
 
 
             
-            # =====================================================
-            # DELETE DEFAULT VPC rollback — re-create default VPC
-            # =====================================================
             if action == "DELETE_DEFAULT_VPC":
                 try:
-                    # ── use `row` + `metadata` — same pattern as every other handler ──
                     region = (
                         metadata.get("region")
                         or row.region
@@ -1359,7 +1221,6 @@ class RollbackEngine:
 
                     ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-                    # AWS has a dedicated API to restore the default VPC in a region
                     new_vpc = ec2.create_default_vpc()["Vpc"]
                     new_vpc_id = new_vpc["VpcId"]
 
@@ -1378,9 +1239,6 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, f"VPC rollback failed: {e}")
 
-            # =====================================================
-            # UNKNOWN
-            # =====================================================
             return self._fail(db, execution_id, f"Rollback not supported for action: {action}")
 
 

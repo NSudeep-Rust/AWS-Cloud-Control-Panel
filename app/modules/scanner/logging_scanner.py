@@ -16,9 +16,6 @@ class LoggingScanner:
         findings = []
         seen_ids = set()
 
-        # -------------------------
-        # CloudTrail Disabled / Not Logging
-        # -------------------------
         try:
             trails = cloudtrail.describe_trails()["trailList"]
 
@@ -70,9 +67,6 @@ class LoggingScanner:
             print("CloudTrail error:", str(e))
 
 
-        # -------------------------
-        # VPC Flow Logs Disabled
-        # -------------------------
         try:
             vpcs = ec2.describe_vpcs()["Vpcs"]
             flow_logs = ec2.describe_flow_logs()["FlowLogs"]

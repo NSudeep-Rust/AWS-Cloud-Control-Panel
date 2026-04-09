@@ -1,9 +1,3 @@
-// ScanContext.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Global scan state shared between Overview and Scanner sections.
-// The actual axios POST lives here so it survives navigation.
-// Both pages subscribe to the same state — no duplication, no cancellation.
-// ─────────────────────────────────────────────────────────────────────────────
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
 
@@ -21,7 +15,6 @@ const SCAN_REGIONS = [
 const ScanCtx = createContext(null)
 
 export function ScanProvider({ children }) {
-    // status: 'idle' | 'scanning' | 'done' | 'error'
     const [status, setStatus] = useState('idle')
     const [findings, setFindings] = useState([])
     const [scanId, setScanId] = useState(null)
@@ -30,10 +23,8 @@ export function ScanProvider({ children }) {
     const [factIdx, setFactIdx] = useState(0)
     const [factVisible, setFactVisible] = useState(true)
 
-    // Which account triggered the scan (cache key)
     const [scanMeta, setScanMeta] = useState(null) // { awsId, dbId, cacheKey }
 
-    // Finding to highlight in Scanner when navigating from Overview
     const [highlightFindingId, setHighlightFindingId] = useState(null)
 
     const timerRef  = useRef(null)
@@ -43,14 +34,9 @@ export function ScanProvider({ children }) {
     const wsRef     = useRef(null)  // WebSocket for push events
     const scanMetaRef = useRef(null) // always up-to-date copy for WS closure
 
-    // Increments every time the backend signals a refresh is needed.
-    // Components subscribe: useEffect(() => { reload() }, [refreshToken])
     const [refreshToken, setRefreshToken]       = useState(0)
-    // Last scheduled scan info pushed from backend — used by Overview to
-    // reload findings without requiring a full manual scan.
     const [latestScheduledScan, setLatestScheduledScan] = useState(null)
 
-    // ── WebSocket — receive push events from backend ───────────────
     useEffect(() => {
         function connect() {
             try {
@@ -63,11 +49,7 @@ export function ScanProvider({ children }) {
 
                         if (msg.event === 'scan_complete') {
                             const currentMeta = scanMetaRef.current
-                            // Only auto-inject findings if this event is for the
-                            // currently signed-in account
                             if (currentMeta && msg.account_id === currentMeta.dbId) {
-                                // Pull the latest findings from the backend and
-                                // inject them into ScanContext so Overview updates
                                 axios.get(`${API}/api/scan/history`)
                                     .then(r => {
                                         const latest = r.data?.data?.scans?.[0]
@@ -111,18 +93,14 @@ export function ScanProvider({ children }) {
         return () => clearInterval(timerRef.current)
     }, [status])
 
-    // ── Scan line rotation ─────────────────────────────────────────
     useEffect(() => {
         if (status !== 'scanning') { clearInterval(lineRef.current); return }
         lineRef.current = setInterval(() => {
-            // Advance to next line but STOP at the last one (don't loop)
-            // 25 lines × 4s = 100s, matching typical 60-90s backend scan duration
             setScanLineIdx(i => Math.min(i + 1, 24))
         }, 4000)
         return () => clearInterval(lineRef.current)
     }, [status])
 
-    // ── Fact rotation ──────────────────────────────────────────────
     useEffect(() => {
         if (status !== 'scanning') { clearInterval(factRef.current); return }
         factRef.current = setInterval(() => {
@@ -135,11 +113,9 @@ export function ScanProvider({ children }) {
         return () => clearInterval(factRef.current)
     }, [status])
 
-    // ── Start scan ─────────────────────────────────────────────────
     const startScan = useCallback(async ({ dbId, awsId, cacheKey }) => {
         if (status === 'scanning') return   // already running — do nothing
 
-        // Cancel any prior request
         if (abortRef.current) abortRef.current.abort()
         const ctrl = new AbortController()
         abortRef.current = ctrl
@@ -168,8 +144,6 @@ export function ScanProvider({ children }) {
             setScanId(id)
             setStatus('done')
 
-            // Write to localStorage so scan survives F5 / Electron window reload
-            // (sessionStorage is cleared on refresh by browser spec)
             try {
                 localStorage.setItem(cacheKey, JSON.stringify({
                     scan_id: id, findings: found, aws_id: awsId, db_id: dbId
@@ -184,7 +158,6 @@ export function ScanProvider({ children }) {
         }
     }, [status])
 
-    // ── Stop scan ──────────────────────────────────────────────────
     const stopScan = useCallback(() => {
         if (abortRef.current) abortRef.current.abort()
         clearInterval(timerRef.current)
@@ -193,7 +166,6 @@ export function ScanProvider({ children }) {
         setStatus('idle')
     }, [])
 
-    // ── Reset ──────────────────────────────────────────────────────
     const resetScan = useCallback(() => {
         stopScan()
         setFindings([])
@@ -202,9 +174,6 @@ export function ScanProvider({ children }) {
         setScanMeta(null)
     }, [stopScan])
 
-    // ── Restore from localStorage cache after F5 / Electron reload ──────────
-    // Call this with the current cacheKey from Overview or ScannerSection on mount.
-    // Only restores if the context is still in 'idle' (i.e. no active / fresh scan).
     const restoreFromCache = useCallback((cacheKey) => {
         if (status !== 'idle') return  // active or completed scan already in state
         try {
@@ -220,7 +189,6 @@ export function ScanProvider({ children }) {
         } catch { }
     }, [status])
 
-    // ── Inject a scan externally (used by WS handler / tests) ──────
     const injectScan = useCallback((scan_id, foundList, meta) => {
         setFindings(foundList)
         setScanId(scan_id)

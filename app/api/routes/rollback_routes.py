@@ -19,7 +19,6 @@ router = APIRouter(
 def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
 
     try:
-        # ── GET EXECUTION ─────────────────────────────────────────────────────
         execution_row = db.query(Execution).filter(
             Execution.execution_id == request.execution_id
         ).first()
@@ -30,14 +29,12 @@ def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
                 errors=["Invalid execution_id"]
             )
 
-        # Guard: don't allow rolling back something already rolled back
         if execution_row.status == "ROLLED_BACK":
             return format_response(
                 module="rollback", mode="LIVE",
                 errors=["This execution has already been rolled back"]
             )
 
-        # ── GET FINDING ───────────────────────────────────────────────────────
         finding_row = db.query(Finding).filter(
             Finding.id == execution_row.finding_id
         ).first()
@@ -48,7 +45,6 @@ def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
                 errors=["Finding not found"]
             )
 
-        # ── GET ACCOUNT ───────────────────────────────────────────────────────
         account = db.query(Account).filter(
             Account.id == finding_row.account_id
         ).first()
@@ -73,9 +69,6 @@ def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
         rollback_engine = RollbackEngine(aws_session)
         result = rollback_engine.rollback(request.execution_id)
 
-        # ── CRITICAL: mark execution status in DB ─────────────────────────────
-        # ROLLBACK_SUCCESS  → mark ROLLED_BACK (card vanishes from Rollback & Remediation)
-        # NOT_RECOVERABLE   → mark NOT_RECOVERABLE (card loses Recover button permanently)
         status = result.get("status")
         if status == "ROLLBACK_SUCCESS":
             execution_row.status = "ROLLED_BACK"
@@ -86,7 +79,6 @@ def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
             db.commit()
             print(f"⛔ Execution {request.execution_id} marked as NOT_RECOVERABLE in DB")
 
-        # Include context in response so frontend can act on it
         result["finding_id"]   = execution_row.finding_id
         result["execution_id"] = request.execution_id
         result["scan_id"]      = execution_row.scan_id

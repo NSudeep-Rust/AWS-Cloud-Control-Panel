@@ -20,15 +20,12 @@ function ModuleIcon({ type, size = 13, color }) {
     if (type?.startsWith('EC2') || type?.startsWith('EBS')) return <Server size={size} color={color} />
     if (type?.startsWith('RDS')) return <Database size={size} color={color} />
     if (type?.startsWith('CLOUDTRAIL') || type?.startsWith('VPC_FLOW') || type?.startsWith('CLOUDWATCH')) return <Eye size={size} color={color} />
-    // VPC_FLOW already caught above; SECURITY_GROUP / NACL / ROUTE / KMS / VPC below
     if (type?.startsWith('SECURITY_GROUP') || type?.startsWith('PUBLIC_SECURITY') || type?.startsWith('NACL')
         || type?.startsWith('ROUTE') || type?.startsWith('VPC') || type?.startsWith('INTERNET')
         || type?.startsWith('PUBLIC_SUBNET') || type?.startsWith('KMS')) return <Lock size={size} color={color} />
     return <Shield size={size} color={color} />
 }
 
-// moduleOf is now the shared canonical getModuleGroup utility (imported above).
-// Alias kept for zero-diff readability in this file.
 const moduleOf = getModuleGroup
 
 
@@ -75,7 +72,6 @@ const SCAN_LINES = [
     'Finalizing scan report...',
 ]
 
-// 9 regions — 6 original + 3 most-used additions
 const SCAN_REGIONS = [
     'us-east-1', 'us-west-2', 'eu-west-1',
     'ap-northeast-1', 'eu-central-1', 'eu-north-1',
@@ -90,7 +86,6 @@ export function ScannerSection({ onNav, dark }) {
     const awsId = isIam ? (account?.parent_aws_account_id || '—') : (account?.aws_account_id || '—')
     const cacheKey = `scan_v3_${account?.account_type}_${awsId}_${dbId}`
 
-    // ── Global scan state ──────────────────────────────────────────
     const {
         status, findings, elapsed,
         scanLineIdx, factIdx, factVisible,
@@ -98,7 +93,6 @@ export function ScannerSection({ onNav, dark }) {
         highlightFindingId, setHighlightFindingId,
     } = useScan()
 
-    // ── On mount: restore last scan from localStorage (survives F5 / Electron reload) ──
     useEffect(() => {
         if (cacheKey) restoreFromCache(cacheKey)
     }, [cacheKey]) // eslint-disable-line
@@ -106,12 +100,10 @@ export function ScannerSection({ onNav, dark }) {
     const scanning = status === 'scanning'
     const hasScan = status === 'done'
 
-    // ── Highlight: scroll to specific finding OR apply severity filter ──
     const highlightRef = useRef(null)
     useEffect(() => {
         if (!highlightFindingId) return
 
-        // Sentinel from stat tile click: '__filter_CRITICAL__' etc
         if (highlightFindingId.startsWith('__filter_')) {
             const sev = highlightFindingId.replace('__filter_', '').replace('__', '')
             setFilterSev(sev)
@@ -121,7 +113,6 @@ export function ScannerSection({ onNav, dark }) {
             return
         }
 
-        // Specific finding clicked from Overview list
         setFilterSev('ALL')
         setFilterMod('ALL')
         setSearch('')
@@ -130,7 +121,6 @@ export function ScannerSection({ onNav, dark }) {
         return () => { clearTimeout(t); clearTimeout(clear) }
     }, [highlightFindingId])
 
-    // ── Local filter state ─────────────────────────────────────────
     const [filterSev, setFilterSev] = useState('ALL')
     const [filterMod, setFilterMod] = useState('ALL')
     const [search, setSearch] = useState('')
@@ -475,7 +465,6 @@ export function ScannerSection({ onNav, dark }) {
                                     const cfg = SEV[f.severity] || SEV.LOW
                                     const isHov = hoverId === f.id
                                     const isHighlight = highlightFindingId === f.id
-                                    // When any finding is highlighted, dim all others
                                     const isDimmed = highlightFindingId && !isHighlight
                                     return (
                                         <div key={f.id || i}
@@ -491,14 +480,12 @@ export function ScannerSection({ onNav, dark }) {
                                                 padding: '14px 16px',
                                                 cursor: 'default',
                                                 transition: 'all 0.3s ease',
-                                                // Highlighted tile pops up above others
                                                 transform: isHighlight ? 'translateY(-4px) scale(1.02)' : 'none',
                                                 boxShadow: isHighlight
                                                     ? `0 8px 32px ${cfg.color}40, 0 0 0 3px ${cfg.color}20`
                                                     : isHov
                                                         ? `0 4px 16px ${cfg.color}18`
                                                         : 'var(--card-shadow)',
-                                                // Dim non-highlighted tiles
                                                 opacity: isDimmed ? 0.35 : 1,
                                                 zIndex: isHighlight ? 10 : 1,
                                                 position: 'relative',

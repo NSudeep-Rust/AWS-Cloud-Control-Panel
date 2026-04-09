@@ -19,12 +19,9 @@ from email.mime.text import MIMEText
 from datetime import datetime
 from typing import Optional
 
-# Set DASHBOARD_URL env variable when deploying to production
-# e.g.  DASHBOARD_URL=https://cloudshield.mycompany.com
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5173")
 
 
-# ── HTML email templates ───────────────────────────────────────────────────────
 
 def _base_html(title: str, body_html: str, subtitle: str = "") -> str:
     """Wraps content in the CloudShield email frame."""
@@ -140,7 +137,7 @@ def _critical_alert_html(findings: list, account_name: str) -> str:
     return _base_html("CloudShield — Critical Alert", body, "🚨 Security Alert")
 
 
-def _scan_summary_html(stats: dict, account_name: str) -> str:
+def _scan_summary_html(stats: dict, account_name: str, report_url: str = "") -> str:
     risk   = stats.get("risk_score", 0)
     level  = stats.get("risk_level", "LOW")
     total  = stats.get("total_findings", 0)
@@ -150,8 +147,18 @@ def _scan_summary_html(stats: dict, account_name: str) -> str:
     low    = stats.get("low", 0)
     scan_at = stats.get("scan_at", datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"))
     lev_c  = {"CRITICAL": "#d13212", "HIGH": "#c8960c", "MEDIUM": "#0972d3", "LOW": "#067340"}.get(level, "#0f1111")
+
+    report_btn = ""
+    if report_url:
+        report_btn = f"""
+        <a href="{report_url}" style="display:inline-block;padding:12px 22px;
+            background:#0972d3;color:#fff;border-radius:8px;font-weight:700;
+            font-size:13px;text-decoration:none;margin:8px 6px;">
+          📄 View Full Report (No App Needed)
+        </a>"""
+
     body = f"""
-      <h2 style="color:#0f1111;margin-top:0;">📊 Scan Complete — Security Summary</h2>
+      <h2 style="color:#0f1111;margin-top:0;">&#x1F4CA; Scan Complete &mdash; Security Summary</h2>
       <p style="color:#565959;font-size:13.5px;line-height:1.6;">
         A security scan has completed for <strong>{account_name}</strong>.
       </p>
@@ -171,20 +178,22 @@ def _scan_summary_html(stats: dict, account_name: str) -> str:
           <thead><tr><th>Severity</th><th>Count</th><th>Status</th></tr></thead>
           <tbody>
             <tr><td>{_sev_badge('CRITICAL')}</td><td><strong>{crit}</strong></td>
-                <td style="color:#d13212;font-size:11px;">{'⚠️ Requires immediate action' if crit > 0 else '✅ None'}</td></tr>
+                <td style="color:#d13212;font-size:11px;">{'&#x26A0;&#xFE0F; Requires immediate action' if crit > 0 else '&#x2705; None'}</td></tr>
             <tr><td>{_sev_badge('HIGH')}</td><td><strong>{high}</strong></td>
-                <td style="color:#c8960c;font-size:11px;">{'⚠️ Urgent attention needed' if high > 0 else '✅ None'}</td></tr>
+                <td style="color:#c8960c;font-size:11px;">{'&#x26A0;&#xFE0F; Urgent attention needed' if high > 0 else '&#x2705; None'}</td></tr>
             <tr><td>{_sev_badge('MEDIUM')}</td><td><strong>{medium}</strong></td>
-                <td style="font-size:11px;">{'Review recommended' if medium > 0 else '✅ None'}</td></tr>
+                <td style="font-size:11px;">{'Review recommended' if medium > 0 else '&#x2705; None'}</td></tr>
             <tr><td>{_sev_badge('LOW')}</td><td><strong>{low}</strong></td>
-                <td style="font-size:11px;color:#8d9191;">{'Low priority' if low > 0 else '✅ None'}</td></tr>
+                <td style="font-size:11px;color:#8d9191;">{'Low priority' if low > 0 else '&#x2705; None'}</td></tr>
           </tbody>
         </table>
       </div>
       <div style="text-align:center;margin-top:20px;">
-        <a href="{DASHBOARD_URL}/panel" class="btn">View Full Report →</a>
-      </div>"""
-    return _base_html("CloudShield — Scan Summary", body, "📊 Scan Completed")
+        {report_btn}
+        <a href="{DASHBOARD_URL}/panel" class="btn" style="margin:8px 6px;">&#x1F6E1;&#xFE0F; Open CloudShield Panel &rarr;</a>
+      </div>
+      {f'<p style="font-size:11px;color:#8d9191;text-align:center;margin-top:8px;">The report link opens directly in your browser &mdash; no app or login required.</p>' if report_url else ''}"""
+    return _base_html("CloudShield \u2014 Scan Summary", body, "&#x1F4CA; Scan Completed")
 
 
 def _drift_alert_html(drift: dict, account_name: str) -> str:
@@ -247,7 +256,6 @@ def _test_html() -> str:
     return _base_html("CloudShield — Test Email", body, "Configuration Verified")
 
 
-# ── SMTP sender ────────────────────────────────────────────────────────────────
 
 class EmailService:
 
@@ -268,12 +276,10 @@ class EmailService:
             port    = int(cfg.smtp_port)
 
             if port == 465:
-                # Direct SSL (e.g. smtp.mail.yahoo.com:465, some custom servers)
                 with smtplib.SMTP_SSL(cfg.smtp_host, port, context=context, timeout=20) as server:
                     server.login(cfg.smtp_username, cfg.smtp_password)
                     server.sendmail(cfg.smtp_username, cfg.recipient_email, msg.as_string())
             else:
-                # STARTTLS — standard for Gmail (587), Outlook (587), Yahoo (587)
                 with smtplib.SMTP(cfg.smtp_host, port, timeout=20) as server:
                     server.ehlo()
                     server.starttls(context=context)
@@ -321,11 +327,12 @@ class EmailService:
         return cls._send(cfg, f"🚨 Critical Alert — {len(findings)} finding(s) on {account_name}", html)
 
     @classmethod
-    def send_scan_summary(cls, stats: dict, account_name: str, cfg) -> tuple[bool, Optional[str]]:
+    def send_scan_summary(cls, stats: dict, account_name: str, cfg,
+                          report_url: str = "") -> tuple[bool, Optional[str]]:
         if not cfg or not cfg.enabled or not cfg.notify_on_scan_complete:
             return False, "Scan-complete notifications disabled."
-        html = _scan_summary_html(stats, account_name)
-        return cls._send(cfg, f"📊 Scan Complete — {stats.get('risk_level','?')} Risk on {account_name}", html)
+        html = _scan_summary_html(stats, account_name, report_url=report_url)
+        return cls._send(cfg, f"&#x1F4CA; Scan Complete \u2014 {stats.get('risk_level','?')} Risk on {account_name}", html)
 
     @classmethod
     def send_drift_alert(cls, drift: dict, account_name: str, cfg) -> tuple[bool, Optional[str]]:
@@ -337,7 +344,6 @@ class EmailService:
         html = _drift_alert_html(drift, account_name)
         return cls._send(cfg, f"🔄 Drift Alert — {new_c} new finding(s) on {account_name}", html)
 
-    # ── Helpers for routes to load config ──────────────────────────────────────
     @staticmethod
     def get_config(account_id: Optional[int], db):
         """Fetch EmailConfig for a given account (or global config if not found)."""

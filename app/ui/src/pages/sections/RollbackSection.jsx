@@ -6,8 +6,6 @@ import { RotateCcw, CheckCircle, AlertTriangle, Clock, Ban } from 'lucide-react'
 
 const API = 'http://localhost:8000'
 
-// ─── Actions that are permanently irreversible ─────────────────────────────
-// These never show a Recover button — they go straight to the "Permanent" tab.
 const NON_ROLLBACKABLE_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE',
   'FORCE_TERMINATE_EC2_INSTANCE',
@@ -53,7 +51,6 @@ function fmtTime(iso) {
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
 }
 
-// ─── Global styles injected once ─────────────────────────────────────────────
 const GLOBAL_STYLES = `
   @keyframes rbModalIn { 0%{opacity:0;transform:translateX(-50%) translateY(-46%) scale(0.93)} 100%{opacity:1;transform:translateX(-50%) translateY(-50%) scale(1)} }
   @keyframes rbSpin    { to{transform:rotate(360deg)} }
@@ -65,14 +62,12 @@ const GLOBAL_STYLES = `
   @keyframes clockHand { to{transform:rotate(360deg)} }
 `
 
-// ─── Confirm Modal — keeps open with spinner until API call completes ─────────
 function ConfirmModal({ execution, onConfirm, onCancel }) {
   const [confirming, setConfirming] = useState(false)
 
   async function handleConfirm() {
     setConfirming(true)
     await onConfirm()
-    // Modal will be closed externally via setConfirmTarget(null) after API completes
   }
 
   return createPortal(
@@ -144,7 +139,6 @@ function ConfirmModal({ execution, onConfirm, onCancel }) {
   , document.body)
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState() {
   const POINTS = [
     { time:'T-0', label:'IAM policy detached',       resource:'iam::user/admin',  color:'#e07b00' },
@@ -199,7 +193,6 @@ function EmptyState() {
   )
 }
 
-// ─── Execution card ───────────────────────────────────────────────────────────
 function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
   const s  = sevOr(execution.finding_severity)
   const st = statStyle(execution.status)
@@ -308,7 +301,6 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
   )
 }
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
 export default function RollbackSection({ onNav }) {
   const { scanId: ctxScanId } = useScan()
 
@@ -334,7 +326,6 @@ export default function RollbackSection({ onNav }) {
       const r = await axios.get(`${API}/api/execute/executions?scan_id=${sid}`)
       const all = r.data?.data?.executions || []
 
-      // Deduplicate: latest EXECUTED per finding_id  
       const latestMap = {}
       const others = []
       for (const e of all) {
@@ -362,7 +353,6 @@ export default function RollbackSection({ onNav }) {
     setConfirmTarget(execution)
   }
 
-  // Called by modal — keeps modal open (spinner showing) until this resolves
   async function handleConfirmRollback() {
     if (!confirmTarget) return
     const execId = confirmTarget.execution_id
@@ -372,11 +362,9 @@ export default function RollbackSection({ onNav }) {
       const r = await axios.post(`${API}/api/rollback/`, { execution_id: execId })
       const status = r.data?.data?.status
 
-      // Close modal AFTER API call
       setConfirmTarget(null)
 
       if (status === 'ROLLBACK_SUCCESS') {
-        // Animate card out, then navigate to Remediation
         setExitingIds(prev => new Set([...prev, execId]))
         setTimeout(() => {
           setRemovedIds(prev => new Set([...prev, execId]))
@@ -384,7 +372,6 @@ export default function RollbackSection({ onNav }) {
           onNav?.('execute')   // go back to Remediation
         }, 500)
       } else if (status === 'NOT_RECOVERABLE') {
-        // Update local state so card moves to "Permanent" tab immediately
         setExecutions(prev => prev.map(e =>
           e.execution_id === execId ? { ...e, status: 'NOT_RECOVERABLE' } : e
         ))
@@ -402,10 +389,6 @@ export default function RollbackSection({ onNav }) {
 
   const visible = executions.filter(e => !removedIds.has(e.execution_id))
 
-  // ── Split into tabs ────────────────────────────────────────────────────────
-  // "Executed"  → rollbackable EXECUTED only
-  // "Permanent" → non-rollbackable EXECUTED + NOT_RECOVERABLE
-  // "Other"     → FAILED, SKIPPED, DRY_RUN, etc.
   const rollbackableList = visible.filter(e =>
     e.status === 'EXECUTED' && !NON_ROLLBACKABLE_ACTIONS.has(e.action)
   )

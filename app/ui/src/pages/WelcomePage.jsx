@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 
 const API = 'http://localhost:8000'
 
-// ── Real scan regions CloudShield supports (with actual AWS AZ counts) ──
 const SCAN_REGIONS = [
     { id: 'us-east-1',      name: 'N. Virginia', group: 'US',   azs: 6, azIds: ['a','b','c','d','e','f'] },
     { id: 'us-east-2',      name: 'Ohio',        group: 'US',   azs: 3, azIds: ['a','b','c'] },
@@ -19,7 +18,6 @@ const SCAN_REGIONS = [
 const TOTAL_AZS = SCAN_REGIONS.reduce((s, r) => s + r.azs, 0)
 const GRP_COLORS = { US: '#0972d3', EU: '#8B5CF6', APAC: '#067340' }
 
-// ── Security modules CloudShield checks ──
 const COVERAGE = [
     { icon: '🔑', label: 'IAM',        desc: 'Roles, users, policies & access keys' },
     { icon: '🪣', label: 'S3',         desc: 'Bucket ACLs, policies & public access' },
@@ -33,7 +31,6 @@ export default function WelcomePage() {
     const navigate = useNavigate()
     const { account, connect } = useAuth()
 
-    // ── DB + health state ──────────────────────────────────────────
     const [dbAccounts,   setDbAccounts]   = useState([])
     const [loadingAccts, setLoadingAccts] = useState(true)
     const [apiOnline,    setApiOnline]    = useState(null)
@@ -42,11 +39,9 @@ export default function WelcomePage() {
     const [hoveredCov,   setHoveredCov]   = useState(null)
     const [hoveredReg,   setHoveredReg]   = useState(null)
 
-    // ── Direct DOM refs for glow — NO React re-renders (UFL-style) ──
     const glowOuterRef = useRef(null)
     const glowInnerRef = useRef(null)
 
-    // ── Smooth mouse tracking via direct DOM writes ──
     useEffect(() => {
         const handleMove = (e) => {
             if (glowOuterRef.current) {
@@ -62,7 +57,6 @@ export default function WelcomePage() {
         return () => window.removeEventListener('mousemove', handleMove)
     }, [])
 
-    // ── Fetch accounts + health ──
     useEffect(() => {
         Promise.all([
             fetch(`${API}/api/accounts/`).then(r => r.json()).catch(() => ({ accounts: [] })),
@@ -478,7 +472,6 @@ function StatMini({ label, value, color }) {
 const s = {
     root: {
         height:'100vh', width:'100vw', display:'flex', alignItems:'center', justifyContent:'center',
-        // Pale off-white — clean, not pure white, not warm amber
         background:'linear-gradient(160deg, #fafaf8 0%, #f8f8f6 50%, #f6f6f4 100%)',
         overflow:'hidden', position:'relative',
     },

@@ -101,7 +101,6 @@ class ThreatMonitor:
             enriched_firewall_findings.append(finding)
 
 
-        # S3
         s3_findings = self.s3_scanner.scan()
         enriched_s3_findings = []
         for finding in s3_findings:
@@ -114,7 +113,6 @@ class ThreatMonitor:
             enriched_s3_findings.append(finding)
 
      
-        # EC2
         ec2_findings_raw = self.ec2_scanner.scan()
 
         enriched_ec2_findings = []
@@ -130,7 +128,6 @@ class ThreatMonitor:
 
             enriched_ec2_findings.append(finding)
 
-        # Logging
         logging_findings_raw = self.logging_scanner.scan()
         enriched_logging_findings = []
         for finding in logging_findings_raw:
@@ -142,7 +139,6 @@ class ThreatMonitor:
             finding["execution"] = self._build_execution(remediation)
             enriched_logging_findings.append(finding)
 
-        # Encryption
         encryption_findings = self.encryption_scanner.scan()
         enriched_encryption_findings = []
         for finding in encryption_findings:
@@ -169,7 +165,6 @@ class ThreatMonitor:
 
             enriched_encryption_findings.append(finding)
 
-        # Network
         network_findings_raw = []
         for region in self.regions:
             findings = self.network_scanner.scan(region=region)
@@ -237,7 +232,6 @@ class ThreatMonitor:
             enriched_iam_findings.append(finding)
 
 
-        # Combine
         all_findings = (
             enriched_firewall_findings +
             enriched_s3_findings +
@@ -248,7 +242,6 @@ class ThreatMonitor:
             enriched_iam_findings
         )
 
-        # Dedup
         seen = set()
         deduped = []
         for f in all_findings:
@@ -261,7 +254,6 @@ class ThreatMonitor:
             if not f.get("region"):
                 f["region"] = "global"
 
-        # 🔥 Conflict resolution
         resource_map = {}
         for f in all_findings:
             key = f"{f['resource_id']}:{f['region']}"
@@ -278,10 +270,8 @@ class ThreatMonitor:
             else:
                 final_findings.extend(findings)
 
-        # ✅ FIXED: evaluate FINAL findings
         policy_results = self.policy_engine.evaluate(final_findings)
 
-        # Policy violations
         policy_violations = []
         for v in policy_results:
             policy_violations.append({
@@ -292,14 +282,10 @@ class ThreatMonitor:
                 "resource_id": v["resource_id"]
             })
 
-        # Risk score
         weights = {"CRITICAL": 20, "HIGH": 10, "MEDIUM": 5, "LOW": 1}
         risk_score = sum(weights.get(v["severity"], 0) for v in policy_violations)
         security_score = max(0, 100 - risk_score)
 
-        # -------------------------
-        # ✅ FINAL RETURN (CORRECT)
-        # -------------------------
         def filter_by_types(findings, types):
             return [f for f in findings if f.get("type") in types]
 

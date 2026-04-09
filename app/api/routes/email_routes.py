@@ -23,7 +23,6 @@ from app.core.email_service import EmailService
 router = APIRouter(prefix="/api/email", tags=["Email Notifications"])
 
 
-# ── Pydantic schemas ───────────────────────────────────────────────────────────
 
 class EmailConfigIn(BaseModel):
     account_id:               Optional[int]  = None
@@ -42,7 +41,6 @@ class EmailConfigIn(BaseModel):
         extra = "allow"
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _mask(cfg: EmailConfig) -> dict:
     """Return config dict with password masked."""
@@ -74,7 +72,6 @@ def _preflight(cfg) -> Optional[str]:
         return "Password is empty — enter your App Password and Save first."
     if not cfg.recipient_email or "@" not in cfg.recipient_email:
         return "Recipient email is missing or invalid."
-    # Gmail App Password must be exactly 16 chars (spaces stripped)
     if "gmail" in (cfg.smtp_host or "").lower():
         pw = (cfg.smtp_password or "").replace(" ", "")
         if len(pw) != 16:
@@ -86,7 +83,6 @@ def _preflight(cfg) -> Optional[str]:
     return None
 
 
-# ── GET config ─────────────────────────────────────────────────────────────────
 
 @router.get("/config")
 def get_email_config(
@@ -118,7 +114,6 @@ def get_email_config(
     )
 
 
-# ── POST config (save / upsert) ────────────────────────────────────────────────
 
 @router.post("/config")
 def save_email_config(
@@ -131,7 +126,6 @@ def save_email_config(
         cfg.smtp_host               = body.smtp_host
         cfg.smtp_port               = body.smtp_port
         cfg.smtp_username           = body.smtp_username
-        # Only update password when user typed a new real value
         if body.smtp_password and body.smtp_password not in ("••••••••", ""):
             cfg.smtp_password       = body.smtp_password
         cfg.recipient_email         = body.recipient_email
@@ -166,7 +160,6 @@ def save_email_config(
     )
 
 
-# ── POST test email (async — runs SMTP in thread, never blocks the server) ─────
 
 @router.post("/test")
 async def send_test_email(
@@ -180,7 +173,6 @@ async def send_test_email(
             data={"sent": False, "error": "No email config saved. Fill in SMTP settings and click Save first."}
         )
 
-    # Pre-flight check — fast, no network call
     err = _preflight(cfg)
     if err:
         return format_response(
@@ -188,7 +180,6 @@ async def send_test_email(
             data={"sent": False, "error": err}
         )
 
-    # Run blocking SMTP in a thread pool so FastAPI stays responsive
     ok, err = await asyncio.to_thread(EmailService.send_test, cfg)
     return format_response(
         module="email_test", mode="ACTION",
@@ -196,7 +187,6 @@ async def send_test_email(
     )
 
 
-# ── POST manual alert (async) ─────────────────────────────────────────────────
 
 @router.post("/send-alert")
 async def send_manual_alert(
@@ -218,7 +208,6 @@ async def send_manual_alert(
             data={"sent": False, "error": err}
         )
 
-    # Get latest scan findings
     q = db.query(Scan)
     if account_id:
         q = q.filter(Scan.account_id == account_id)

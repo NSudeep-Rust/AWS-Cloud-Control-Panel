@@ -43,10 +43,8 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
     const [alertCounts, setAlertCounts] = useState({ critical: 0, high: 0 })
     const pollRef = useRef(null)
 
-    // Poll live-findings counts — session-filtered (only alerts from this login)
     useEffect(() => {
         const accountDbId = account?.id
-        // Reset badges immediately when session changes
         setAlertCounts({ critical: 0, high: 0 })
 
         async function fetchCounts() {
@@ -56,7 +54,6 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                 const json = await r.json()
                 const findings = json?.data?.findings || []
 
-                // ── Session filter: ignore anything detected before this sign-in ──
                 const sessionFindings = sessionStart
                     ? findings.filter(f => {
                         const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
@@ -82,7 +79,6 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
         try {
             if (clearData) {
                 const API = 'http://localhost:8000'
-                // Get the real AWS account ID (string) to pass to the wipe endpoint
                 const awsId = account?.aws_account_id || account?.account_id
                 if (awsId) {
                     await fetch(
@@ -90,10 +86,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                         { method: 'DELETE' }
                     ).catch(() => {})
                 }
-                // Clear seen-alert IDs so toasts reset fresh on next login
                 localStorage.removeItem('seen_alert_ids')
-                // Clear cached scan results from localStorage (scan_v* keys)
-                // so findings don't carry over to the next account/session
                 Object.keys(localStorage).forEach(k => {
                     if (k.startsWith('scan_v')) localStorage.removeItem(k)
                 })
@@ -113,7 +106,6 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
     const profile   = account?.profile_name || account?.username || 'default'
     const isIam     = account?.account_type === 'iam'
 
-    // Colors
     const bg        = dark ? '#161b22' : '#fafbfc'
     const card      = dark ? '#1c2330' : '#ffffff'
     const border    = dark ? 'rgba(255,255,255,0.08)' : '#d5d9d9'

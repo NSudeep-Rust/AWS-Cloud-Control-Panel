@@ -56,7 +56,6 @@ function findingIcon(type = '') {
     return <Shield size={13} />
 }
 
-// getModule is aliased to the shared canonical getModuleGroup utility.
 const getModule = getModuleGroup
 
 
@@ -74,7 +73,6 @@ const SCAN_BANNERS = [
 ]
 
 
-// ── Radar animation component ─────────────────────────────────────────────────
 function ThreatRadar({ running, dark }) {
     const [angle, setAngle] = useState(0)
     const blips = [
@@ -123,7 +121,6 @@ function ThreatRadar({ running, dark }) {
     )
 }
 
-// ── Single finding card with remediation ─────────────────────────────────────
 const FindingCard = memo(function FindingCard({ f, dark }) {
     const [expanded, setExpanded] = useState(false)
     const sev = SEV[f.severity] || SEV.LOW
@@ -180,7 +177,6 @@ const FindingCard = memo(function FindingCard({ f, dark }) {
     )
 })
 
-// ── Filter bar ────────────────────────────────────────────────────────────────
 function FilterBar({ active, onChange, counts, modules, activeModule, onModule }) {
     const filters = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'AUTO-FIX', 'MANUAL']
     return (
@@ -226,7 +222,6 @@ function FilterBar({ active, onChange, counts, modules, activeModule, onModule }
 }
 
 
-// ── Main ThreatsSection ───────────────────────────────────────────────────────
 export default function ThreatsSection({ dark }) {
     const { account } = useAuth()
     const { scanId, status: scanStatus, findings: scanFindings } = useScan()
@@ -235,18 +230,15 @@ export default function ThreatsSection({ dark }) {
     const awsId = isIam ? (account?.parent_aws_account_id || '—') : (account?.aws_account_id || '—')
     const dbId  = isIam ? account?.account_id : account?.id
 
-    // Monitor state
     const [monitorStatus, setMonitorStatus] = useState(null)
     const [toggling, setToggling] = useState(false)
     const monitorRunning = monitorStatus?.running === true
 
-    // Threat analysis
     const [threats, setThreats] = useState(null)
     const [loadingThreats, setLoadingThreats] = useState(false)
     const [threatError, setThreatError] = useState(null)
     const [activeScanId, setActiveScanId] = useState(scanId || null)
 
-    // UI
     const [filter, setFilter] = useState('ALL')
     const [moduleFilter, setModuleFilter] = useState('ALL')
     const [msgIdx, setMsgIdx] = useState(0)
@@ -254,27 +246,23 @@ export default function ThreatsSection({ dark }) {
     const msgRef = useRef(null)
     const factRef = useRef(null)
 
-    // Poll monitor status
     useEffect(() => {
         fetchStatus()
         const iv = setInterval(fetchStatus, 8000)
         return () => clearInterval(iv)
     }, [])
 
-    // Rotate messages while running
     useEffect(() => {
         if (!monitorRunning) { clearInterval(msgRef.current); return }
         msgRef.current = setInterval(() => setMsgIdx(i => (i + 1) % MONITOR_MSGS.length), 2500)
         return () => clearInterval(msgRef.current)
     }, [monitorRunning])
 
-    // Rotate AWS facts always
     useEffect(() => {
         factRef.current = setInterval(() => setFactIdx(i => (i + 1) % AWS_FACTS.length), 5000)
         return () => clearInterval(factRef.current)
     }, [])
 
-    // Auto-load threats when we have a scan_id from context
     useEffect(() => {
         if (scanId && scanStatus === 'done') {
             setActiveScanId(scanId)
@@ -282,7 +270,6 @@ export default function ThreatsSection({ dark }) {
         }
     }, [scanId, scanStatus])
 
-    // If no scan in context, try to fetch the latest scan from DB
     useEffect(() => {
         if (!scanId && dbId) fetchLatestScan()
     }, [scanId, dbId])
@@ -310,7 +297,6 @@ export default function ThreatsSection({ dark }) {
         if (toggling) return
         setToggling(true)
         const wasRunning = monitorRunning
-        // OPTIMISTIC: flip immediately so the button responds at once
         setMonitorStatus(prev => ({ ...(prev || {}), running: !wasRunning }))
         try {
             if (wasRunning) {
@@ -341,7 +327,6 @@ export default function ThreatsSection({ dark }) {
 
     const allFindings = threats?.findings || []
 
-    // Derive available modules from findings
     const moduleList = ['ALL', ...Array.from(new Set(allFindings.map(f => getModule(f.type)))).sort()]
 
     const filtered = allFindings.filter(f => {

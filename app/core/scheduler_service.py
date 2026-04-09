@@ -37,7 +37,6 @@ class SchedulerService:
         self.running = False
         self.thread  = None
 
-    # ── Public control ────────────────────────────────────────────────────────
     def start(self):
         if self.running:
             return
@@ -53,7 +52,6 @@ class SchedulerService:
     def get_status(self):
         return {"running": self.running}
 
-    # ── Background loop ───────────────────────────────────────────────────────
     def _loop(self):
         while self.running:
             try:
@@ -100,7 +98,6 @@ class SchedulerService:
 
             findings = run_full_scan(aws, source="SCHEDULED")
 
-            # ── Persist scan ──────────────────────────────────────────────
             scan_id = str(uuid.uuid4())
             db.add(Scan(id=scan_id, account_id=account.id, source="SCHEDULED"))
             db.commit()
@@ -124,7 +121,6 @@ class SchedulerService:
                     pass   # duplicate ID edge-case — skip silently
             db.commit()
 
-            # ── Update schedule ───────────────────────────────────────────
             cfg = db.query(ScheduleConfig).filter(ScheduleConfig.id == config_id).first()
             if cfg:
                 cfg.last_run_at = datetime.utcnow()
@@ -135,7 +131,6 @@ class SchedulerService:
             print(f"⏰ Scheduled scan COMPLETE for account {account.aws_account_id} "
                   f"— {len(findings)} findings — scan_id={scan_id}")
 
-            # ── Notify frontend: new findings available ────────────────────
             ws_manager.broadcast_sync({
                 "event":          "scan_complete",
                 "scan_id":        scan_id,
@@ -146,7 +141,6 @@ class SchedulerService:
 
         except Exception as e:
             print(f"❌ Scheduled scan FAILED for account {account_db_id}: {e}")
-            # Still update next_run_at so we don't spam-retry every minute
             try:
                 cfg = db.query(ScheduleConfig).filter(ScheduleConfig.id == config_id).first()
                 if cfg:
@@ -156,7 +150,6 @@ class SchedulerService:
             except Exception:
                 pass
 
-    # ── Manual "run now" trigger (called from API) ────────────────────────────
     def run_now(self, account_db_id: int):
         """Fire a scheduled scan immediately in a separate thread."""
         def _fire():
@@ -168,7 +161,6 @@ class SchedulerService:
                     .first()
                 )
                 config_id = cfg.id if cfg else None
-                # Still run even if no schedule config exists
                 self._run_scheduled_scan(account_db_id, config_id, db)
             finally:
                 db.close()
@@ -177,5 +169,4 @@ class SchedulerService:
         t.start()
 
 
-# ── Singleton — imported by main.py ──────────────────────────────────────────
 scheduler_service = SchedulerService()

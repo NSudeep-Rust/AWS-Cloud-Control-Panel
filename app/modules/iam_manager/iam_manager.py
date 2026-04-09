@@ -28,7 +28,6 @@ class IAMManager:
                     seen_ids.add(f["id"])
                     findings.append(f)
 
-        # ── Account-level password policy (1 API call, fast) ─────────────
         try:
             password_policy = iam.get_account_password_policy()["PasswordPolicy"]
             if not password_policy.get("ExpirePasswords", False):
@@ -50,7 +49,6 @@ class IAMManager:
                 "description": "IAM account does not have a password policy configured",
             })
 
-        # ── Fetch user + role lists (2 API calls, fast) ──────────────────
         try:
             users = iam.list_users().get("Users", [])
         except Exception:
@@ -60,7 +58,6 @@ class IAMManager:
         except Exception:
             roles = []
 
-        # ── Per-user audit worker ──────────────────────────────────────────
         def audit_user(user):
             user_name = user["UserName"]
             local = []
@@ -68,7 +65,6 @@ class IAMManager:
             def ladd(f):
                 local.append(f)
 
-            # Parallelise the 4 independent user-level fetches
             def fetch_attached():
                 try:
                     return iam.list_attached_user_policies(UserName=user_name).get("AttachedPolicies", [])
@@ -103,7 +99,6 @@ class IAMManager:
                 access_keys        = f_keys.result()
                 inline_policies    = f_inl.result()
 
-            # AdministratorAccess check
             for policy in attached_policies:
                 if policy["PolicyName"] == "AdministratorAccess":
                     ladd({
@@ -116,7 +111,6 @@ class IAMManager:
                         "description": "IAM user has AdministratorAccess policy attached",
                     })
 
-            # Full-admin policy check (fetch each policy version — parallelised)
             def check_policy_doc(policy):
                 try:
                     ver = iam.get_policy(PolicyArn=policy["PolicyArn"])["Policy"]["DefaultVersionId"]
@@ -139,7 +133,6 @@ class IAMManager:
                 with ThreadPoolExecutor(max_workers=min(len(attached_policies), 4)) as p:
                     list(p.map(check_policy_doc, attached_policies))
 
-            # MFA check
             if len(mfa_devices) == 0:
                 ladd({
                     "id": f"iam-no-mfa-{user_name}",
@@ -150,7 +143,6 @@ class IAMManager:
                     "description": "IAM user does not have MFA enabled",
                 })
 
-            # Access key checks (fetch last-used in parallel)
             def check_key(key):
                 key_id = key["AccessKeyId"]
                 status = key["Status"]
@@ -185,7 +177,6 @@ class IAMManager:
                 with ThreadPoolExecutor(max_workers=min(len(access_keys), 4)) as p:
                     list(p.map(check_key, access_keys))
 
-            # Unused user check
             password_last_used = user.get("PasswordLastUsed")
             create_date        = user.get("CreateDate")
             now = datetime.utcnow()
@@ -212,7 +203,6 @@ class IAMManager:
                         "description": f"IAM user inactive for {days_unused} days",
                     })
 
-            # Inline policy checks
             def check_inline_policy(policy_name):
                 try:
                     doc = iam.get_user_policy(UserName=user_name, PolicyName=policy_name)["PolicyDocument"]
@@ -248,7 +238,6 @@ class IAMManager:
 
             return local
 
-        # ── Per-role audit worker ──────────────────────────────────────────
         def audit_role(role):
             role_name = role["RoleName"]
             local = []
@@ -285,7 +274,6 @@ class IAMManager:
                             })
             return local
 
-        # ── Run all users + roles in parallel ─────────────────────────────
         max_w = max(1, min(len(users) + len(roles), 10))
         with ThreadPoolExecutor(max_workers=max_w) as pool:
             user_futs = {pool.submit(audit_user, u): u["UserName"] for u in users}

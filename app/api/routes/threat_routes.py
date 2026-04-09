@@ -93,7 +93,6 @@ def run_threat_monitor(request: ThreatRequest, db: Session = Depends(get_db)):
 def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     global monitor_service, fast_watcher_svc
 
-    # 1. Get account from DB
     account = db.query(Account).filter(
         Account.aws_account_id == request.account_id
     ).first()
@@ -101,7 +100,6 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     if not account:
         return {"error": "Account not found"}
 
-    # 2. Create AWS session using DB values
     aws = AWSSession(
         profile_name=account.profile_name,
         access_key=account.access_key,
@@ -111,7 +109,6 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     aws.initialize()
     print("🔥 MONITOR USING ACCOUNT:", aws.get_account_id())
 
-    # 3. Start full monitor (runs complete threat scanner every 15s)
     monitor = ThreatMonitor(aws_session=aws)
     monitor_service = MonitorService(
         monitor,
@@ -121,7 +118,6 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     )
     monitor_service.start()
 
-    # 4. Start FastWatcher (lightweight 8s checks for critical changes)
     if fast_watcher_svc:
         fast_watcher_svc.stop()
     fast_watcher_svc = FastWatcher(

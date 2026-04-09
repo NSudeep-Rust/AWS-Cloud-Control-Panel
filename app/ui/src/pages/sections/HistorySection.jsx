@@ -1,9 +1,7 @@
-// HistorySection.jsx — Full Audit History & Event Timeline
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { historyAPI, executeAPI, scheduleAPI, driftAPI } from '@/api'
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 const SEV_COLOR  = { CRITICAL:'#d13212', HIGH:'#f59e0b', MEDIUM:'#0972d3', LOW:'#067340' }
 const SEV_BG     = { CRITICAL:'rgba(209,50,18,0.08)', HIGH:'rgba(245,158,11,0.08)', MEDIUM:'rgba(9,114,211,0.08)', LOW:'rgba(6,115,64,0.08)' }
 const SEV_ORDER  = { CRITICAL:0, HIGH:1, MEDIUM:2, LOW:3 }
@@ -25,14 +23,12 @@ function relTime(iso) {
     return `${Math.floor(h/24)}d ago`
 }
 
-// severity counts from findings array
 function severityCounts(findings=[]) {
     const out = { CRITICAL:0, HIGH:0, MEDIUM:0, LOW:0 }
     findings.forEach(f => { if (out[f.severity] !== undefined) out[f.severity]++ })
     return out
 }
 
-// service from finding type
 function serviceOf(type='') {
     if (type.startsWith('IAM')) return 'IAM'
     if (type.startsWith('S3')) return 'S3'
@@ -45,7 +41,6 @@ function serviceOf(type='') {
     return 'AWS'
 }
 
-// ── Compare two scans, return delta info ──────────────────────────────
 function scanChangedFrom(scan, prevScan) {
     if (!prevScan) return { changed: true, isFirst: true, dC:0, dH:0, dM:0, dL:0, dTotal:0 }
     const c1 = severityCounts(scan.details)
@@ -59,7 +54,6 @@ function scanChangedFrom(scan, prevScan) {
     return { changed, isFirst: false, dC, dH, dM, dL, dTotal }
 }
 
-// ─── sub-components ───────────────────────────────────────────────────────────
 function StatTile({ label, value, sub, color='#FF9900', icon }) {
     return (
         <div style={{ flex:1, minWidth:120, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:8, padding:'16px 20px', display:'flex', flexDirection:'column', gap:4 }}>
@@ -101,7 +95,6 @@ function ScanEvent({ evt, execMap, delta, drift }) {
     const total  = evt.count || 0
     const execs  = execMap[evt.scan_id] || []
 
-    // Choose card title based on delta
     const eventTitle = (() => {
         if (!delta || delta.isFirst) return 'Latest Security Scan'
         if (delta.dTotal > 0)  return 'New Findings Detected'
@@ -116,7 +109,6 @@ function ScanEvent({ evt, execMap, delta, drift }) {
         return '#f59e0b'
     })()
 
-    // group findings by service
     const byService = {}
     evt.details?.forEach(f => {
         const svc = serviceOf(f.type)
@@ -295,7 +287,6 @@ function RemediationEvent({ ex }) {
     )
 }
 
-// ─── Animated "Findings Hidden" Banner ─────────────────────────────────────
 function HiddenFindingsBanner({ totalScans, totalFindings, totalCritHigh, onToggle, style }) {
     const canvasRef = useRef(null)
     const rafRef    = useRef(null)
@@ -444,8 +435,6 @@ function HiddenFindingsBanner({ totalScans, totalFindings, totalCritHigh, onTogg
 }
 
 
-// ─── Animated radar canvas for empty state ─────────────────────────────────
-// ── Schedule Control Panel ──────────────────────────────────────────────────
 function SchedulePanel({ accountDbId }) {
     const [cfg,      setCfg]      = useState(null)   // null = loading
     const [saving,   setSaving]   = useState(false)
@@ -454,7 +443,6 @@ function SchedulePanel({ accountDbId }) {
     const [enabled,  setEnabled]  = useState(false)
     const [tick,     setTick]     = useState(0)       // clock for countdown
 
-    // Load schedule
     const loadCfg = useCallback(async () => {
         if (!accountDbId) return
         try {
@@ -466,7 +454,6 @@ function SchedulePanel({ accountDbId }) {
     }, [accountDbId])
 
     useEffect(() => { loadCfg() }, [loadCfg])
-    // countdown ticker — every 10s so 1-min interval looks live
     useEffect(() => { const t = setInterval(() => setTick(x=>x+1), 10000); return () => clearInterval(t) }, [])
 
     async function save(newEnabled, newInterval) {
@@ -486,7 +473,6 @@ function SchedulePanel({ accountDbId }) {
         } finally { setTimeout(() => setRunning(false), 2000) }
     }
 
-    // Countdown formatter
     function countdown(iso) {
         if (!iso) return '—'
         const diff = new Date(iso) - new Date()
@@ -506,7 +492,6 @@ function SchedulePanel({ accountDbId }) {
         { v:24,  label:'Every 24h' },
     ]
 
-    // Human-readable interval label from stored value
     function intervalLabel(v) {
         const found = INTERVALS.find(i => i.v === v)
         return found ? found.label : (v < 0 ? `Every ${Math.abs(v)}m` : `Every ${v}h`)
@@ -672,10 +657,8 @@ function HistoryRadarBanner({ onNav }) {
     )
 }
 
-// ─── main section ──────────────────────────────────────────────────────────────
 export function HistorySection({ onNav }) {
     const { account } = useAuth()
-    // For IAM users: account_id = parent root account DB id; for root: account.id
     const accountId = account?.account_type === 'iam'
         ? (account?.account_id ?? null)
         : (account?.id ?? null)
@@ -724,23 +707,18 @@ export function HistorySection({ onNav }) {
 
     useEffect(() => { load() }, [load])
 
-    // executions grouped by scan_id for quick lookup
     const execMap = {}
     execs.forEach(ex => {
         const sid = ex.scan_id
         if (sid) { if (!execMap[sid]) execMap[sid] = []; execMap[sid].push(ex) }
     })
 
-    // ── Compute delta-annotated scans (sorted newest first) ────────────────
-    // scans[0] = newest, scans[n-1] = oldest
-    // delta for scans[i] = diff from scans[i+1] (the scan before it in time)
     const annotatedScans = scans.map((sc, i) => ({
         scan:  sc,
         delta: scanChangedFrom(sc, scans[i + 1] || null),
         execs: execMap[sc.scan_id] || [],
     }))
 
-    // Apply search + severity filters
     const baseFiltered = annotatedScans.filter(({ scan, delta }) => {
         if (sevFilter !== 'ALL') {
             const counts = severityCounts(scan.details)
@@ -756,21 +734,18 @@ export function HistorySection({ onNav }) {
         return true
     })
 
-    // Apply changes-only filter: hide scans identical to previous (unless they have remediations)
     const displayScans = changesOnly && !search && sevFilter === 'ALL'
         ? baseFiltered.filter(({ delta, execs }) => delta.changed || delta.isFirst || execs.length > 0)
         : baseFiltered
 
     const hiddenCount = baseFiltered.length - displayScans.length
 
-    // aggregate computed values
     const totalFindings  = scans.reduce((s,sc) => s + (sc.count||0), 0)
     const totalCritHigh  = scans.reduce((s,sc) => { const c = severityCounts(sc.details); return s+c.CRITICAL+c.HIGH }, 0)
     const totalExecs     = execs.length
     const totalScans     = scans.length
     const changedScans   = annotatedScans.filter(({ delta, execs }) => delta.changed || delta.isFirst || execs.length > 0).length
 
-    // ── styles ──────────────────────────────────────────────────────────────
     const S = {
         root:   { display:'flex', flexDirection:'column', height:'100%', background:'var(--bg)', overflow:'hidden' },
         header: { padding:'20px 24px 0', border:'1px solid var(--border)', borderRadius:12, background:'var(--bg2)', flexShrink:0, boxShadow:'0 1px 8px rgba(0,0,0,0.07)', marginBottom:4 },

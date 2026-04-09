@@ -2,21 +2,17 @@
 Global security guardrails for Cloud Security Panel.
 """
 
-# Default execution mode
 DEFAULT_EXECUTION_MODE = "DRY_RUN"
 
-# LIVE execution requires BOTH to be true:
 LIVE_EXECUTION_ENABLED = True
 LIVE_EXECUTION_APPROVED_BY_USER = True
 
 
 ALLOWED_LIVE_ACTIONS = {
-    # S3
     "ENABLE_S3_VERSIONING",
     "ENABLE_BLOCK_PUBLIC_ACCESS",
     "REMOVE_PUBLIC_S3_ACL",
     "ENABLE_S3_ACCESS_LOGGING",
-    # IAM
     "DETACH_ADMIN_POLICY",
     "REMOVE_INLINE_POLICY",
     "REMOVE_INLINE_WILDCARD_POLICY",
@@ -25,7 +21,6 @@ ALLOWED_LIVE_ACTIONS = {
     "DELETE_ACCESS_KEY",
     "DELETE_UNUSED_IAM_USER",
     "DISABLE_STALE_ACCESS_KEY",
-    # EC2 / Network
     "RESTRICT_SECURITY_GROUP",
     "REVOKE_UNRESTRICTED_SSH",
     "REVOKE_UNRESTRICTED_RDP",
@@ -45,50 +40,37 @@ ALLOWED_LIVE_ACTIONS = {
     "TERMINATE_EC2_INSTANCE",
     "FORCE_TERMINATE_EC2_INSTANCE",
     "DELETE_DEFAULT_VPC",
-    # Logging / Encryption
     "ENABLE_CLOUDTRAIL",
     "START_CLOUDTRAIL_LOGGING",
     "ENABLE_KMS_KEY_ROTATION",
     "SET_LOG_GROUP_RETENTION",
-    # RDS
     "DISABLE_RDS_PUBLIC_ACCESS",
     "ENABLE_RDS_BACKUP",
     "ENABLE_RDS_DELETION_PROTECTION",
-    # IAM Trust
     "RESTRICT_ROLE_EXTERNAL_TRUST",
     "ENCRYPT_RDS_INSTANCE",
 }
 
-# --------------------------------------------------
-# Severity Mapping for all scanner findings
-# --------------------------------------------------
 
 SEVERITY_MAP = {
 
-    # Firewall — generic
     "PUBLIC_SECURITY_GROUP": "HIGH",
 
-    # Security Group — specific ports (NEW)
     "SECURITY_GROUP_UNRESTRICTED_SSH": "CRITICAL",
     "SECURITY_GROUP_UNRESTRICTED_RDP": "CRITICAL",
 
-    # EC2 / IMDSv1 (NEW)
     "EC2_IMDSV1_ENABLED": "MEDIUM",
 
-    # EC2 Unmonitored Running Instance (NEW)
     "EC2_INSTANCE_RUNNING_UNMONITORED": "HIGH",
 
-    # EBS Snapshot Public (NEW)
     "EBS_SNAPSHOT_PUBLIC": "CRITICAL",
 
-    # S3
     "PUBLIC_S3_BUCKET": "CRITICAL",
     "S3_BLOCK_PUBLIC_ACCESS_DISABLED": "HIGH",
     "S3_NO_ENCRYPTION": "HIGH",
     "S3_VERSIONING_DISABLED": "MEDIUM",
     "S3_ACCESS_LOGGING_DISABLED": "MEDIUM",
 
-    # EC2
     "PUBLIC_EC2_INSTANCE": "HIGH",
     "EC2_WITHOUT_IAM_ROLE": "MEDIUM",
     "EC2_DEFAULT_SECURITY_GROUP": "MEDIUM",
@@ -96,14 +78,12 @@ SEVERITY_MAP = {
     "EBS_UNENCRYPTED_VOLUME": "HIGH",
     "EC2_PUBLIC_ELASTIC_IP": "HIGH",
 
-    # Encryption
     "EBS_DEFAULT_ENCRYPTION_DISABLED": "HIGH",
     "S3_BUCKET_ENCRYPTION_DISABLED": "HIGH",
     "KMS_KEY_ROTATION_DISABLED": "MEDIUM",
     "EBS_SNAPSHOT_NOT_ENCRYPTED": "HIGH",
     "RDS_STORAGE_NOT_ENCRYPTED": "HIGH",
 
-    # IAM
     "IAM_PASSWORD_NEVER_EXPIRES": "MEDIUM",
     "IAM_PASSWORD_POLICY_MISSING": "HIGH",
     "IAM_ADMIN_USER": "CRITICAL",
@@ -121,18 +101,14 @@ SEVERITY_MAP = {
     "IAM_ROLE_EXTERNAL_TRUST": "CRITICAL",
     "IAM_ACCESS_KEY_OLD_INACTIVE": "MEDIUM",
 
-    # IAM access key rotation (NEW)
     "IAM_ACCESS_KEY_NOT_ROTATED": "HIGH",
 
-    # Logging
     "CLOUDTRAIL_DISABLED": "HIGH",
     "VPC_FLOW_LOGS_DISABLED": "MEDIUM",
     "CLOUDTRAIL_NOT_LOGGING": "HIGH",
 
-    # CloudWatch (NEW)
     "CLOUDWATCH_LOG_GROUP_NO_RETENTION": "LOW",
 
-    # Network
     "PUBLIC_SUBNET_DETECTED": "MEDIUM",
     "ROUTE_TABLE_PUBLIC_ROUTE": "MEDIUM",
     "NACL_ALLOW_ALL_INBOUND": "HIGH",
@@ -142,15 +118,11 @@ SEVERITY_MAP = {
     "VPC_WITHOUT_NAT_GATEWAY": "LOW",
     "DEFAULT_VPC_EXISTS":     "MEDIUM",
 
-    # RDS (NEW)
     "RDS_PUBLICLY_ACCESSIBLE": "HIGH",
     "RDS_BACKUP_DISABLED": "MEDIUM",
     "RDS_DELETION_PROTECTION_DISABLED": "MEDIUM",
 }
 
-# --------------------------------------------------
-# Severity → Enforcement rules
-# --------------------------------------------------
 
 ENFORCEMENT_MAP = {
     "CRITICAL": "REQUIRE_APPROVAL",
@@ -162,9 +134,6 @@ ENFORCEMENT_MAP = {
 
 ALERT_SEVERITIES = ["CRITICAL", "HIGH"]
 
-# --------------------------------------------------
-# Risk scoring weights
-# --------------------------------------------------
 
 RISK_WEIGHTS = {
     "CRITICAL": 10,

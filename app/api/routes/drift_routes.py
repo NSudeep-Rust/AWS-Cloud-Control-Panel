@@ -71,7 +71,6 @@ def get_drift(
     resolved_keys   = set(previous_map) - set(latest_map)
     persistent_keys = set(latest_map)   & set(previous_map)
 
-    # Sort by severity weight for UI ordering
     SEV_W = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
 
     def sev_sort(items):
@@ -81,7 +80,6 @@ def get_drift(
     resolved_findings   = sev_sort([_fmt(previous_map[k]) for k in resolved_keys])
     persistent_findings = sev_sort([_fmt(latest_map[k])   for k in persistent_keys])
 
-    # Severity breakdown of new findings
     new_by_sev = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
     for f in new_findings:
         new_by_sev[f["severity"]] = new_by_sev.get(f["severity"], 0) + 1
@@ -110,7 +108,6 @@ def get_drift(
             "resolved_by_severity": resolved_by_sev,
             "new":        new_findings,
             "resolved":   resolved_findings,
-            # persistent is large — only send count by default, full list on request
             "persistent": persistent_findings,
         }
     )

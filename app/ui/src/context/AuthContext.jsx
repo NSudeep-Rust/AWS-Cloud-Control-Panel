@@ -8,18 +8,11 @@ export function AuthProvider({ children }) {
         return saved ? JSON.parse(saved) : null
     })
 
-    // Session start timestamp — every sign-in resets this, so only
-    // alerts detected AFTER this timestamp are shown in the current session.
     const [sessionStart, setSessionStart] = useState(() => {
         const s = sessionStorage.getItem('cloudshield_session_start')
         return s ? parseInt(s, 10) : null
     })
 
-    // accountData shape for ROOT account:
-    // { id, aws_account_id, profile_name, region, account_type: "root" }
-    //
-    // accountData shape for IAM USER:
-    // { id, account_id, parent_aws_account_id, username, region, account_type: "iam" }
 
     const connect = (accountData) => {
         const now = Date.now()
@@ -36,14 +29,12 @@ export function AuthProvider({ children }) {
         setSessionStart(null)
     }
 
-    // Helper — display name for whoever is connected
     const displayName = account
         ? account.account_type === 'iam'
             ? account.username
             : (account.profile_name || account.aws_account_id)
         : null
 
-    // Helper — the actual AWS account ID being scanned
     const awsAccountId = account
         ? account.account_type === 'iam'
             ? account.parent_aws_account_id

@@ -97,6 +97,5 @@ class ProtectionHistory:
         history = self.read_history()
         history.append(record)
 
-        # JSON write
         with open(self.file_path, "w") as f:
             json.dump(history, f, indent=2)

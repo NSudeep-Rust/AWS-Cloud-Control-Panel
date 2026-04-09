@@ -14,9 +14,6 @@ class NetworkScanner:
         findings = []
         seen_ids = set()
 
-        # -------------------------
-        # PUBLIC SUBNET DETECTED
-        # -------------------------
         try:
             route_tables = ec2.describe_route_tables()["RouteTables"]
 
@@ -46,9 +43,6 @@ class NetworkScanner:
         except Exception as e:
             print("Public subnet error:", str(e))
 
-        # -------------------------
-        # ROUTE TABLE PUBLIC ROUTE
-        # -------------------------
         try:
             route_tables = ec2.describe_route_tables()["RouteTables"]
 
@@ -76,15 +70,11 @@ class NetworkScanner:
         except Exception as e:
             print("Route table error:", str(e))
 
-        # -------------------------
-        # NACL ALLOW ALL INBOUND
-        # -------------------------
         try:
             nacls = ec2.describe_network_acls()["NetworkAcls"]
 
             for nacl in nacls:
 
-                # 🔥 ADD THIS
                 if nacl.get("IsDefault"):
                     continue
 
@@ -112,15 +102,11 @@ class NetworkScanner:
         except Exception as e:
             print("NACL inbound error:", str(e))
 
-        # -------------------------
-        # NACL ALLOW ALL OUTBOUND
-        # -------------------------
         try:
             nacls = ec2.describe_network_acls()["NetworkAcls"]
 
             for nacl in nacls:
 
-                # 🔥 ADD THIS
                 if nacl.get("IsDefault"):
                     continue
 
@@ -148,9 +134,6 @@ class NetworkScanner:
         except Exception as e:
             print("NACL outbound error:", str(e))
 
-        # -------------------------
-        # INTERNET GATEWAY ATTACHED
-        # -------------------------
         try:
             igws = ec2.describe_internet_gateways()["InternetGateways"]
 
@@ -177,9 +160,6 @@ class NetworkScanner:
         except Exception as e:
             print("IGW error:", str(e))
 
-        # -------------------------
-        # UNUSED SECURITY GROUP
-        # -------------------------
         try:
             security_groups = ec2.describe_security_groups()["SecurityGroups"]
             network_interfaces = ec2.describe_network_interfaces()["NetworkInterfaces"]
@@ -210,9 +190,6 @@ class NetworkScanner:
         except Exception as e:
             print("Unused SG error:", str(e))
 
-        # -------------------------
-        # VPC WITHOUT NAT GATEWAY
-        # -------------------------
         try:
             vpcs = ec2.describe_vpcs()["Vpcs"]
             nat_gateways = ec2.describe_nat_gateways()["NatGateways"]

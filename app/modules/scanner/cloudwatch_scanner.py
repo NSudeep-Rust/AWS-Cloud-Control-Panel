@@ -16,9 +16,6 @@ class CloudWatchScanner:
         findings = []
         seen_ids = set()
 
-        # -------------------------
-        # CLOUDWATCH LOG GROUP NO RETENTION
-        # -------------------------
         try:
             paginator = logs.get_paginator("describe_log_groups")
             pages = paginator.paginate()
@@ -28,7 +25,6 @@ class CloudWatchScanner:
                     group_name = log_group["logGroupName"]
                     retention_days = log_group.get("retentionInDays")
 
-                    # None means "Never expire" — no retention set
                     if retention_days is None:
                         finding_id = f"cloudwatch-no-retention-{group_name.replace('/', '-').strip('-')}"
 

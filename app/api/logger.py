@@ -1,15 +1,12 @@
 import logging
 import os
 
-# Resolve absolute path to app/logs/api.log
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_FILE_PATH = os.path.join(BASE_DIR, "logs", "api.log")
 
-# Create logger
 logger = logging.getLogger("cloud_security_panel_api")
 logger.setLevel(logging.INFO)
 
-# Prevent duplicate handlers on reload
 if not logger.handlers:
     file_handler = logging.FileHandler(LOG_FILE_PATH)
     file_handler.setLevel(logging.INFO)

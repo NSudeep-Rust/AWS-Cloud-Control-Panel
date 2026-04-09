@@ -95,7 +95,6 @@ class S3Scanner:
             except Exception:
                 pass
 
-        # Run all 5 checks for this bucket concurrently (was sequential)
         checks = [check_acl, check_encryption, check_versioning, check_logging, check_public_access]
         with ThreadPoolExecutor(max_workers=5) as pool:
             futs = [pool.submit(fn) for fn in checks]
@@ -117,7 +116,6 @@ class S3Scanner:
         if not buckets:
             return []
 
-        # Process all buckets in parallel (was fully sequential)
         all_findings = []
         with ThreadPoolExecutor(max_workers=min(len(buckets), 10)) as pool:
             future_map = {pool.submit(self._scan_bucket, s3, b["Name"]): b["Name"] for b in buckets}

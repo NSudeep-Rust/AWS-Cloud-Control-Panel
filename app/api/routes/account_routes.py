@@ -10,13 +10,9 @@ router = APIRouter(
 )
 
 
-# ─────────────────────────────────────────
-# ROOT ACCOUNTS
-# ─────────────────────────────────────────
 
 @router.post("/")
 def create_account(request: AccountCreateRequest, db: Session = Depends(get_db)):
-    # Check duplicate
     existing = db.query(Account).filter(
         Account.aws_account_id == request.aws_account_id
     ).first()
@@ -68,18 +64,13 @@ def list_accounts(db: Session = Depends(get_db)):
     }
 
 
-# ─────────────────────────────────────────
-# IAM USERS
-# ─────────────────────────────────────────
 
 @router.post("/iam-users/")
 def create_iam_user(request: IamUserCreateRequest, db: Session = Depends(get_db)):
-    # Verify parent account exists
     parent = db.query(Account).filter(Account.id == request.account_id).first()
     if not parent:
         raise HTTPException(status_code=404, detail="Parent account not found")
 
-    # Check duplicate username under same account
     existing = db.query(IamUser).filter(
         IamUser.account_id == request.account_id,
         IamUser.username == request.username

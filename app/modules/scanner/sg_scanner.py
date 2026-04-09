@@ -18,9 +18,6 @@ class SGScanner:
         findings = []
         seen_ids = set()
 
-        # -------------------------
-        # UNRESTRICTED SSH (port 22)
-        # -------------------------
         try:
             security_groups = ec2.describe_security_groups()["SecurityGroups"]
 
@@ -37,7 +34,6 @@ class SGScanner:
 
                         if cidr == "0.0.0.0/0":
 
-                            # SSH — port 22
                             if protocol in ["-1", "tcp"] and from_port <= 22 <= to_port:
                                 finding_id = f"sg-unrestricted-ssh-{sg_id}"
                                 if finding_id not in seen_ids:
@@ -53,7 +49,6 @@ class SGScanner:
                                         "description": f"Security group '{sg_id}' allows unrestricted SSH (port 22) from 0.0.0.0/0"
                                     })
 
-                            # RDP — port 3389
                             if protocol in ["-1", "tcp"] and from_port <= 3389 <= to_port:
                                 finding_id = f"sg-unrestricted-rdp-{sg_id}"
                                 if finding_id not in seen_ids:
@@ -72,9 +67,6 @@ class SGScanner:
         except Exception as e:
             print(f"SG port scan error ({region}):", str(e))
 
-        # -------------------------
-        # EC2 IMDSv1 ENABLED
-        # -------------------------
         try:
             response = ec2.describe_instances()
             for reservation in response.get("Reservations", []):
@@ -83,7 +75,6 @@ class SGScanner:
                     metadata_options = instance.get("MetadataOptions", {})
                     http_tokens = metadata_options.get("HttpTokens", "optional")
 
-                    # "optional" = IMDSv1 allowed (insecure), "required" = IMDSv2 only
                     if http_tokens == "optional":
                         finding_id = f"ec2-imdsv1-enabled-{instance_id}"
                         if finding_id not in seen_ids:
@@ -100,9 +91,6 @@ class SGScanner:
         except Exception as e:
             print(f"IMDSv1 scan error ({region}):", str(e))
 
-        # -------------------------
-        # EBS SNAPSHOT PUBLIC
-        # -------------------------
         try:
             snapshots = ec2.describe_snapshots(OwnerIds=["self"])["Snapshots"]
 

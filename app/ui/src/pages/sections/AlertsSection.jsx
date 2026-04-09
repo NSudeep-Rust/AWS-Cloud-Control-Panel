@@ -6,14 +6,12 @@ import { Bell, CheckCircle, ChevronDown, RefreshCcw, ShieldAlert, Radio, Square,
 
 const API = 'http://localhost:8000'
 
-// ─── Severity config ──────────────────────────────────────────────────────────
 const SEV = {
   CRITICAL: { color:'#d13212', bg:'rgba(209,50,18,0.08)', border:'rgba(209,50,18,0.3)',  glow:'rgba(209,50,18,0.2)',  badgeBg:'rgba(209,50,18,0.12)', icon:'🚨' },
   HIGH:     { color:'#e07b00', bg:'rgba(224,123,0,0.07)', border:'rgba(224,123,0,0.28)', glow:'rgba(224,123,0,0.15)', badgeBg:'rgba(224,123,0,0.12)', icon:'⚠️' },
 }
 const sev = s => SEV[s?.toUpperCase()] || SEV.HIGH
 
-// ─── Human-readable descriptions ─────────────────────────────────────────────
 const DESCRIPTIONS = {
   IAM_USER_ADMIN_POLICY:           'IAM user has the AdministratorAccess policy attached, granting unrestricted access to all AWS services and resources.',
   IAM_ADMIN_USER:                  'An IAM user exists with administrator-level permissions. This poses significant security risk if compromised.',
@@ -55,7 +53,6 @@ function fmtTime(iso) {
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
 }
 
-// ─── CSS animations ───────────────────────────────────────────────────────────
 const STYLES = `
   @keyframes alSpin    { to{transform:rotate(360deg)} }
   @keyframes alPulse1  { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.55} 50%{transform:translate(-50%,-50%) scale(1.18);opacity:0.2} }
@@ -76,7 +73,6 @@ const STYLES = `
   @keyframes orbit4    { from{transform:rotate(280deg) translateX(118px) rotate(-280deg)} to{transform:rotate(640deg) translateX(118px) rotate(-640deg)} }
 `
 
-// ─── Radar hero (shown while no findings) ─────────────────────────────────────
 function HeroAnimation({ monitorRunning, onToggle, toggling }) {
   const ORBS = [
     { emoji:'🔐', anim:'orbit0', delay:'0s',   dur:'7s'  },
@@ -148,7 +144,6 @@ function HeroAnimation({ monitorRunning, onToggle, toggling }) {
   )
 }
 
-// ─── Finding tile card ────────────────────────────────────────────────────────
 function FindingCard({ finding, onDismiss, idx }) {
   const [expanded, setExpanded] = useState(false)
   const [dismissing, setDismissing] = useState(false)
@@ -162,7 +157,6 @@ function FindingCard({ finding, onDismiss, idx }) {
     catch { setDismissing(false) }
   }
 
-  // Human-readable type label
   const typeLabel = finding.finding_type?.replace(/_/g, ' ') || 'Security Finding'
 
   return (
@@ -262,7 +256,6 @@ function FindingCard({ finding, onDismiss, idx }) {
   )
 }
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
 export function AlertsSection({ onNav }) {
   const { account, sessionStart } = useAuth()
 
@@ -281,10 +274,8 @@ export function AlertsSection({ onNav }) {
   const awsId     = account?.parent_aws_account_id || account?.aws_account_id
   const accountDbId = account?.id
 
-  // Effective running state
   const monitorRunning = monitorOptimistic !== null ? monitorOptimistic : (monitorStatus?.running === true)
 
-  // ── Poll monitor status every 3s ──────────────────────────────────────────
   const fetchMonitorStatus = useCallback(async () => {
     try {
       const r = await axios.get(`${API}/api/threats/monitor/status`)
@@ -293,13 +284,11 @@ export function AlertsSection({ onNav }) {
     } catch { setMonitorStatus(null) }
   }, [])
 
-  // ── Poll live findings every 8s ───────────────────────────────────────────
   const loadFindings = useCallback(async () => {
     try {
       const params = accountDbId ? { account_db_id: accountDbId } : {}
       const r = await axios.get(`${API}/api/live-findings/`, { params })
       const all = r.data?.data?.findings || []
-      // ── Session filter: only show alerts detected AFTER this session started ──
       const sessionFiltered = sessionStart
         ? all.filter(f => {
             const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
@@ -318,7 +307,6 @@ export function AlertsSection({ onNav }) {
     loadFindings()
     monitorPollRef.current = setInterval(fetchMonitorStatus, 3000)
     findingPollRef.current = setInterval(loadFindings, 8000)
-    // Load drift data once on mount (not polled — it's a scan comparison)
     driftAPI.get(accountDbId).then(r => {
       const d = r.data?.data
       if (d?.has_drift) setDrift(d)
@@ -326,7 +314,6 @@ export function AlertsSection({ onNav }) {
     return () => { clearInterval(monitorPollRef.current); clearInterval(findingPollRef.current) }
   }, [fetchMonitorStatus, loadFindings])
 
-  // ── Toggle monitor (optimistic) ───────────────────────────────────────────
   async function toggleMonitor() {
     if (toggling) return
     setToggling(true)
@@ -348,7 +335,6 @@ export function AlertsSection({ onNav }) {
   const highFindings     = findings.filter(f => f.severity === 'HIGH')
   const baseFiltered = filter==='critical' ? criticalFindings : filter==='high' ? highFindings : findings
 
-  // ── Sort by detected_at ──────────────────────────────────────────────────
   const displayed = [...baseFiltered].sort((a, b) => {
     const ta = a.detected_at ? new Date(a.detected_at).getTime() : 0
     const tb = b.detected_at ? new Date(b.detected_at).getTime() : 0

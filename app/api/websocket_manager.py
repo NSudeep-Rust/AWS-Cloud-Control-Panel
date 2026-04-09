@@ -1,5 +1,3 @@
-# websocket_manager.py
-# Manages WebSocket clients for instant alert push (Windows Defender style)
 from fastapi import WebSocket
 from typing import Set
 import json
@@ -52,5 +50,4 @@ class AlertWebSocketManager:
             pass  # No event loop — silent fallback
 
 
-# Global singleton — imported by threat_routes and websocket route
 ws_manager = AlertWebSocketManager()

@@ -1,9 +1,7 @@
-// AnalyticsSection.jsx — Premium Security Analytics, AWS CloudShield Theme
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { analyticsAPI, emailAPI } from '@/api'
 
-// ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
   critical: '#d13212', criticalBg: 'rgba(209,50,18,0.08)',   criticalBorder: 'rgba(209,50,18,0.22)',
   high:     '#e07b00', highBg:     'rgba(224,123,0,0.08)',   highBorder:     'rgba(224,123,0,0.22)',
@@ -23,7 +21,6 @@ const relT = iso => {
   return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s/60)}m ago` : s < 86400 ? `${Math.floor(s/3600)}h ago` : `${Math.floor(s/86400)}d ago`
 }
 
-// ── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   @keyframes anlFade    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
@@ -46,7 +43,6 @@ const CSS = `
   .skeleton   { background: linear-gradient(90deg,#f0f2f4 25%,#e8eaed 50%,#f0f2f4 75%); background-size:400px 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
 `
 
-// ── Count-up ──────────────────────────────────────────────────────────────────
 function useCountUp(target, ms = 900) {
   const [v, setV] = useState(0)
   const raf = useRef(null)
@@ -65,7 +61,6 @@ function useCountUp(target, ms = 900) {
   return v
 }
 
-// ── Gauge (canvas) ────────────────────────────────────────────────────────────
 function RiskGauge({ score = 0 }) {
   const ref = useRef(null)
   const raf = useRef(null)
@@ -79,10 +74,8 @@ function RiskGauge({ score = 0 }) {
     let prog = 0
     const draw = () => {
       ctx.clearRect(0, 0, W, 155)
-      // Track
       ctx.beginPath(); ctx.arc(CX, CY, R, SA, SA + ARC)
       ctx.strokeStyle = 'rgba(0,0,0,0.07)'; ctx.lineWidth = 16; ctx.lineCap = 'round'; ctx.stroke()
-      // Arc
       if (prog > 0.001) {
         const g = ctx.createLinearGradient(CX - R, CY, CX + R, CY)
         g.addColorStop(0, '#1d8102'); g.addColorStop(0.4, '#c8960c')
@@ -91,7 +84,6 @@ function RiskGauge({ score = 0 }) {
         ctx.strokeStyle = g; ctx.lineWidth = 16; ctx.lineCap = 'round'
         ctx.shadowColor = color; ctx.shadowBlur = 16; ctx.stroke(); ctx.shadowBlur = 0
       }
-      // Tick marks
       for (let i = 0; i <= 10; i++) {
         const a = SA + ARC * (i / 10)
         ctx.beginPath()
@@ -99,14 +91,12 @@ function RiskGauge({ score = 0 }) {
         ctx.lineTo(CX + Math.cos(a) * (R - 4), CY + Math.sin(a) * (R - 4))
         ctx.strokeStyle = i % 5 === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.1)'; ctx.lineWidth = i % 5 === 0 ? 2 : 1; ctx.stroke()
       }
-      // Tip
       if (prog > 0) {
         const a = SA + ARC * prog
         const dx = CX + Math.cos(a) * R, dy = CY + Math.sin(a) * R
         ctx.beginPath(); ctx.arc(dx, dy, 6, 0, Math.PI * 2)
         ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 14; ctx.fill(); ctx.shadowBlur = 0
       }
-      // Score number
       ctx.fillStyle = color; ctx.font = `900 38px Inter,system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText(Math.round(prog * score), CX, CY - 6)
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.font = '11px Inter'
@@ -125,7 +115,6 @@ function RiskGauge({ score = 0 }) {
   return <canvas ref={ref} style={{ width: 220, height: 155, display: 'block' }} />
 }
 
-// ── Trend chart (canvas) ──────────────────────────────────────────────────────
 function TrendChart({ trend = [] }) {
   const ref = useRef(null)
   const raf = useRef(null)
@@ -143,7 +132,6 @@ function TrendChart({ trend = [] }) {
     let prog = 0
     const draw = () => {
       ctx.clearRect(0, 0, W, H)
-      // Grid
       ;[0.25, 0.5, 0.75, 1].forEach(f => {
         const y = H - 24 - f * (H - 48)
         ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W - 8, y)
@@ -154,21 +142,18 @@ function TrendChart({ trend = [] }) {
       if (pts.length < 2) return
       const visible = Math.max(2, Math.round(prog * pts.length))
       const vp = pts.slice(0, visible)
-      // Fill gradient
       const fg = ctx.createLinearGradient(0, 0, 0, H)
       fg.addColorStop(0, 'rgba(255,153,0,0.15)'); fg.addColorStop(1, 'rgba(255,153,0,0)')
       ctx.beginPath(); ctx.moveTo(vp[0].x, H - 24)
       vp.forEach(p => ctx.lineTo(p.x, p.y))
       ctx.lineTo(vp[vp.length - 1].x, H - 24)
       ctx.closePath(); ctx.fillStyle = fg; ctx.fill()
-      // Line
       const lg = ctx.createLinearGradient(pts[0].x, 0, pts[pts.length - 1].x, 0)
       lg.addColorStop(0, '#1d8102'); lg.addColorStop(0.5, '#c8960c'); lg.addColorStop(1, '#d13212')
       ctx.beginPath()
       vp.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y))
       ctx.strokeStyle = lg; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'
       ctx.shadowColor = 'rgba(255,153,0,0.4)'; ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0
-      // Dots
       vp.forEach((p, i) => {
         const col = SEV_C[trend[i]?.risk_level] || '#FF9900'
         ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill()
@@ -183,7 +168,6 @@ function TrendChart({ trend = [] }) {
   return <canvas ref={ref} style={{ width: '100%', height: 140, display: 'block' }} />
 }
 
-// ── Animated bar ──────────────────────────────────────────────────────────────
 function AnimBar({ label, value, max, color, delay = 0, count }) {
   const [w, setW] = useState(0)
   useEffect(() => {
@@ -211,7 +195,6 @@ function AnimBar({ label, value, max, color, delay = 0, count }) {
   )
 }
 
-// ── KPI Tile ──────────────────────────────────────────────────────────────────
 function KpiTile({ icon, label, value, color, sub, delay = 0 }) {
   const num = useCountUp(typeof value === 'number' ? value : 0)
   return (
@@ -228,7 +211,6 @@ function KpiTile({ icon, label, value, color, sub, delay = 0 }) {
   )
 }
 
-// ── SVG Compliance ring ───────────────────────────────────────────────────────
 function ComplianceRing({ rating = 'GOOD', score = 0 }) {
   const pct = Math.max(0, 100 - score)
   const color = rating === 'GOOD' ? '#1d8102' : rating === 'MODERATE' ? '#c8960c' : '#d13212'
@@ -249,7 +231,6 @@ function ComplianceRing({ rating = 'GOOD', score = 0 }) {
   )
 }
 
-// ── Skeleton loader ───────────────────────────────────────────────────────────
 function Skeleton() {
   return (
     <div>
@@ -266,7 +247,6 @@ function Skeleton() {
   )
 }
 
-// ── No-data empty state ───────────────────────────────────────────────────────
 function EmptyAnalytics({ onNav }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340, gap: 20, textAlign: 'center', padding: '40px 20px' }}>
@@ -286,7 +266,6 @@ function EmptyAnalytics({ onNav }) {
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export function AnalyticsSection({ onNav }) {
   const { accountId } = useAuth()
   const [rs,   setRs]   = useState(null)
@@ -329,7 +308,6 @@ export function AnalyticsSection({ onNav }) {
 
   useEffect(() => { doFetch() }, [doFetch])
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
   const score    = rs?.risk_score ?? 0
   const level    = rs?.risk_level ?? 'LOW'
   const riskCol  = RISK_C(score)
@@ -694,7 +672,6 @@ export function AnalyticsSection({ onNav }) {
 
 export default AnalyticsSection
 
-// ── Compliance Score Tab ──────────────────────────────────────────────────────
 function ComplianceScoreTab({ cs }) {
   const [expanded, setExpanded] = useState({})
   const toggle = (key) => setExpanded(e => ({ ...e, [key]: !e[key] }))
@@ -810,7 +787,6 @@ function ComplianceScoreTab({ cs }) {
   )
 }
 
-// ── Email Notifications Tab ───────────────────────────────────────────────────
 function EmailNotificationsTab({ accountId }) {
   const BLANK = {
     smtp_host: 'smtp.gmail.com', smtp_port: 587,
@@ -845,7 +821,6 @@ function EmailNotificationsTab({ accountId }) {
     setTimeout(() => setToast(null), 6000)
   }
 
-  // Returns true on success — used by handleTest to chain
   async function doSave() {
     setSaving(true); setSaved(false)
     try {
@@ -865,7 +840,6 @@ function EmailNotificationsTab({ accountId }) {
     if (ok) showMsg(true, 'Settings saved successfully!')
   }
 
-  // FIX 3: auto-save first so test always uses current form values
   async function handleTest() {
     setTesting(true)
     showMsg(null, 'Saving settings then connecting to SMTP...')
@@ -892,7 +866,6 @@ function EmailNotificationsTab({ accountId }) {
     finally { setAlerting(false) }
   }
 
-  // FIX 2: Custom preset clears host so user can type freely
   const PRESETS = [
     { label: 'Gmail',   host: 'smtp.gmail.com',     port: 587 },
     { label: 'Outlook', host: 'smtp.office365.com',  port: 587 },

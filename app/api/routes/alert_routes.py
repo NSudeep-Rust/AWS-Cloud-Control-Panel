@@ -23,21 +23,15 @@ def get_alerts(
     """
 
     if account_id is not None:
-        # ── FIX: join Alert → Finding → Scan → filter by account_id ──
-        # Alert.finding_id → Finding.id (but Finding has composite PK: scan_id+id)
-        # We join through scans to get account ownership
 
-        # Get all scan_ids for this account
         account_scan_ids = db.query(Scan.id).filter(Scan.account_id == account_id).subquery()
 
-        # Get all finding_ids from those scans
         account_finding_ids = (
             db.query(Finding.id)
             .filter(Finding.scan_id.in_(account_scan_ids))
             .subquery()
         )
 
-        # Filter alerts to only those linked to this account's findings
         alerts_query = (
             db.query(Alert)
             .filter(Alert.finding_id.in_(account_finding_ids))

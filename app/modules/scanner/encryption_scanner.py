@@ -13,9 +13,6 @@ class EncryptionScanner:
         findings = []
         seen_ids = set()
 
-        # -------------------------
-        # EBS Default Encryption Disabled
-        # -------------------------
         try:
             response = ec2.get_ebs_encryption_by_default()
 
@@ -38,9 +35,6 @@ class EncryptionScanner:
 
         
 
-        # -------------------------
-        # KMS Key Rotation Disabled
-        # -------------------------
         kms = session.client("kms")
 
         alias_map = {}
@@ -88,9 +82,6 @@ class EncryptionScanner:
         except Exception as e:
             print("KMS list error:", str(e))
 
-        # -------------------------
-        # EBS Snapshot Not Encrypted
-        # -------------------------
         try:
             snapshots = ec2.describe_snapshots(OwnerIds=["self"])["Snapshots"]
 
@@ -113,9 +104,6 @@ class EncryptionScanner:
         except Exception as e:
             print("EBS snapshot error:", str(e))
 
-        # -------------------------
-        # RDS Storage Not Encrypted
-        # -------------------------
         rds = session.client("rds")
 
         try:

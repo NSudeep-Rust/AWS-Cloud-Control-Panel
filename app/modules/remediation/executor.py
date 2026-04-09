@@ -7,7 +7,6 @@ from app.utils.iam_policy_utils import has_wildcard, normalize_statements
 from app.utils.json_utils import make_json_safe
 
 
-#from app.config.security_config import S3_LOGGING_BUCKET
 from app.config.security_config import (
     DEFAULT_EXECUTION_MODE,
     LIVE_EXECUTION_ENABLED,
@@ -388,9 +387,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -----------------------------------
-        # Fetch current Security Group — GUARDED
-        # -----------------------------------
         try:
             response = ec2.describe_security_groups(GroupIds=[resource_id])
             sgs = response.get("SecurityGroups", [])
@@ -428,7 +424,6 @@ class RemediationExecutor:
                         "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
                     })
 
-        # If no public rules, nothing to do
         if not targeted_rules:
             return {
                 "status": "SKIPPED",
@@ -437,9 +432,6 @@ class RemediationExecutor:
                 "metadata": {"security_group_id": resource_id, "region": region}
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -451,9 +443,6 @@ class RemediationExecutor:
                 "metadata": {}
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         execution_id = str(uuid.uuid4())
         revoked_rules = []
 
@@ -472,9 +461,6 @@ class RemediationExecutor:
                 "metadata": {"security_group_id": resource_id, "region": region}
             }
 
-        # -----------------------------------
-        # SAVE HISTORY (rollback support)
-        # -----------------------------------
         if self.history:
             self.history.record_execution({
                 "execution_id": execution_id,
@@ -511,18 +497,12 @@ class RemediationExecutor:
 
         s3 = self.aws_session.session.client("s3")
 
-        # -----------------------------------
-        # STEP 1 — GET CURRENT STATE
-        # -----------------------------------
         try:
             current = s3.get_bucket_logging(Bucket=bucket_name)
             previous_logging = current.get("LoggingEnabled", {})
         except Exception:
             previous_logging = {}
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -536,11 +516,7 @@ class RemediationExecutor:
                 }
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         
-        # ✅ STEP 1 — Ensure log bucket exists
    
 
         try:
@@ -641,9 +617,6 @@ class RemediationExecutor:
 
         user_name = finding.get("resource_id")
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -653,9 +626,6 @@ class RemediationExecutor:
                 "message": "MFA must be enabled manually or enforced via IAM policy"
             }
 
-        # -----------------------------------
-        # LIVE (ADVISORY ONLY)
-        # -----------------------------------
         return {
             "status": "MANUAL_REQUIRED",
             "execution_id": str(uuid.uuid4()),
@@ -697,7 +667,6 @@ class RemediationExecutor:
         iam = self.aws_session.session.client("iam")
 
         try:
-            # 🔥 Get current status for rollback
             key_metadata = iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
 
             previous_status = None
@@ -706,7 +675,6 @@ class RemediationExecutor:
                     previous_status = key["Status"]
                     break
 
-            # 🔥 Disable key
             iam.update_access_key(
                 UserName=user_name,
                 AccessKeyId=access_key_id,
@@ -751,26 +719,18 @@ class RemediationExecutor:
 
         iam = self.aws_session.session.client("iam")
 
-        # -----------------------------------
-        # SAFETY CHECK (VERY IMPORTANT)
-        # -----------------------------------
         all_keys = iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
 
-        # 🔥 Find target key metadata FIRST
         key_metadata = None
         for key in all_keys:
             if key["AccessKeyId"] == access_key_id:
                 key_metadata = key
                 break
-        # -----------------------------------
-        # 🔥 FIX: Make metadata JSON safe
-        # -----------------------------------
         safe_metadata = key_metadata.copy()
 
         if "CreateDate" in safe_metadata:
             safe_metadata["CreateDate"] = safe_metadata["CreateDate"].isoformat()
 
-        # 🔥 If key not found
         if not key_metadata:
             return {
                 "status": "FAILED",
@@ -778,7 +738,6 @@ class RemediationExecutor:
                 "user_name": user_name
             }
 
-        # 🔥 DO NOT delete active keys
         if key_metadata["Status"] != "Inactive":
             return {
                 "status": "SKIPPED",
@@ -786,7 +745,6 @@ class RemediationExecutor:
                 "user_name": user_name
             }
 
-        # 🔥 DO NOT delete last remaining key
         if len(all_keys) <= 1:
             return {
                 "status": "SKIPPED",
@@ -794,9 +752,6 @@ class RemediationExecutor:
                 "user_name": user_name
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -807,7 +762,6 @@ class RemediationExecutor:
             }
 
         try:
-            # 🔥 Capture previous state for rollback
             key_metadata = None
             for key in all_keys:
                 if key["AccessKeyId"] == access_key_id:
@@ -825,7 +779,6 @@ class RemediationExecutor:
                 "timestamp": datetime.utcnow().isoformat(),
                 "action": "DELETE_ACCESS_KEY",
 
-                # 🔥 move these OUTSIDE metadata
                 "user_name": user_name,
                 "access_key_id": access_key_id,
 
@@ -857,9 +810,6 @@ class RemediationExecutor:
 
         kms = self.aws_session.session.client("kms")
 
-        # -----------------------------------
-        # GET CURRENT STATE (for rollback)
-        # -----------------------------------
         try:
             current = kms.get_key_rotation_status(KeyId=key_id)
             previous_state = current.get("KeyRotationEnabled", False)
@@ -869,9 +819,6 @@ class RemediationExecutor:
                 "reason": f"Failed to fetch current rotation state: {str(e)}"
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -883,15 +830,11 @@ class RemediationExecutor:
                 }
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         try:
             kms.enable_key_rotation(KeyId=key_id)
 
             execution_id = str(uuid.uuid4())   # ✅ create once
 
-            # ✅ SAVE TO DB (THIS WAS MISSING)
             if self.history:
                 self.history.record_execution({
                     "execution_id": execution_id,
@@ -936,9 +879,6 @@ class RemediationExecutor:
         log_group_name = f"/cloudsecure/vpc-flow-logs/{vpc_id}"
         role_name = "CloudSecure-FlowLogs-Role"
 
-        # -----------------------------------
-        # STEP 1 — Check existing flow logs
-        # -----------------------------------
         existing = ec2.describe_flow_logs(
             Filters=[{"Name": "resource-id", "Values": [vpc_id]}]
         )["FlowLogs"]
@@ -950,9 +890,6 @@ class RemediationExecutor:
                 "vpc_id": vpc_id
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -963,17 +900,11 @@ class RemediationExecutor:
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
-        # -----------------------------------
-        # STEP 2 — Ensure Log Group
-        # -----------------------------------
         try:
             logs.create_log_group(logGroupName=log_group_name)
         except logs.exceptions.ResourceAlreadyExistsException:
             pass
 
-        # -----------------------------------
-        # STEP 3 — Ensure IAM Role
-        # -----------------------------------
         try:
             role = iam.get_role(RoleName=role_name)
             role_arn = role["Role"]["Arn"]
@@ -1013,9 +944,6 @@ class RemediationExecutor:
                 PolicyDocument=json.dumps(policy)
             )
 
-        # -----------------------------------
-        # STEP 4 — Create Flow Log
-        # -----------------------------------
         response = ec2.create_flow_logs(
             ResourceIds=[vpc_id],
             ResourceType="VPC",
@@ -1026,9 +954,6 @@ class RemediationExecutor:
 
         flow_log_id = response["FlowLogIds"][0]
 
-        # -----------------------------------
-        # SAVE HISTORY (CRITICAL)
-        # -----------------------------------
         if self.history:
             self.history.record_execution({
                 "execution_id": str(uuid.uuid4()),
@@ -1063,9 +988,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -----------------------------------
-        # STEP 1 — Re-validate (CRITICAL)
-        # -----------------------------------
         try:
             sg = ec2.describe_security_groups(GroupIds=[sg_id])["SecurityGroups"][0]
         except Exception:
@@ -1075,7 +997,6 @@ class RemediationExecutor:
                 "resource_id": sg_id
             }
 
-        # ❌ Do not delete default SG
         if sg.get("GroupName") == "default":
             return {
                 "status": "SKIPPED",
@@ -1083,9 +1004,6 @@ class RemediationExecutor:
                 "resource_id": sg_id
             }
 
-        # -----------------------------------
-        # Check if SG is still unused
-        # -----------------------------------
         enis = ec2.describe_network_interfaces()["NetworkInterfaces"]
 
         for eni in enis:
@@ -1097,9 +1015,6 @@ class RemediationExecutor:
                         "resource_id": sg_id
                     }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1109,17 +1024,11 @@ class RemediationExecutor:
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         execution_id = str(uuid.uuid4())
 
         try:
             ec2.delete_security_group(GroupId=sg_id)
 
-            # -----------------------------------
-            # SAVE HISTORY (IMPORTANT)
-            # -----------------------------------
             if self.history:
                 self.history.record_execution({
                     "execution_id": execution_id,
@@ -1144,7 +1053,6 @@ class RemediationExecutor:
 
         except ClientError as e:
 
-            # Common AWS failure (dependency exists)
             return {
                 "status": "FAILED",
                 "action": "DELETE_UNUSED_SECURITY_GROUP",
@@ -1165,9 +1073,6 @@ class RemediationExecutor:
 
         iam = self.aws_session.session.client("iam")
 
-        # -----------------------------------
-        # FETCH CURRENT POLICY
-        # -----------------------------------
         try:
             policy_doc = iam.get_user_policy(
                 UserName=user_name,
@@ -1180,9 +1085,6 @@ class RemediationExecutor:
                 "reason": f"Failed to fetch policy: {str(e)}"
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1193,9 +1095,6 @@ class RemediationExecutor:
             }
 
      
-        # -----------------------------------
-        # TRANSFORM POLICY
-        # -----------------------------------
         transformed_policy = json.loads(json.dumps(policy_doc))
         statements = normalize_statements(transformed_policy)
 
@@ -1222,12 +1121,8 @@ class RemediationExecutor:
             if has_wildcard(resources):
                 stmt["Resource"] = "*"
 
-        # 🔥 IMPORTANT
         transformed_policy["Statement"] = statements
 
-        # -----------------------------------
-        # APPLY TRANSFORMED POLICY
-        # -----------------------------------
         try:
             iam.put_user_policy(
                 UserName=user_name,
@@ -1393,7 +1288,6 @@ class RemediationExecutor:
                 target_route = route
                 break
 
-        # ---------------- DRY RUN ----------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1417,7 +1311,6 @@ class RemediationExecutor:
             DestinationCidrBlock="0.0.0.0/0"
         )
 
-        # SAVE HISTORY
         if self.history:
             self.history.record_execution({
                 "execution_id": execution_id,
@@ -1444,9 +1337,6 @@ class RemediationExecutor:
 
         iam = self.aws_session.session.client("iam")
 
-        # -----------------------------------
-        # GET CURRENT TRUST POLICY
-        # -----------------------------------
         try:
             role = iam.get_role(RoleName=role_name)["Role"]
             current_policy = role["AssumeRolePolicyDocument"]
@@ -1458,9 +1348,6 @@ class RemediationExecutor:
 
         account_id = self.aws_session.get_account_id()
 
-        # -----------------------------------
-        # BUILD NEW TRUST POLICY
-        # -----------------------------------
      
         new_policy = copy.deepcopy(current_policy)
 
@@ -1470,9 +1357,6 @@ class RemediationExecutor:
             if "AWS" in principal:
                 principal["AWS"] = f"arn:aws:iam::{account_id}:root"
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1484,9 +1368,6 @@ class RemediationExecutor:
                 }
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         try:
             iam.update_assume_role_policy(
                 RoleName=role_name,
@@ -1529,9 +1410,6 @@ class RemediationExecutor:
 
         
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1541,9 +1419,6 @@ class RemediationExecutor:
                 "recommended_fix": remediation.get("recommended_fix")
             }
 
-        # -----------------------------------
-        # CHECK EXISTING TRAIL
-        # -----------------------------------
         existing_trails = cloudtrail.describe_trails()["trailList"]
 
         for t in existing_trails:
@@ -1554,9 +1429,6 @@ class RemediationExecutor:
                     "trail_name": trail_name
                 }
 
-        # -----------------------------------
-        # CREATE S3 BUCKET (if not exists)
-        # -----------------------------------
         bucket_created = False
 
         try:
@@ -1603,9 +1475,6 @@ class RemediationExecutor:
             Policy=json.dumps(policy)
         )
 
-        # -----------------------------------
-        # CREATE TRAIL
-        # -----------------------------------
         cloudtrail.create_trail(
             Name=trail_name,
             S3BucketName=bucket_name,
@@ -1617,9 +1486,6 @@ class RemediationExecutor:
 
         execution_id = str(uuid.uuid4())
 
-        # -----------------------------------
-        # SAVE HISTORY
-        # -----------------------------------
         if self.history:
             self.history.record_execution({
                 "execution_id": execution_id,
@@ -1662,9 +1528,6 @@ class RemediationExecutor:
                 "reason": "Missing trail_name in finding"
             }
 
-        # -------------------------
-        # DRY RUN
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1704,9 +1567,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -----------------------------------
-        # GET CURRENT STATE (for rollback)
-        # -----------------------------------
         try:
             attr = ec2.describe_instance_attribute(
                 InstanceId=instance_id,
@@ -1719,9 +1579,6 @@ class RemediationExecutor:
                 "reason": f"Failed to fetch termination protection: {str(e)}"
             }
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1733,9 +1590,6 @@ class RemediationExecutor:
                 }
             }
 
-        # -----------------------------------
-        # LIVE EXECUTION
-        # -----------------------------------
         try:
             ec2.modify_instance_attribute(
                 InstanceId=instance_id,
@@ -1772,15 +1626,11 @@ class RemediationExecutor:
         instance_id = attachments[0]["InstanceId"] if attachments else None
         device_name = attachments[0]["Device"] if attachments else None
 
-        # 🔥 FIX region
         if not region or region == "global":
             region = self.aws_session.session.region_name
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -------------------------
-        # DRY RUN
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1791,9 +1641,6 @@ class RemediationExecutor:
             }
 
         try:
-            # -------------------------
-            # STEP 1 — Create snapshot
-            # -------------------------
             snapshot = ec2.create_snapshot(
                 VolumeId=volume_id,
                 Description="Snapshot for encryption"
@@ -1810,9 +1657,6 @@ class RemediationExecutor:
                 }
             )
 
-            # -------------------------
-            # STEP 2 — Copy snapshot with encryption
-            # -------------------------
             encrypted_snapshot = ec2.copy_snapshot(
                 SourceSnapshotId=snapshot_id,
                 SourceRegion=region,
@@ -1822,9 +1666,6 @@ class RemediationExecutor:
 
             waiter.wait(SnapshotIds=[encrypted_snapshot_id])
 
-            # -------------------------
-            # STEP 3 — Create encrypted volume
-            # -------------------------
             original_volume = ec2.describe_volumes(VolumeIds=[volume_id])["Volumes"][0]
 
             new_volume = ec2.create_volume(
@@ -1844,9 +1685,6 @@ class RemediationExecutor:
                     "volume_id": volume_id
                 }
 
-            # -------------------------
-            # STEP 4 — STOP INSTANCE (REQUIRED)
-            # -------------------------
             ec2.stop_instances(InstanceIds=[instance_id])
 
             snapshot_waiter = ec2.get_waiter('snapshot_completed')
@@ -1860,9 +1698,6 @@ class RemediationExecutor:
             instance_waiter = ec2.get_waiter("instance_stopped")
             instance_waiter.wait(InstanceIds=[instance_id])
 
-            # -------------------------
-            # STEP 5 — DETACH old volume
-            # -------------------------
             attachments = original_volume.get("Attachments", [])
 
             device_name = None
@@ -1878,9 +1713,6 @@ class RemediationExecutor:
 
                 vol_waiter.wait(VolumeIds=[volume_id])
 
-            # -------------------------
-            # STEP 5 — ATTACH new volume
-            # -------------------------
             if device_name:
                 ec2.attach_volume(
                     VolumeId=new_volume_id,
@@ -1888,9 +1720,6 @@ class RemediationExecutor:
                     Device=device_name
                 )
 
-            # -------------------------
-            # STEP 6 — START INSTANCE
-            # -------------------------
             ec2.start_instances(InstanceIds=[instance_id])
 
             return {
@@ -1931,9 +1760,6 @@ class RemediationExecutor:
         role_name = "CloudSecure-EC2-Role"
         profile_name = "CloudSecure-EC2-InstanceProfile"
 
-        # -------------------------
-        # DRY RUN
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -1943,9 +1769,6 @@ class RemediationExecutor:
             }
 
         try:
-            # -------------------------
-            # STEP 1 — Create Role (if not exists)
-            # -------------------------
             try:
                 iam.get_role(RoleName=role_name)
             except iam.exceptions.NoSuchEntityException:
@@ -1964,7 +1787,6 @@ class RemediationExecutor:
                     AssumeRolePolicyDocument=json.dumps(assume_policy)
                 )
 
-            # wait until profile exists
             for _ in range(10):
                 try:
                     iam.get_instance_profile(InstanceProfileName=profile_name)
@@ -1972,17 +1794,11 @@ class RemediationExecutor:
                 except iam.exceptions.NoSuchEntityException:
                     time.sleep(2)
 
-            # -------------------------
-            # STEP 2 — Create Instance Profile
-            # -------------------------
             try:
                 iam.get_instance_profile(InstanceProfileName=profile_name)
             except iam.exceptions.NoSuchEntityException:
                 iam.create_instance_profile(InstanceProfileName=profile_name)
 
-            # -------------------------
-            # STEP 3 — Add role to profile
-            # -------------------------
             try:
                 iam.add_role_to_instance_profile(
                     InstanceProfileName=profile_name,
@@ -1993,9 +1809,6 @@ class RemediationExecutor:
 
             time.sleep(10)  # 🔥 REQUIRED (IAM propagation delay)
 
-            # -------------------------
-            # STEP 4 — Attach to EC2
-            # -------------------------
             response = ec2.describe_iam_instance_profile_associations(
                 Filters=[{"Name": "instance-id", "Values": [instance_id]}]
             )
@@ -2041,22 +1854,17 @@ class RemediationExecutor:
         instance_id = finding.get("resource_id")
         region = finding.get("region")
 
-        # 🔥 FIX (MANDATORY)
         if not region or region == "global":
             region = self.aws_session.session.region_name or "us-east-1"
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -----------------------------------
-        # GET CURRENT SGs
-        # -----------------------------------
         response = ec2.describe_instances(InstanceIds=[instance_id])
         instance = response["Reservations"][0]["Instances"][0]
 
         current_sgs = instance.get("SecurityGroups", [])
         current_sg_ids = [sg["GroupId"] for sg in current_sgs]
 
-        # find default SG
         default_sg = next((sg for sg in current_sgs if sg["GroupName"] == "default"), None)
 
         if not default_sg:
@@ -2068,9 +1876,6 @@ class RemediationExecutor:
 
         default_sg_id = default_sg["GroupId"]
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -2082,9 +1887,6 @@ class RemediationExecutor:
             }
 
         try:
-            # -----------------------------------
-            # STEP 1 — Create new secure SG
-            # -----------------------------------
             vpc_id = instance["VpcId"]
 
             sg_response = ec2.create_security_group(
@@ -2095,9 +1897,6 @@ class RemediationExecutor:
 
             new_sg_id = sg_response["GroupId"]
 
-            # -----------------------------------
-            # STEP 2 — Add minimal rule (allow SSH only)
-            # -----------------------------------
             ec2.authorize_security_group_ingress(
                 GroupId=new_sg_id,
                 IpPermissions=[{
@@ -2108,9 +1907,6 @@ class RemediationExecutor:
                 }]
             )
 
-            # -----------------------------------
-            # STEP 3 — Replace SG
-            # -----------------------------------
             updated_sgs = [sg for sg in current_sg_ids if sg != default_sg_id]
             updated_sgs.append(new_sg_id)
 
@@ -2119,9 +1915,6 @@ class RemediationExecutor:
                 Groups=updated_sgs
             )
 
-            # -----------------------------------
-            # SAVE HISTORY
-            # -----------------------------------
             if self.history:
                 self.history.record_execution({
                     "execution_id": str(uuid.uuid4()),
@@ -2163,7 +1956,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # ── Resolve the EIP attached to this instance ──────────────────────────
         try:
             addrs = ec2.describe_addresses(
                 Filters=[{"Name": "instance-id", "Values": [instance_id]}]
@@ -2176,7 +1968,6 @@ class RemediationExecutor:
             }
 
         if not addrs:
-            # Instance has a public IP but no EIP — nothing to release
             return {
                 "status": "SKIPPED",
                 "action": "REMOVE_ELASTIC_IP",
@@ -2189,7 +1980,6 @@ class RemediationExecutor:
         association_id  = addr.get("AssociationId")
         public_ip       = addr.get("PublicIp")
 
-        # DRY RUN
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -2200,11 +1990,9 @@ class RemediationExecutor:
             }
 
         try:
-            # Step 1 — Disassociate from instance
             if association_id:
                 ec2.disassociate_address(AssociationId=association_id)
 
-            # Step 2 — Release the EIP back to AWS pool
             ec2.release_address(AllocationId=allocation_id)
 
             return {
@@ -2231,9 +2019,6 @@ class RemediationExecutor:
         user_name = finding.get("resource_id")
         iam = self.aws_session.session.client("iam")
 
-        # -----------------------------------
-        # DRY RUN
-        # -----------------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -2243,9 +2028,6 @@ class RemediationExecutor:
             }
 
         try:
-            # -----------------------------------
-            # STEP 1 — GET USER (for backup)
-            # -----------------------------------
             user = iam.get_user(UserName=user_name)["User"]
 
             backup = {
@@ -2257,9 +2039,6 @@ class RemediationExecutor:
                 "groups": []
             }
 
-            # -----------------------------------
-            # STEP 2 — LOGIN PROFILE (password)
-            # -----------------------------------
             try:
                 profile = iam.get_login_profile(UserName=user_name)
                 backup["login_profile"] = profile["LoginProfile"]
@@ -2269,9 +2048,6 @@ class RemediationExecutor:
             except iam.exceptions.NoSuchEntityException:
                 pass
 
-            # -----------------------------------
-            # STEP 3 — ACCESS KEYS
-            # -----------------------------------
             keys = iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
 
             for key in keys:
@@ -2280,22 +2056,17 @@ class RemediationExecutor:
                     "Status": key["Status"]
                 })
 
-                # disable first
                 iam.update_access_key(
                     UserName=user_name,
                     AccessKeyId=key["AccessKeyId"],
                     Status="Inactive"
                 )
 
-                # delete
                 iam.delete_access_key(
                     UserName=user_name,
                     AccessKeyId=key["AccessKeyId"]
                 )
 
-            # -----------------------------------
-            # STEP 4 — INLINE POLICIES
-            # -----------------------------------
             inline = iam.list_user_policies(UserName=user_name)["PolicyNames"]
 
             for p in inline:
@@ -2308,9 +2079,6 @@ class RemediationExecutor:
 
                 iam.delete_user_policy(UserName=user_name, PolicyName=p)
 
-            # -----------------------------------
-            # STEP 5 — ATTACHED POLICIES
-            # -----------------------------------
             attached = iam.list_attached_user_policies(UserName=user_name)["AttachedPolicies"]
 
             for p in attached:
@@ -2321,9 +2089,6 @@ class RemediationExecutor:
                     PolicyArn=p["PolicyArn"]
                 )
 
-            # -----------------------------------
-            # STEP 6 — GROUPS
-            # -----------------------------------
             groups = iam.list_groups_for_user(UserName=user_name)["Groups"]
 
             for g in groups:
@@ -2334,9 +2099,6 @@ class RemediationExecutor:
                     GroupName=g["GroupName"]
                 )
 
-            # -----------------------------------
-            # STEP 7 — FINAL DELETE
-            # -----------------------------------
             iam.delete_user(UserName=user_name)
             safe_backup = make_json_safe(backup)
 
@@ -2365,9 +2127,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # -------------------------
-        # DRY RUN
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -2408,9 +2167,6 @@ class RemediationExecutor:
         instance_id = finding.get("resource_id")
         region      = finding.get("region")
 
-        # -------------------------
-        # DRY RUN — no AWS calls
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status":        "DRY_RUN",
@@ -2425,13 +2181,9 @@ class RemediationExecutor:
                 }
             }
 
-        # -------------------------
-        # LIVE
-        # -------------------------
         try:
             ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-            # ── Step 1: verify instance exists & is stopped ─────────────────
             try:
                 desc  = ec2.describe_instances(InstanceIds=[instance_id])
                 rsvns = desc.get("Reservations", [])
@@ -2464,7 +2216,6 @@ class RemediationExecutor:
                     "resource_name": instance_id,
                 }
 
-            # ── Step 2: disable termination protection if enabled ───────────
             protection_disabled = False
             try:
                 attr = ec2.describe_instance_attribute(
@@ -2480,7 +2231,6 @@ class RemediationExecutor:
                     protection_disabled = True
                     print(f"✅  {instance_id}: Termination protection disabled")
             except ClientError as e:
-                # If we can't describe/modify the attribute, report a clear error
                 code = e.response["Error"]["Code"]
                 msg  = e.response["Error"]["Message"]
                 return {
@@ -2491,7 +2241,6 @@ class RemediationExecutor:
                     "resource_name": instance_id,
                 }
 
-            # ── Step 3: terminate ───────────────────────────────────────────
             try:
                 ec2.terminate_instances(InstanceIds=[instance_id])
             except ClientError as e:
@@ -2530,19 +2279,11 @@ class RemediationExecutor:
                 "resource_name": instance_id,
             }
 
-    # =========================================================
-    # FORCE TERMINATE RUNNING EC2 (direct — no stop-first)
-    # Handles EC2_INSTANCE_RUNNING_UNMONITORED and similar findings
-    # where the policy requires instant termination of a running instance.
-    # =========================================================
     def _handle_force_terminate_ec2_instance(self, finding, remediation):
 
         instance_id = finding.get("resource_id")
         region      = finding.get("region")
 
-        # -------------------------
-        # DRY RUN — no AWS calls
-        # -------------------------
         if self.execution_mode == "DRY_RUN":
             return {
                 "status":        "DRY_RUN",
@@ -2557,13 +2298,9 @@ class RemediationExecutor:
                 }
             }
 
-        # -------------------------
-        # LIVE
-        # -------------------------
         try:
             ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-            # ── Step 1: verify instance exists & is in a terminable state ────────
             try:
                 desc  = ec2.describe_instances(InstanceIds=[instance_id])
                 rsvns = desc.get("Reservations", [])
@@ -2586,7 +2323,6 @@ class RemediationExecutor:
                     "resource_name": instance_id,
                 }
 
-            # Allow termination from running, stopping, stopped, pending
             if state in ("terminated", "shutting-down"):
                 return {
                     "status":        "SKIPPED",
@@ -2597,7 +2333,6 @@ class RemediationExecutor:
                     "resource_name": instance_id,
                 }
 
-            # ── Step 2: disable termination protection if enabled ──────────────
             protection_disabled = False
             try:
                 attr = ec2.describe_instance_attribute(
@@ -2623,7 +2358,6 @@ class RemediationExecutor:
                     "resource_name": instance_id,
                 }
 
-            # ── Step 3: terminate the running instance directly ───────────────
             try:
                 ec2.terminate_instances(InstanceIds=[instance_id])
             except ClientError as e:
@@ -2662,16 +2396,12 @@ class RemediationExecutor:
                 "resource_name": instance_id,
             }
 
-    # =========================================================
-    # REVOKE UNRESTRICTED SSH (port 22 from 0.0.0.0/0)
-    # =========================================================
     def _handle_revoke_unrestricted_ssh(self, finding, remediation):
         resource_id = finding.get("resource_id")
         region = finding.get("region")
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # Collect rules that open port 22 to 0.0.0.0/0
         try:
             response = ec2.describe_security_groups(GroupIds=[resource_id])
             sgs = response.get("SecurityGroups", [])
@@ -2773,9 +2503,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # REVOKE UNRESTRICTED RDP (port 3389 from 0.0.0.0/0)
-    # =========================================================
     def _handle_revoke_unrestricted_rdp(self, finding, remediation):
         resource_id = finding.get("resource_id")
         region = finding.get("region")
@@ -2883,9 +2610,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # ENFORCE IMDSv2 (disable IMDSv1 on EC2 instance)
-    # =========================================================
     def _handle_enforce_imdsv2(self, finding, remediation):
         instance_id = finding.get("resource_id")
         region = finding.get("region")
@@ -2949,9 +2673,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # MAKE EBS SNAPSHOT PRIVATE
-    # =========================================================
     def _handle_make_snapshot_private(self, finding, remediation):
         snapshot_id = finding.get("resource_id")
         region = finding.get("region")
@@ -3016,9 +2737,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # DISABLE RDS PUBLIC ACCESS
-    # =========================================================
     def _handle_disable_rds_public_access(self, finding, remediation):
         db_id = finding.get("resource_id")
         region = finding.get("region")
@@ -3082,16 +2800,12 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # ENABLE RDS BACKUP (set retention to 7 days)
-    # =========================================================
     def _handle_enable_rds_backup(self, finding, remediation):
         db_id = finding.get("resource_id")
         region = finding.get("region")
 
         rds = self.aws_session.session.client("rds", region_name=region)
 
-        # Get current retention for rollback metadata
         try:
             desc = rds.describe_db_instances(DBInstanceIdentifier=db_id)
             previous_retention = desc["DBInstances"][0].get("BackupRetentionPeriod", 0)
@@ -3155,9 +2869,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # ENABLE RDS DELETION PROTECTION
-    # =========================================================
     def _handle_enable_rds_deletion_protection(self, finding, remediation):
         db_id = finding.get("resource_id")
         region = finding.get("region")
@@ -3221,9 +2932,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # DISABLE STALE ACCESS KEY (90+ days old, still active)
-    # =========================================================
     def _handle_disable_stale_access_key(self, finding, remediation):
         user_name = finding.get("resource_id")
         access_key_id = (
@@ -3298,9 +3006,6 @@ class RemediationExecutor:
             }
 
 
-    # =========================================================
-    # SET CLOUDWATCH LOG GROUP RETENTION (90 days)
-    # =========================================================
     def _handle_set_log_group_retention(self, finding, remediation):
         log_group_name = finding.get("resource_id")  # resource_id IS the log group name
         region = finding.get("region")
@@ -3371,7 +3076,6 @@ class RemediationExecutor:
 
         remediation = finding.get("remediation")
 
-        # 🔥 FIX START
         if not isinstance(remediation, dict):
             return {
                 "status": "SKIPPED",
@@ -3380,7 +3084,6 @@ class RemediationExecutor:
                 "finding_id": finding.get("id"),
                 "metadata": {}
             }
-        # 🔥 FIX END
 
         if remediation.get("action") == "NO_ACTION":
             return {
@@ -3401,13 +3104,11 @@ class RemediationExecutor:
                 "reason": guard.get("reason", "Blocked by safety guard"),
                 "action": action,
                 "resource_id": finding.get("resource_id"),
-                 # 🔥 CRITICAL FIX
                 "metadata": {
                     "resource_id": finding.get("resource_id")
                 }
             }
 
-        # 🔥 ADD LIVE GATE HERE (MOVE THIS UP)
 
         resource_id = finding.get("resource_id")
         region = finding.get("region")
@@ -3420,7 +3121,6 @@ class RemediationExecutor:
             )
             if previously_executed:
 
-                # ✅ Only apply re-check logic for SG restriction
                 if action == "RESTRICT_SECURITY_GROUP":
 
                     try:
@@ -3450,7 +3150,6 @@ class RemediationExecutor:
                             "metadata": {}
                         }
 
-                # ✅ For all other actions → simple skip
                 else:
                     return {
                         "status": "SKIPPED",
@@ -3484,9 +3183,6 @@ class RemediationExecutor:
                     "metadata": {}
                 }
 
-        # -----------------------------------
-        # HANDLER EXECUTION - FULLY GUARDED
-        # -----------------------------------
 
         handler = self.action_handlers.get(action)
         if handler:
@@ -3503,7 +3199,6 @@ class RemediationExecutor:
                     "metadata": {}
                 }
 
-            # 🔥 GUARANTEE metadata ALWAYS EXISTS
             if not isinstance(result, dict):
                 result = {"status": "FAILED", "reason": "Handler returned non-dict", "metadata": {}}
             if "metadata" not in result or result["metadata"] is None:
@@ -3511,7 +3206,6 @@ class RemediationExecutor:
 
             return result
         else:
-            # 🔥 CRITICAL FIX: always return a dict — never None
             return {
                 "status": "FAILED",
                 "reason": f"No handler implemented for action: {action}",
@@ -3520,9 +3214,6 @@ class RemediationExecutor:
                 "metadata": {}
             }
 
-    # =========================================================
-    # DELETE DEFAULT VPC — cascade deletes all dependencies
-    # =========================================================
     def _handle_delete_default_vpc(self, finding, remediation):
         vpc_id  = finding.get("resource_id")
         region  = finding.get("region")
@@ -3536,7 +3227,6 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        # ── 1. Collect snapshot of everything for DRY_RUN and rollback ──────
         try:
             subnets = ec2.describe_subnets(
                 Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
@@ -3557,7 +3247,6 @@ class RemediationExecutor:
                 ]
             )["NatGateways"]
 
-            # Check BOTH requester and accepter sides — this VPC could be on either end
             peering_req = ec2.describe_vpc_peering_connections(
                 Filters=[
                     {"Name": "requester-vpc-info.vpc-id", "Values": [vpc_id]},
@@ -3570,7 +3259,6 @@ class RemediationExecutor:
                     {"Name": "status-code",               "Values": ["active", "pending-acceptance"]},
                 ]
             )["VpcPeeringConnections"]
-            # Deduplicate by connection ID (could appear on both sides if queried broadly)
             _peering_map = {p["VpcPeeringConnectionId"]: p for p in peering_req + peering_acc}
             peering = list(_peering_map.values())
 
@@ -3587,7 +3275,6 @@ class RemediationExecutor:
                 "metadata": {}
             }
 
-        # Build human-readable summary
         non_main_rts = [rt for rt in route_tables if not any(a.get("Main") for a in rt.get("Associations", []))]
 
         summary_lines = [
@@ -3600,7 +3287,6 @@ class RemediationExecutor:
             f"  {len([s for s in sgs if s['GroupName'] != 'default'])} non-default security group(s) to delete",
         ]
 
-        # ── DRY RUN — describe what would happen, no AWS calls ─────────────
         if self.execution_mode == "DRY_RUN":
             return {
                 "status": "DRY_RUN",
@@ -3628,13 +3314,9 @@ class RemediationExecutor:
                 }
             }
 
-        # ── LIVE — cascade delete in correct dependency order ───────────────
         deleted_log = []
         errors_log  = []
 
-        # Step 0.5: Revoke all SG ingress/egress rules first.
-        # The default SG has self-referential rules that prevent SG/subnet deletion.
-        # Non-default SGs may reference each other. Clear everything before proceeding.
         for sg in sgs:
             sg_id = sg["GroupId"]
             try:
@@ -3652,12 +3334,10 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"SG egress clear {sg_id}: {e}")
 
-        # Step 1: Delete NAT Gateways (they hold EIPs — must go first)
         nat_eip_alloc_ids = []
         for nat in nat_gateways:
             nat_id = nat["NatGatewayId"]
             try:
-                # Collect EIP allocation IDs before deleting the NAT
                 for addr in nat.get("NatGatewayAddresses", []):
                     alloc = addr.get("AllocationId")
                     if alloc:
@@ -3668,7 +3348,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"NAT {nat_id}: {e}")
 
-        # Wait for NAT gateways to finish deleting (they're async)
         if nat_gateways:
             max_wait = 120  # 2 min max
             elapsed  = 0
@@ -3687,7 +3366,6 @@ class RemediationExecutor:
                 time.sleep(10)
                 elapsed += 10
 
-        # Step 2: Release NAT EIPs
         for alloc_id in nat_eip_alloc_ids:
             try:
                 ec2.release_address(AllocationId=alloc_id)
@@ -3695,7 +3373,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"EIP {alloc_id}: {e}")
 
-        # Step 3: Detach and delete Internet Gateway(s)
         for igw in igws:
             igw_id = igw["InternetGatewayId"]
             try:
@@ -3710,9 +3387,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"IGW delete {igw_id}: {e}")
 
-        # Step 3.5: Delete available (detached) network interfaces per subnet.
-        # Leftover ENIs from Lambda, RDS, or ECS tasks block subnet deletion.
-        # SAFETY: only touch ENIs in 'available' state — never force-detach attached ones.
         for subnet in subnets:
             subnet_id = subnet["SubnetId"]
             try:
@@ -3732,8 +3406,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"ENI list for {subnet_id}: {e}")
 
-        # Step 3.7: Delete non-default Network ACLs.
-        # Non-default NACLs associated with subnets can block subnet deletion.
         try:
             nacls = ec2.describe_network_acls(
                 Filters=[{"Name": "vpc-id", "Values": [vpc_id]}]
@@ -3741,10 +3413,8 @@ class RemediationExecutor:
             for nacl in nacls:
                 if not nacl.get("IsDefault"):
                     nacl_id = nacl["NetworkAclId"]
-                    # Disassociate subnets from this NACL before deleting
                     for assoc in nacl.get("Associations", []):
                         try:
-                            # Re-associate subnets to the default NACL (required before deleting custom NACL)
                             default_nacl = next(
                                 (n for n in nacls if n.get("IsDefault")), None
                             )
@@ -3763,7 +3433,6 @@ class RemediationExecutor:
         except Exception as e:
             errors_log.append(f"NACL list: {e}")
 
-        # Step 4: Delete subnets
         for subnet in subnets:
             subnet_id = subnet["SubnetId"]
             try:
@@ -3772,7 +3441,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"Subnet {subnet_id}: {e}")
 
-        # Step 5: Delete non-main route tables
         for rt in non_main_rts:
             rt_id = rt["RouteTableId"]
             try:
@@ -3781,7 +3449,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"RT {rt_id}: {e}")
 
-        # Step 6: Delete VPC peering connections
         for pc in peering:
             pc_id = pc["VpcPeeringConnectionId"]
             try:
@@ -3790,7 +3457,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"Peering {pc_id}: {e}")
 
-        # Step 7: Delete non-default security groups
         for sg in sgs:
             if sg["GroupName"] == "default":
                 continue
@@ -3801,7 +3467,6 @@ class RemediationExecutor:
             except Exception as e:
                 errors_log.append(f"SG {sg_id}: {e}")
 
-        # Step 8: Delete the VPC itself
         try:
             ec2.delete_vpc(VpcId=vpc_id)
             deleted_log.append(f"VPC deleted: {vpc_id}")
@@ -3823,7 +3488,6 @@ class RemediationExecutor:
                 "vpc_id":        vpc_id,
                 "region":        region,
                 "cidr_block":    vpc_detail.get("CidrBlock"),
-                # Full snapshot stored for rollback reconstruction
                 "vpc_snapshot":  make_json_safe(vpc_detail),
                 "subnets":       make_json_safe(subnets),
                 "route_tables":  make_json_safe(route_tables),

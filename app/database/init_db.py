@@ -5,9 +5,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # -------------------------
-    # 1️⃣ SCANS TABLE
-    # -------------------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS scans (
         scan_id TEXT PRIMARY KEY,
@@ -15,9 +12,6 @@ def init_db():
     )
     """)
 
-    # -------------------------
-    # 2️⃣ FINDINGS TABLE
-    # -------------------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS findings (
         id TEXT,
@@ -31,9 +25,6 @@ def init_db():
     )
     """)
 
-    # -------------------------
-    # 3️⃣ APPROVALS TABLE
-    # -------------------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS approvals (
         approval_token TEXT PRIMARY KEY,
@@ -44,9 +35,6 @@ def init_db():
     """)
 
 
-    # -------------------------
-    # 4️⃣ EXECUTIONS TABLE
-    # -------------------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS executions (
         execution_id TEXT PRIMARY KEY,

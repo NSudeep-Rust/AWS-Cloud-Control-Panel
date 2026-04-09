@@ -1,7 +1,3 @@
-// ToastSystem.jsx
-// Windows Defender-style security alert toasts.
-// Polls /api/alerts/ and shows a popup for each new alert.
-// Tracks seen IDs in sessionStorage so refreshes don't re-show old alerts.
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
@@ -36,7 +32,6 @@ const SEV_CONFIG = {
     },
 }
 
-// ── Web Audio beep ─────────────────────────────────────────────────────────
 function playSound(severity) {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -61,7 +56,6 @@ function playSound(severity) {
     } catch { /* AudioContext blocked by browser policy — silent fallback */ }
 }
 
-// ── Single toast card ─────────────────────────────────────────────────────
 function Toast({ toast, onDismiss, onNav }) {
     const [progress, setProgress] = useState(100)
     const [visible, setVisible] = useState(false)
@@ -69,13 +63,11 @@ function Toast({ toast, onDismiss, onNav }) {
     const cfg = SEV_CONFIG[toast.severity] || SEV_CONFIG.LOW
     const Icon = cfg.icon
 
-    // Slide-in on mount
     useEffect(() => {
         const t = setTimeout(() => setVisible(true), 30)
         return () => clearTimeout(t)
     }, [])
 
-    // Progress bar countdown
     useEffect(() => {
         const start = Date.now()
         const iv = setInterval(() => {
@@ -209,8 +201,6 @@ function Toast({ toast, onDismiss, onNav }) {
     )
 }
 
-// ── Main ToastSystem — mount once inside PanelPage ────────────────────────
-// Severities that trigger popups — MEDIUM and LOW are silently ignored
 const NOTIFY_SEVERITIES = new Set(['CRITICAL', 'HIGH'])
 
 export default function ToastSystem({ onNav }) {
@@ -219,7 +209,6 @@ export default function ToastSystem({ onNav }) {
     const [notifPermission, setNotifPermission] = useState('default')
     const seenRef = useRef(null)
 
-    // ── Request OS notification permission on mount ──────────────────────
     useEffect(() => {
         if (!('Notification' in window)) return
         if (Notification.permission === 'granted') {
@@ -233,9 +222,6 @@ export default function ToastSystem({ onNav }) {
         }
     }, [])
 
-    // ── Load seen IDs from localStorage (persists across logout/login) ──
-    // FIX: was sessionStorage — got cleared on every logout, causing all
-    // old alerts to re-fire as "new" after every login.
     useEffect(() => {
         try {
             const raw = localStorage.getItem('seen_alert_ids')
@@ -251,9 +237,7 @@ export default function ToastSystem({ onNav }) {
         setToasts(prev => prev.filter(t => t.id !== id))
     }, [])
 
-    // ── Fire OS-level system notification ───────────────────────────────
     const fireNativeNotif = useCallback((alert, displayType) => {
-        // Only fire OS notification for CRITICAL and HIGH
         if (!NOTIFY_SEVERITIES.has(alert.severity)) return
         if (!('Notification' in window) || Notification.permission !== 'granted') return
         const sevLabel = { CRITICAL: '🔴 CRITICAL', HIGH: '🟠 HIGH', MEDIUM: '🟡 MEDIUM', LOW: '🔵 LOW' }
@@ -274,14 +258,11 @@ export default function ToastSystem({ onNav }) {
         } catch { /* ignore */ }
     }, [onNav])
 
-    // ── Build and show a toast from an alert payload ─────────────────────
-    // Only CRITICAL and HIGH fire popups — MEDIUM/LOW are silently ignored
     const showAlert = useCallback((alert) => {
         if (!seenRef.current) return
         const idStr = String(alert.id)
         if (seenRef.current.has(idStr)) return   // already seen → skip
 
-        // ── Severity gate: only CRITICAL and HIGH get popups ──────────────
         if (!NOTIFY_SEVERITIES.has(alert.severity)) {
             seenRef.current.add(idStr)  // mark seen so it doesn't re-check
             return
@@ -289,11 +270,9 @@ export default function ToastSystem({ onNav }) {
 
         seenRef.current.add(idStr)
         try {
-            // Persist to localStorage so it survives logout/login
             localStorage.setItem('seen_alert_ids', JSON.stringify([...seenRef.current]))
         } catch { }
 
-        // Build display strings
         const parts = (alert.finding_id || alert.type || '').split('-')
         const typeWords = []
         for (const p of parts) {
@@ -320,10 +299,6 @@ export default function ToastSystem({ onNav }) {
         })
     }, [fireNativeNotif])
 
-    // ── ⚡ WebSocket — primary real-time channel ──────────────────────────
-    // Connects to ws://localhost:8000/ws/alerts
-    // When monitor fires an alert → instantly pushed here → toast shown
-    // Total latency: < 200ms (vs 15,000ms with polling)
     const wsRef = useRef(null)
 
     const connectWS = useCallback(() => {
@@ -335,7 +310,6 @@ export default function ToastSystem({ onNav }) {
 
             ws.onopen = () => {
                 console.log('⚡ Alert WebSocket connected')
-                // Send a ping every 25s to keep connection alive
                 const pingInterval = setInterval(() => {
                     if (ws.readyState === WebSocket.OPEN) ws.send('ping')
                     else clearInterval(pingInterval)
@@ -366,7 +340,6 @@ export default function ToastSystem({ onNav }) {
     }, [showAlert])
 
     useEffect(() => {
-        // Small delay so seenRef loads from localStorage first
         const t = setTimeout(connectWS, 500)
         return () => {
             clearTimeout(t)
@@ -374,12 +347,9 @@ export default function ToastSystem({ onNav }) {
         }
     }, [connectWS])
 
-    // ── HTTP polling — fallback / initial load of existing alerts ────────
-    // Runs on mount + every POLL_MS to catch any alerts missed while WS was down
     const poll = useCallback(async () => {
         if (!seenRef.current) return
         try {
-            // Pass account_id so we only get THIS account's alerts (not global)
             const params = dbId ? { account_id: dbId } : {}
             const r = await axios.get(`${API}/api/alerts/`, { params })
             const alerts = r.data?.data?.alerts || r.data?.alerts || []

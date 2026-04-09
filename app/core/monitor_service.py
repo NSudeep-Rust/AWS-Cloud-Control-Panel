@@ -8,7 +8,6 @@ from app.config.security_config import ALERT_SEVERITIES
 from app.core.email_service import EmailService
 from datetime import datetime
 
-# Windows desktop notification — winotify (shows "AWS CloudShield", not "Python")
 import os as _os
 _ICON_PATH = _os.path.normpath(
     _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.ico")
@@ -68,7 +67,6 @@ class MonitorService:
             try:
                 current_findings = self.monitor.run_once()
 
-                                # FIRST RUN → NO DIFF
                 if self.previous_findings is None:
                     print("ℹ️ First run — skipping diff")
                 else:
@@ -79,20 +77,15 @@ class MonitorService:
                     print(f"✅ RESOLVED: {len(diff['resolved'])}")
                     print(f"➖ UNCHANGED: {len(diff['unchanged'])}")
 
-                    # ------------------------
-                    # STORE DIFF IN DB  ✅ HERE
-                    # ------------------------
                     try:
                         db = next(get_db())
 
-                        # NEW
                         for fid in diff["new"]:
                             db.add(FindingChange(
                                 finding_id=fid,
                                 change_type="NEW"
                             ))
 
-                        # RESOLVED
                         for fid in diff["resolved"]:
                             db.add(FindingChange(
                                 finding_id=fid,
@@ -102,9 +95,6 @@ class MonitorService:
                         db.commit()
                         db.close()
 
-                        # ------------------------
-                        # 🚨 ALERT ENGINE (ADD HERE)
-                        # ------------------------
                         try:
                             db = next(get_db())
 
@@ -132,7 +122,6 @@ class MonitorService:
                                     )
                                     db.add(alert)
 
-                                    # ⚡ Instant WebSocket push — fires before DB commit
                                     if self.broadcast_fn:
                                         try:
                                             self.broadcast_fn({
@@ -151,7 +140,6 @@ class MonitorService:
                             db.commit()
                             db.close()
 
-                            # ✅ SMART PRINT + Windows toast
                             if severities_triggered:
                                 print(f"🚨 Alerts generated for: {', '.join(severities_triggered)}")
                                 for fid in diff["new"]:
@@ -174,12 +162,9 @@ class MonitorService:
                     except Exception as db_error:
                         print(f"❌ DB ERROR (diff store): {db_error}")
 
-                # ── Save current CRITICAL/HIGH findings to LiveMonitorFinding table ──
                 if self.account_db_id:
                     try:
                         db = next(get_db())
-                        # Replace all active (non-dismissed) findings for this account
-                        # so the dashboard always shows what the monitor CURRENTLY sees
                         db.query(LiveMonitorFinding).filter(
                             LiveMonitorFinding.account_db_id == self.account_db_id,
                             LiveMonitorFinding.dismissed == 0
@@ -205,7 +190,6 @@ class MonitorService:
                         high = sum(1 for f in current_findings if f.get("severity") == "HIGH")
                         print(f"📊 LiveMonitorFindings updated → CRITICAL:{crit} HIGH:{high}")
 
-                        # 📧 Send critical alert email (fire-and-forget)
                         crit_high = [
                             {"type": f.get("type",""), "severity": f.get("severity",""),
                              "resource_id": f.get("resource_id",""), "region": f.get("region","global")}
@@ -232,7 +216,6 @@ class MonitorService:
                     except Exception as live_err:
                         print(f"❌ LiveMonitorFinding save error: {live_err}")
 
-                # UPDATE STATE
                 self.previous_findings = current_findings
             except Exception as e:
                 print(f"❌ Monitor error: {e}")

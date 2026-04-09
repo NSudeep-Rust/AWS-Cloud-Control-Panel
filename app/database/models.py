@@ -10,9 +10,6 @@ from sqlalchemy import Enum
 
 
 
-# -------------------------
-# 1️⃣ ACCOUNTS
-# -------------------------
 class Account(Base):
     __tablename__ = "accounts"
 
@@ -28,9 +25,6 @@ class Account(Base):
     iam_users = relationship("IamUser", back_populates="account")
 
 
-# -------------------------
-# 2️⃣ SCANS
-# -------------------------
 class Scan(Base):
     __tablename__ = "scans"
 
@@ -42,9 +36,6 @@ class Scan(Base):
     findings = relationship("Finding", back_populates="scan")
 
 
-# -------------------------
-# 3️⃣ FINDINGS
-# -------------------------
 class Finding(Base):
     __tablename__ = "findings"
 
@@ -67,9 +58,6 @@ class Finding(Base):
     )
 
 
-# -------------------------
-# 4️⃣ EXECUTIONS
-# -------------------------
 class Execution(Base):
     __tablename__ = "executions"
 
@@ -86,9 +74,6 @@ class Execution(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# -------------------------
-# 5️⃣ ROLLBACKS
-# -------------------------
 class Rollback(Base):
     __tablename__ = "rollbacks"
 
@@ -98,9 +83,6 @@ class Rollback(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# -------------------------
-# 6️⃣ ALERTS (for monitoring)
-# -------------------------
 class Alert(Base):
     __tablename__ = "alerts"
 
@@ -111,9 +93,6 @@ class Alert(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# -------------------------
-# 7️⃣ FINDING CHANGES
-# -------------------------
 class FindingChange(Base):
     __tablename__ = "finding_changes"
 
@@ -125,9 +104,6 @@ class FindingChange(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# -------------------------
-# 8️⃣ IAM USERS
-# -------------------------
 class IamUser(Base):
     __tablename__ = "iam_users"
 
@@ -142,9 +118,6 @@ class IamUser(Base):
     account = relationship("Account", back_populates="iam_users")
 
 
-# -------------------------
-# 9️⃣ LIVE MONITOR FINDINGS (for Alerts Dashboard — separate from Alert popup table)
-# -------------------------
 class LiveMonitorFinding(Base):
     """
     Stores the CURRENT set of CRITICAL/HIGH findings seen by the live threat monitor.
@@ -166,9 +139,6 @@ class LiveMonitorFinding(Base):
     detected_at        = Column(DateTime, default=datetime.utcnow)
 
 
-# ──────────────────────────────────────────────────────────────────
-# 🔟 SCHEDULE CONFIG (per-account automated scan schedule)
-# ──────────────────────────────────────────────────────────────────
 class ScheduleConfig(Base):
     """
     One row per account.  Stores the user's automated scan schedule.
@@ -187,9 +157,6 @@ class ScheduleConfig(Base):
     updated_at     = Column(DateTime, default=datetime.utcnow)
 
 
-# ─────────────────────────────────────────────────────────────
-# 8️⃣  EMAIL NOTIFICATION CONFIG
-# ─────────────────────────────────────────────────────────────
 from sqlalchemy import Boolean
 
 class EmailConfig(Base):
@@ -203,7 +170,6 @@ class EmailConfig(Base):
     id                      = Column(Integer, primary_key=True, autoincrement=True)
     account_id              = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
 
-    # SMTP settings
     smtp_host               = Column(String, default="smtp.gmail.com")
     smtp_port               = Column(Integer, default=587)
     smtp_username           = Column(String, nullable=True)   # sender Gmail / Outlook address
@@ -211,14 +177,12 @@ class EmailConfig(Base):
     recipient_email         = Column(String, nullable=True)   # where alerts are sent
     sender_name             = Column(String, default="CloudShield Security")
 
-    # Global toggle
     enabled                 = Column(Boolean, default=False)
 
-    # Per-event toggles
     notify_on_critical      = Column(Boolean, default=True)   # live monitor CRITICAL findings
     notify_on_scan_complete = Column(Boolean, default=True)   # scan finish summary
     notify_on_drift         = Column(Boolean, default=True)   # drift detected (new findings)
 
     created_at              = Column(DateTime, default=datetime.utcnow)
     updated_at              = Column(DateTime, default=datetime.utcnow)
-
+

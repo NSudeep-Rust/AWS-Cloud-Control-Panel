@@ -24,7 +24,6 @@ const SEV = {
     LOW: { color: '#0972d3', bg: 'rgba(9,114,211,0.1)', border: 'rgba(9,114,211,0.2)' },
 }
 
-// Scanning facts shown in the Recent Findings radar card
 const RADAR_FACTS = [
     'Scanning IAM users & roles across 6 regions...',
     'Checking S3 bucket policies & ACLs...',
@@ -90,7 +89,6 @@ const FindingItem = memo(function FindingItem({ f, i, dark, onNav, setHighlightF
     )
 })
 
-// ── Stable sub-components outside Overview — prevents scroll reset on clock re-render ──
 function Card({ children, style = {}, onClick }) {
     const [hov, setHov] = useState(false)
     return (
@@ -169,7 +167,6 @@ function SevBar({ label, count, color, total, dark }) {
     )
 }
 
-// ── Canvas radar — top-level component (hooks-safe) ─────────────────────────
 const RADAR_REGIONS = [
     { id: 'us-east-1', c: '#FF9900' }, { id: 'us-east-2', c: '#FF9900' }, { id: 'us-west-2', c: '#FF9900' },
     { id: 'eu-west-1', c: '#0972d3' }, { id: 'eu-central-1', c: '#0972d3' }, { id: 'eu-north-1', c: '#0972d3' },
@@ -211,7 +208,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
         function draw() {
             ctx.clearRect(0, 0, SIZE, SIZE)
 
-            // Background circle
             ctx.beginPath()
             ctx.arc(cx, cy, R, 0, Math.PI * 2)
             ctx.fillStyle = 'rgba(255,153,0,0.04)'
@@ -220,7 +216,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
             ctx.lineWidth = 1.2
             ctx.stroke()
 
-            // Inner grid rings
             ;[0.33, 0.66].forEach(f => {
                 ctx.beginPath()
                 ctx.arc(cx, cy, R * f, 0, Math.PI * 2)
@@ -229,7 +224,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
                 ctx.stroke()
             })
 
-            // Cross-hairs
             ctx.beginPath()
             ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy)
             ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R)
@@ -237,7 +231,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
             ctx.lineWidth = 0.7
             ctx.stroke()
 
-            // Sweep trail
             const sweepAngle = angleRef.current
             const TRAIL = Math.PI * 1.1
             for (let t = 0; t < 40; t++) {
@@ -251,7 +244,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
                 ctx.fill()
             }
 
-            // Radar arm
             ctx.beginPath()
             ctx.moveTo(cx, cy)
             ctx.lineTo(cx + Math.cos(sweepAngle) * R, cy + Math.sin(sweepAngle) * R)
@@ -262,7 +254,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
             ctx.stroke()
             ctx.shadowBlur = 0
 
-            // Blips
             RADAR_BLIPS.forEach(b => {
                 const bx = cx + Math.cos(b.a) * R * b.r
                 const by = cy + Math.sin(b.a) * R * b.r
@@ -280,7 +271,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
                 ctx.shadowBlur = 0
             })
 
-            // Center dot
             ctx.beginPath()
             ctx.arc(cx, cy, 4.5, 0, Math.PI * 2)
             ctx.fillStyle = '#FF9900'
@@ -330,7 +320,6 @@ function ScanningDisplay({ elapsed, radarFact }) {
 export default function Overview({ onNav, dark }) {
     const { account } = useAuth()
 
-    // ── Account identity ───────────────────────────────────────────
     const isIam = account?.account_type === 'iam'
     const dbId = isIam ? (account?.account_id ?? null) : (account?.id ?? null)
     const awsId = isIam ? (account?.parent_aws_account_id || '—') : (account?.aws_account_id || '—')
@@ -338,13 +327,11 @@ export default function Overview({ onNav, dark }) {
     const region = account?.region || '—'
     const cacheKey = `scan_v3_${account?.account_type}_${awsId}_${dbId}`
 
-    // ── Global scan state (shared with ScannerSection) ─────────────
     const { status: scanStatus, findings: scanFindings, elapsed, startScan, stopScan,
             restoreFromCache, highlightFindingId, setHighlightFindingId,
             refreshToken } = useScan()
     const scanning = scanStatus === 'scanning'
 
-    // ── Local dashboard state ──────────────────────────────────────
     const [riskData, setRiskData] = useState(null)
     const [riskTrend, setRiskTrend] = useState([])
     const [alerts, setAlerts] = useState([])
@@ -355,44 +342,35 @@ export default function Overview({ onNav, dark }) {
     const [monitorToggling, setMonitorToggling] = useState(false)
     const [time, setTime] = useState(new Date())
 
-    // Radar animation state (local to Overview card only)
     const [radarFact, setRadarFact] = useState(0)
     const radarRef = useRef(null)
 
-    // Clock
     useEffect(() => {
         const iv = setInterval(() => setTime(new Date()), 1000)
         return () => clearInterval(iv)
     }, [])
 
-    // Radar fact rotation during scan
     useEffect(() => {
         if (!scanning) { clearInterval(radarRef.current); return }
         radarRef.current = setInterval(() => setRadarFact(i => (i + 1) % RADAR_FACTS.length), 2200)
         return () => clearInterval(radarRef.current)
     }, [scanning])
 
-    // Fetch dashboard APIs on account change + restore last scan from localStorage
     useEffect(() => {
-        // Clear other accounts' scan caches from localStorage (not sessionStorage)
         Object.keys(localStorage).forEach(k => {
             if (k.startsWith('scan_v') && k !== cacheKey) localStorage.removeItem(k)
         })
         setRiskData(null); setRiskTrend([]); setHistory(null);
         setAlerts([]); setMonitorStatus(null)
         setLoadingRisk(true); setLoadingAlerts(true)
-        // Restore last scan so findings stay visible after F5
         restoreFromCache(cacheKey)
         fetchAll()
     }, [cacheKey])
 
-    // Refresh analytics after scan completes — small delay so backend finishes computing
     useEffect(() => {
         if (scanStatus === 'done') {
-            // Clear stale risk data immediately so old value doesn't linger
             setRiskData(null)
             setLoadingRisk(true)
-            // Wait 800ms for backend to finish persisting scan results before fetching
             const t = setTimeout(() => {
                 fetchRiskScore()
                 fetchRiskTrend()
@@ -402,11 +380,8 @@ export default function Overview({ onNav, dark }) {
         }
     }, [scanStatus])
 
-    // ── Auto-refresh when backend signals execution or scheduled scan ────────
-    // refreshToken increments on: execution_complete, scan_complete (WS events)
     useEffect(() => {
         if (refreshToken === 0) return  // skip initial mount
-        // 1s delay: let backend commit findings + executions before re-fetching
         const t = setTimeout(() => {
             fetchRiskScore()
             fetchRiskTrend()
@@ -446,7 +421,6 @@ export default function Overview({ onNav, dark }) {
         if (monitorToggling) return
         setMonitorToggling(true)
         const wasRunning = monitorRunning
-        // OPTIMISTIC: flip immediately so button responds instantly
         setMonitorStatus(prev => ({ ...(prev || {}), running: !wasRunning }))
         try {
             if (wasRunning) {
@@ -467,7 +441,6 @@ export default function Overview({ onNav, dark }) {
         startScan({ dbId, awsId, cacheKey })
     }
 
-    // Derived
     const totalFindings = scanFindings.length
     const criticalCount = scanFindings.filter(f => f.severity === 'CRITICAL').length
     const highCount = scanFindings.filter(f => f.severity === 'HIGH').length
@@ -491,7 +464,6 @@ export default function Overview({ onNav, dark }) {
                 : riskScore <= 80 ? '#e67e22'
                     : '#d13212'
 
-    // (Sub-components moved above Overview — stable references fix scroll reset bug)
 
     function FindingRow({ finding, idx }) {
         const sev = SEV[finding.severity] || SEV.LOW
@@ -537,9 +509,6 @@ export default function Overview({ onNav, dark }) {
         )
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // RENDER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 'calc(100vh - 64px)', minHeight: 0 }}>
             {/* ── 1. HEADER ── */}

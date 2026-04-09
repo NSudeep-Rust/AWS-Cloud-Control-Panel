@@ -12,7 +12,6 @@ const AWS_REGIONS = [
     'sa-east-1', 'ca-central-1', 'me-south-1', 'af-south-1',
 ]
 
-// ── AWS service info panels (auto-cycle on right side) ──────────────
 const PANELS = [
     {
         service: 'IAM', color: '#8B5CF6', icon: '🔑',
@@ -66,19 +65,16 @@ export default function AccountSetupPage() {
     const [connecting,   setConnecting]   = useState(false)
     const [bannerIndex,  setBannerIndex]  = useState(0)
 
-    // Add Account form
     const [rootForm,     setRootForm]     = useState({ aws_account_id: '', profile_name: '', region: 'us-east-1', access_key: '', secret_key: '' })
     const [rootError,    setRootError]    = useState('')
     const [rootSuccess,  setRootSuccess]  = useState('')
     const [rootCreating, setRootCreating] = useState(false)
 
-    // IAM form
     const [iamForm,     setIamForm]     = useState({ account_id: '', username: '', access_key: '', secret_key: '', region: 'us-east-1' })
     const [iamError,    setIamError]    = useState('')
     const [iamSuccess,  setIamSuccess]  = useState('')
     const [iamCreating, setIamCreating] = useState(false)
 
-    // ── UFL-style direct DOM glow refs ──
     const glowOuterRef = useRef(null)
     const glowInnerRef = useRef(null)
 
@@ -97,7 +93,6 @@ export default function AccountSetupPage() {
         return () => window.removeEventListener('mousemove', handle)
     }, [])
 
-    // Auto-cycle info panel
     useEffect(() => {
         const iv = setInterval(() => setBannerIndex(i => (i + 1) % PANELS.length), 4200)
         return () => clearInterval(iv)
