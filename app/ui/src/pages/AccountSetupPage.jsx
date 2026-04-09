@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Check, Plus, User, Key, Cloud } from 'lucide-react'
+import { ChevronRight, Check, Plus, User, Key, Cloud, Eye, EyeOff } from 'lucide-react'
 import { accountsAPI } from '../api/index'
 import { useAuth } from '../context/AuthContext'
 
@@ -14,31 +14,31 @@ const AWS_REGIONS = [
 
 const PANELS = [
     {
-        service: 'IAM', color: '#8B5CF6', icon: '🔑',
+        service: 'IAM', color: '#8B5CF6', icon: 'ðŸ”‘',
         title: 'Identity & Access Management',
         desc: 'Securely control who can access what in your AWS environment.',
         facts: ['Role-based access control (RBAC)', 'Multi-factor authentication (MFA)', 'Free with every AWS account'],
     },
     {
-        service: 'EC2', color: '#FF9900', icon: '🖥️',
+        service: 'EC2', color: '#FF9900', icon: 'ðŸ–¥ï¸',
         title: 'Elastic Compute Cloud',
         desc: 'Virtual servers that launch in seconds and scale in minutes.',
         facts: ['400+ instance types & families', 'Auto Scaling for demand spikes', 'Spot instances save up to 90%'],
     },
     {
-        service: 'S3', color: '#22C55E', icon: '🪣',
+        service: 'S3', color: '#22C55E', icon: 'ðŸª£',
         title: 'Simple Storage Service',
         desc: 'Object storage built for any amount of data, from anywhere.',
         facts: ['99.999999999% (11 9s) durability', 'Object versioning & lifecycle rules', 'AES-256 server-side encryption'],
     },
     {
-        service: 'VPC', color: '#0972d3', icon: '🛡️',
+        service: 'VPC', color: '#0972d3', icon: 'ðŸ›¡ï¸',
         title: 'Virtual Private Cloud',
         desc: 'Your own logically isolated network inside AWS.',
         facts: ['Network-level isolation & segmentation', 'Security groups & Network ACLs', 'AWS Direct Connect & VPN support'],
     },
     {
-        service: 'Shield', color: '#d13212', icon: '🔒',
+        service: 'Shield', color: '#d13212', icon: 'ðŸ”’',
         title: 'AWS Shield & GuardDuty',
         desc: 'Always-on DDoS protection and ML-powered threat detection.',
         facts: ['Automatic DDoS mitigation', 'ML-powered anomaly detection', 'Real-time CloudTrail log analysis'],
@@ -185,13 +185,13 @@ export default function AccountSetupPage() {
         return (e.profile_name || e.aws_account_id || '?').slice(0, 2).toUpperCase()
     }
     function getTitle(e) { return e._type === 'iam' ? (e.username || 'IAM User') : e.aws_account_id }
-    function getMeta(e)  { return e._type === 'iam' ? `IAM · ${e.parent_aws_account_id || '—'} · ${e.region}` : `${e.profile_name || 'default'} · ${e.region}` }
+    function getMeta(e)  { return e._type === 'iam' ? `IAM Â· ${e.parent_aws_account_id || 'â€”'} Â· ${e.region}` : `${e.profile_name || 'default'} Â· ${e.region}` }
 
     const panel = PANELS[bannerIndex]
     const TABS = [
         { id: 'new',      label: '+ Add Account', },
-        { id: 'existing', label: '⊙ Sign In',     },
-        { id: 'iam',      label: '⚿ IAM User',    },
+        { id: 'existing', label: 'âŠ™ Sign In',     },
+        { id: 'iam',      label: 'âš¿ IAM User',    },
     ]
 
     return (
@@ -209,7 +209,7 @@ export default function AccountSetupPage() {
                 input:focus,select:focus{outline:none;border-color:#FF9900!important;box-shadow:0 0 0 2px rgba(255,153,0,0.18)!important}
             `}</style>
 
-            {/* ── Background layers ── */}
+            {/* â”€â”€ Background layers â”€â”€ */}
             <div style={{ position:'absolute', inset:0, pointerEvents:'none',
                 backgroundImage:'radial-gradient(circle, rgba(180,110,0,0.16) 1.5px, transparent 1.5px)',
                 backgroundSize:'22px 22px' }} />
@@ -222,7 +222,7 @@ export default function AccountSetupPage() {
                 background:'radial-gradient(circle,rgba(255,180,40,0.06) 0%,transparent 70%)',
                 filter:'blur(3px)' }} />
 
-            {/* ── UFL-style mouse glow — direct DOM refs ── */}
+            {/* â”€â”€ UFL-style mouse glow â€” direct DOM refs â”€â”€ */}
             <div ref={glowOuterRef} style={{
                 position:'absolute', left:-250, top:-250, width:500, height:500, borderRadius:'50%',
                 background:'radial-gradient(circle,rgba(255,180,0,0.20) 0%,rgba(255,160,0,0.10) 30%,rgba(255,140,0,0.03) 60%,transparent 80%)',
@@ -234,7 +234,7 @@ export default function AccountSetupPage() {
                 pointerEvents:'none', zIndex:0, filter:'blur(2px)',
             }} />
 
-            {/* ── Back button ── */}
+            {/* â”€â”€ Back button â”€â”€ */}
             <button onClick={() => navigate(account ? '/panel' : '/')} style={s.backBtn}
                 onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor='rgba(255,153,0,0.35)' }}
                 onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.65)'; e.currentTarget.style.borderColor='rgba(35,47,62,0.2)' }}>
@@ -244,10 +244,10 @@ export default function AccountSetupPage() {
                 {account ? 'Back to Dashboard' : 'Back to Home'}
             </button>
 
-            {/* ── 2-column layout ── */}
+            {/* â”€â”€ 2-column layout â”€â”€ */}
             <div style={s.layout}>
 
-                {/* ═══ LEFT — Form card ═══ */}
+                {/* â•â•â• LEFT â€” Form card â•â•â• */}
                 <div style={{ ...s.card, animation:'fadeUp 0.4s ease both' }}>
                     {/* Logo */}
                     <div style={{ textAlign:'center', marginBottom:18 }}>
@@ -280,7 +280,7 @@ export default function AccountSetupPage() {
                         ))}
                     </div>
 
-                    {/* ── SIGN IN TAB ── */}
+                    {/* â”€â”€ SIGN IN TAB â”€â”€ */}
                     {tab === 'existing' && (
                         <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
                             {loading && (
@@ -343,7 +343,7 @@ export default function AccountSetupPage() {
                                 </div>
                             )}
 
-                            {error && <div style={s.errBox}>⚠ {error}</div>}
+                            {error && <div style={s.errBox}>âš  {error}</div>}
 
                             {entries.length > 0 && (
                                 <button style={{ ...s.primaryBtn, opacity: selectedKey ? 1 : 0.5 }}
@@ -369,7 +369,7 @@ export default function AccountSetupPage() {
                         </div>
                     )}
 
-                    {/* ── ADD ACCOUNT TAB ── */}
+                    {/* â”€â”€ ADD ACCOUNT TAB â”€â”€ */}
                     {tab === 'new' && (
                         <form style={{ display:'flex', flexDirection:'column', gap:10 }} onSubmit={handleCreateRoot}>
                             <FG label="AWS account ID" required>
@@ -385,18 +385,18 @@ export default function AccountSetupPage() {
                                     onChange={e => setRootForm(f => ({ ...f, region: e.target.value }))} />
                             </FG>
                             <div style={{ fontSize:12, fontWeight:700, color:'#414d5c', borderBottom:'1px solid rgba(35,47,62,0.1)', paddingBottom:5 }}>
-                                Credentials <span style={{ color:'#687078', fontWeight:400, fontSize:11 }}>— optional if using IAM role</span>
+                                Credentials <span style={{ color:'#687078', fontWeight:400, fontSize:11 }}>â€” optional if using IAM role</span>
                             </div>
                             <FG label="Access key ID">
                                 <FI value={rootForm.access_key} placeholder="AKIAIOSFODNN7EXAMPLE"
                                     onChange={e => setRootForm(f => ({ ...f, access_key: e.target.value }))} />
                             </FG>
                             <FG label="Secret access key">
-                                <FI type="password" value={rootForm.secret_key} placeholder="••••••••••••••••"
+                                <FI type="password" value={rootForm.secret_key} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     onChange={e => setRootForm(f => ({ ...f, secret_key: e.target.value }))} />
                             </FG>
-                            {rootError   && <div style={s.errBox}>⚠ {rootError}</div>}
-                            {rootSuccess && <div style={s.okBox}>✓ {rootSuccess}</div>}
+                            {rootError   && <div style={s.errBox}>âš  {rootError}</div>}
+                            {rootSuccess && <div style={s.okBox}>âœ“ {rootSuccess}</div>}
                             <button type="submit" style={s.primaryBtn} disabled={rootCreating}
                                 onMouseEnter={e => { if(!rootCreating) e.currentTarget.style.background='#ec8a00' }}
                                 onMouseLeave={e => { e.currentTarget.style.background='#FF9900' }}>
@@ -406,12 +406,12 @@ export default function AccountSetupPage() {
                         </form>
                     )}
 
-                    {/* ── IAM USER TAB ── */}
+                    {/* â”€â”€ IAM USER TAB â”€â”€ */}
                     {tab === 'iam' && (
                         <form style={{ display:'flex', flexDirection:'column', gap:10 }} onSubmit={handleCreateIam}>
                             <div style={{ display:'flex', alignItems:'flex-start', gap:9, background:'rgba(9,114,211,0.05)',
                                           border:'1px solid rgba(9,114,211,0.2)', borderRadius:7, padding:'9px 12px' }}>
-                                <span style={{ fontSize:14, flexShrink:0 }}>🔑</span>
+                                <span style={{ fontSize:14, flexShrink:0 }}>ðŸ”‘</span>
                                 <p style={{ fontSize:12, color:'#0972d3', lineHeight:1.5, margin:0 }}>
                                     Select a root account then enter IAM credentials to connect with specific permissions.
                                 </p>
@@ -438,11 +438,11 @@ export default function AccountSetupPage() {
                                     onChange={e => setIamForm(f => ({ ...f, access_key: e.target.value }))} />
                             </FG>
                             <FG label="Secret access key" required>
-                                <FI type="password" value={iamForm.secret_key} placeholder="••••••••••••••••"
+                                <FI type="password" value={iamForm.secret_key} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     onChange={e => setIamForm(f => ({ ...f, secret_key: e.target.value }))} />
                             </FG>
-                            {iamError   && <div style={s.errBox}>⚠ {iamError}</div>}
-                            {iamSuccess && <div style={s.okBox}>✓ {iamSuccess}</div>}
+                            {iamError   && <div style={s.errBox}>âš  {iamError}</div>}
+                            {iamSuccess && <div style={s.okBox}>âœ“ {iamSuccess}</div>}
                             <button type="submit" style={s.primaryBtn} disabled={iamCreating}
                                 onMouseEnter={e => { if(!iamCreating) e.currentTarget.style.background='#ec8a00' }}
                                 onMouseLeave={e => { e.currentTarget.style.background='#FF9900' }}>
@@ -462,7 +462,7 @@ export default function AccountSetupPage() {
                     </div>
                 </div>
 
-                {/* ═══ RIGHT — Info panel (always visible) ═══ */}
+                {/* â•â•â• RIGHT â€” Info panel (always visible) â•â•â• */}
                 <div style={{ ...s.infoCard, animation:'fadeUp 0.4s ease 0.15s both' }}>
                     {/* Service badge + dots */}
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
@@ -513,7 +513,7 @@ export default function AccountSetupPage() {
                         {/* Pro tip */}
                         <div style={{ display:'flex', alignItems:'flex-start', gap:9, padding:'11px 13px', borderRadius:8,
                                       background:'rgba(255,153,0,0.05)', border:'1px solid rgba(255,153,0,0.18)' }}>
-                            <span style={{ fontSize:14, flexShrink:0 }}>💡</span>
+                            <span style={{ fontSize:14, flexShrink:0 }}>ðŸ’¡</span>
                             <p style={{ fontSize:11, color:'#5a6a7a', lineHeight:1.6, margin:0 }}>
                                 <strong style={{ color:'#414d5c' }}>Pro tip:</strong> Use IAM roles with temporary credentials instead of long-term access keys. AWS recommends roles for all production workloads.
                             </p>
@@ -541,7 +541,7 @@ export default function AccountSetupPage() {
                         ))}
                     </div>
 
-                    {/* ── What gets scanned on your account ── */}
+                    {/* â”€â”€ What gets scanned on your account â”€â”€ */}
                     <div style={{ marginTop:14 }}>
                         <div style={{ fontSize:9, fontWeight:800, color:'#687078',
                                       textTransform:'uppercase', letterSpacing:.9, marginBottom:9 }}>
@@ -549,12 +549,12 @@ export default function AccountSetupPage() {
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                             {[
-                                { icon:'🔑', label:'IAM',        checks:8,  color:'#8B5CF6' },
-                                { icon:'🪣', label:'S3',         checks:12, color:'#22C55E' },
-                                { icon:'🖥️', label:'EC2',        checks:9,  color:'#FF9900' },
-                                { icon:'🛡️', label:'VPC',        checks:7,  color:'#0972d3' },
-                                { icon:'📋', label:'CloudTrail', checks:6,  color:'#d13212' },
-                                { icon:'🔒', label:'KMS',        checks:10, color:'#687078' },
+                                { icon:'ðŸ”‘', label:'IAM',        checks:8,  color:'#8B5CF6' },
+                                { icon:'ðŸª£', label:'S3',         checks:12, color:'#22C55E' },
+                                { icon:'ðŸ–¥ï¸', label:'EC2',        checks:9,  color:'#FF9900' },
+                                { icon:'ðŸ›¡ï¸', label:'VPC',        checks:7,  color:'#0972d3' },
+                                { icon:'ðŸ“‹', label:'CloudTrail', checks:6,  color:'#d13212' },
+                                { icon:'ðŸ”’', label:'KMS',        checks:10, color:'#687078' },
                             ].map(sc => (
                                 <div key={sc.label} style={{ display:'flex', alignItems:'center', gap:7 }}>
                                     <span style={{ fontSize:11, flexShrink:0 }}>{sc.icon}</span>
@@ -580,7 +580,7 @@ export default function AccountSetupPage() {
     )
 }
 
-/* ── Sub-components ── */
+/* â”€â”€ Sub-components â”€â”€ */
 function FG({ label, required, children }) {
     return (
         <div>
@@ -613,7 +613,7 @@ function FS({ value, onChange, options, isObjOptions }) {
     )
 }
 
-/* ── Styles ── */
+/* â”€â”€ Styles â”€â”€ */
 const s = {
     page: {
         position:'fixed', inset:0, overflow:'hidden',

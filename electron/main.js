@@ -134,6 +134,7 @@ function launchUpdater() {
 ipcMain.on("check-update", () => launchUpdater());
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   createSplash();
   startBackend();
   waitForBackend((err) => {
