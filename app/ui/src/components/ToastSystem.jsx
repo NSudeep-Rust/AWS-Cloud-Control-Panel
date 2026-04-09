@@ -11,7 +11,7 @@ import { ShieldAlert, AlertTriangle, Info, X, ChevronRight, Shield } from 'lucid
 const API = 'http://localhost:8000'
 const POLL_MS = 15_000          // poll every 15 seconds
 const AUTO_DISMISS_MS = 12_000   // toast stays for 12 seconds
-const MAX_TOASTS = 4            // max visible at once
+const MAX_TOASTS = 3            // max visible at once (capped to prevent stacking)
 
 const SEV_CONFIG = {
     CRITICAL: {
@@ -105,7 +105,8 @@ function Toast({ toast, onDismiss, onNav }) {
             onClick={handleClick}
             style={{
                 position: 'relative',
-                width: 340,
+                width: 300,
+                maxWidth: 'calc(100vw - 48px)',  // never overflow at narrow viewports
                 background: cfg.bg,
                 border: `1px solid ${cfg.border}`,
                 borderLeft: `4px solid ${cfg.color}`,
@@ -113,7 +114,7 @@ function Toast({ toast, onDismiss, onNav }) {
                 overflow: 'hidden',
                 cursor: 'pointer',
                 boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 24px ${cfg.glow}`,
-                transform: visible && !leaving ? 'translateX(0)' : 'translateX(380px)',
+                transform: visible && !leaving ? 'translateX(0)' : 'translateX(340px)',
                 opacity: leaving ? 0 : visible ? 1 : 0,
                 transition: leaving
                     ? 'transform 0.3s ease-in, opacity 0.3s ease-in'

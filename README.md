@@ -1,128 +1,264 @@
-﻿# Cloud Security Panel
+<div align="center">
 
-Cloud Security Panel is a defensive AWS security platform designed to detect
-cloud misconfigurations and apply controlled remediation with strict safety
-gates.
+<img src="app/assets/aws_cloudshield.ico" alt="AWS Cloud Control Panel" width="80"/>
 
-The system separates detection, planning, and execution to ensure that
-no destructive action is taken without explicit approval and auditability.
+# ☁️ AWS Cloud Control Panel
 
-It follows a Microsoft Defender–style workflow:
-Detect → Review → Approve → Fix.
+**Enterprise-grade AWS security scanner, threat monitor & auto-remediation platform**
 
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev)
+[![AWS](https://img.shields.io/badge/AWS-boto3-FF9900?style=flat&logo=amazonaws&logoColor=white)](https://aws.amazon.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
----
+*Scan · Detect · Remediate · Monitor — all from one beautiful panel*
 
-## Why This Project Exists
-
-Cloud environments are frequently misconfigured due to human error,
-rapid deployments, and lack of continuous review. These misconfigurations
-often lead to data exposure, account compromise, or privilege escalation.
-
-Cloud Security Panel focuses on:
-- Detecting risky cloud configurations
-- Explaining why they are dangerous
-- Preventing unsafe automatic changes
-- Allowing controlled, auditable remediation
+</div>
 
 ---
 
-## How the System Works
+## 📸 Screenshots
 
-The system is intentionally divided into strict layers:
+### Welcome & Account Selection
+![Welcome Page](docs/screenshots/landing_page.png)
+> System health dashboard, AWS region coverage, security module overview, and multi-account switching
 
-1. **Scanner**
-   - Reads AWS configuration data
-   - Detects security risks (e.g. public security groups)
+### Command Center — Overview
+![Dashboard Overview](docs/screenshots/dashboard_overview.png)
+> Real-time risk score, finding severity breakdown, recent security events, and quick action shortcuts
 
-2. **Threat Monitor**
-   - Normalizes findings
-   - Groups risks by resource and region
-   - Attaches remediation recommendations
+### Security Scanner — 176 Findings
+![Scanner Section](docs/screenshots/scanner_page.png)
+> Full scan results with filters by severity, module, and region — all findings ranked and actionable
 
-3. **Remediation Planner**
-   - Decides *what* should be done
-   - Never performs actions directly
+### Threat Monitor — Live Analysis
+![Threat Monitor](docs/screenshots/threats_page.png)
+> 146 auto-fixable findings, 30 manual advisories — searchable by module, severity, and remediation type
 
-4. **Remediation Executor**
-   - Executes actions only when allowed
-   - Defaults to DRY-RUN mode
-   - Blocks unsafe or unapproved changes
-
-5. **Protection History**
-   - Stores every finding and decision
-   - Prevents repeated execution
-   - Enables auditing and rollback review
+### Auto-Remediation Pipeline
+![Remediation Section](docs/screenshots/remediation_page.png)
+> Dry-run preview → approve → apply fix to AWS. Full rollback support for every executed action
 
 ---
 
-## Safety-First Design
+## ✨ Features
 
-This project is designed to be safe by default:
+### 🔍 Security Scanner
+- **52+ security checks** across IAM, S3, EC2, VPC, RDS, KMS, CloudTrail, CloudWatch, and more
+- **9 AWS regions** scanned concurrently with parallel per-region sub-scanners
+- Fully parallelized S3 (per-bucket) and IAM (per-user) checks for **~20–30s scan time**
+- Real-time progress log with module-specific status messages
+- Findings ranked by severity: `CRITICAL` → `HIGH` → `MEDIUM` → `LOW`
 
-- No live remediation runs without explicit approval
-- Execution mode must be intentionally switched to LIVE
-- All actions are logged before execution
-- Repeated executions are blocked automatically
+### 🛡️ Threat Monitor
+- Real-time continuous monitoring mode (live polling)
+- Filterable by module, severity, and remediation type (AUTO-FIX / MANUAL)
+- WebSocket-based instant alert delivery
+- System tray notifications (Windows)
 
-This makes the system suitable for learning, auditing,
-and controlled production use.
+### ⚡ Auto-Remediation Engine
+- **Dry-run preview** before any change is applied to AWS
+- One-click apply with danger guard for irreversible actions
+- Full **rollback** support — revert any executed fix from the Rollback section
+- Manual advisory panel for findings requiring human review
 
+### 📊 Dashboard & Analytics
+- Risk Score engine (0–100) with CRITICAL/HIGH/MEDIUM/LOW categorisation
+- Scan history with per-scan finding breakdowns
+- Compliance posture tracking across time
+- Alerts & notifications system with localStorage persistence
+
+### 🔐 Multi-Account Support
+- Add unlimited AWS accounts (Root or IAM user credentials)
+- Switch accounts without re-entering credentials
+- Per-account scan isolation and history
 
 ---
 
-## Setup and Execution Flow
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  React / Vite Frontend                   │
+│   WelcomePage → PanelPage (Overview, Scanner, Threats,   │
+│   Remediation, Rollback, History, Analytics, Alerts)     │
+│   ScanContext · AuthContext · ToastSystem · Sidebar      │
+└───────────────────────┬─────────────────────────────────┘
+                        │ REST API + WebSocket
+┌───────────────────────▼─────────────────────────────────┐
+│              FastAPI Backend (port 8000)                  │
+│   /api/scan  /api/execute  /api/rollback  /api/alerts    │
+│   /api/history  /api/accounts  /api/monitor              │
+└───┬───────────────┬───────────────┬─────────────────────┘
+    │               │               │
+┌───▼───┐     ┌─────▼────┐   ┌─────▼──────────────────┐
+│Scanner│     │Remediation│   │   Threat Monitor        │
+│Engine │     │ Executor  │   │   (FastWatcher/Polling) │
+│9 mods │     │ Planner   │   │   WebSocket broadcaster │
+└───┬───┘     │ Rollback  │   └────────────────────────┘
+    │         └─────┬─────┘
+┌───▼─────────────▼──────────────────────────────────────┐
+│         boto3 / botocore  (AWS SDK)                      │
+│         SQLite  (findings, executions, accounts, history)│
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔬 Security Modules
+
+| Module | Checks | Key Findings Detected |
+|--------|--------|-----------------------|
+| **IAM** | 12 | Admin users, wildcard policies, MFA missing, unused keys, key rotation |
+| **S3** | 5 | Public ACLs, encryption disabled, versioning off, public access block |
+| **EC2** | 6 | IMDSv2 disabled, public IPs, default SGs, termination protection |
+| **VPC** | 5 | Flow logs disabled, default VPC, internet gateway, public subnets |
+| **Security Groups** | 4 | Open SSH/RDP, unrestricted ingress, unused groups, NACL misconfig |
+| **CloudTrail** | 3 | Logging disabled, no encryption, S3 bucket exposed |
+| **CloudWatch** | 2 | Log group retention, metric filters |
+| **KMS** | 2 | Key rotation disabled, CMK exposure |
+| **RDS** | 3 | Public access, deletion protection, backup disabled |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.9 or later
-- An AWS account
-- AWS CLI configured on the local machine
+| Requirement | Version |
+|-------------|---------|
+| Python | 3.11+ |
+| Node.js | 18+ |
+| AWS Account | Root or IAM credentials |
 
-The project uses AWS SDK (boto3) and follows AWS best practices
-for authentication and authorization.
-
----
-
-### AWS Authentication Model
-
-Cloud Security Panel does not store AWS credentials.
-
-Authentication is handled through:
-- AWS CLI profiles (for local development)
-- IAM roles with STS (planned for production use)
-
-All AWS access is read-only by default.
-
----
-
-### Running the Project
-
-1. Clone the repository
-2. Create and activate a Python virtual environment
-3. Install dependencies
-4. Configure AWS credentials using `aws configure`
-5. Run the application:
+### Installation
 
 ```bash
-python app/main.py
+# 1. Clone the repository
+git clone https://github.com/NSudeep-Rust/CloudSecurityPanel.git
+cd CloudSecurityPanel
+
+# 2. Create and activate Python virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/macOS
+
+# 3. Install Python dependencies
+pip install -r requirements.txt
+
+# 4. Install frontend dependencies and build
+cd app/ui
+npm install
+npm run build
+cd ../..
+
+# 5. Start the application
+python run.py
+```
+
+The app will be available at **http://localhost:8000**
+
+### First Run
+
+1. Open `http://localhost:8000` in your browser
+2. Click **"Add New Account"**
+3. Enter your AWS credentials (Access Key ID + Secret Access Key)
+4. Select your primary region
+5. Click **"Run Scan"** — results in ~20–30 seconds
 
 ---
 
-## Security Guarantees
+## 📁 Project Structure
 
-Cloud Security Panel is designed with strict safety guarantees to prevent
-accidental or unauthorized changes to cloud environments.
+```
+CloudSecurityPanel/
+├── app/
+│   ├── api/
+│   │   ├── main.py              # FastAPI app entry
+│   │   └── routes/              # All API endpoints
+│   ├── core/
+│   │   └── aws_session.py       # boto3 session manager
+│   ├── modules/
+│   │   ├── scanner/             # 9 scanner engines
+│   │   │   ├── scanner.py       # Main orchestrator
+│   │   │   ├── iam_extra_scanner.py
+│   │   │   ├── s3_scanner.py
+│   │   │   ├── ec2_scanner.py
+│   │   │   ├── rds_scanner.py
+│   │   │   └── ...
+│   │   ├── remediation/
+│   │   │   ├── executor.py      # Applies fixes to AWS
+│   │   │   ├── planner.py       # Dry-run preview
+│   │   │   └── rollback.py      # Reverts executed fixes
+│   │   ├── iam_manager/
+│   │   │   └── iam_manager.py   # IAM-specific audits
+│   │   └── threat_monitor/      # Live monitoring engine
+│   ├── database/
+│   │   └── models.py            # SQLAlchemy ORM models
+│   ├── config/
+│   │   └── security_config.py   # Severity mappings
+│   └── ui/
+│       └── src/
+│           ├── pages/
+│           │   ├── WelcomePage.jsx
+│           │   ├── PanelPage.jsx
+│           │   └── sections/    # All panel sections
+│           ├── context/
+│           │   ├── AuthContext.jsx
+│           │   └── ScanContext.jsx
+│           └── components/
+│               ├── Sidebar.jsx
+│               └── ToastSystem.jsx
+├── run.py                       # Application entry point
+└── requirements.txt
+```
 
-The system enforces the following guarantees:
+---
 
-- Live remediation is disabled by default
-- Explicit user approval is required for any LIVE execution
-- Only allow-listed remediation actions can ever be executed
-- IAM-related findings are never auto-remediated
-- All remediation actions are tracked in execution history
-- Duplicate or repeated executions are automatically blocked
-- DRY-RUN previews are available for all supported remediations
+## 🛠️ Tech Stack
 
-These guarantees ensure that the system can be safely used on real AWS
-accounts without risk of unintended impact.
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | FastAPI (Python 3.11) |
+| **AWS SDK** | boto3 + botocore |
+| **Database** | SQLite via SQLAlchemy |
+| **Frontend** | React 18 + Vite 5 |
+| **Styling** | Vanilla CSS (no Tailwind) |
+| **API Docs** | OpenAPI 3.1 (auto-generated) |
+| **Auth** | JWT + bcrypt |
+| **Notifications** | winotify (Windows) |
+| **Real-time** | WebSocket (FastAPI) |
+
+---
+
+## 🔮 Roadmap
+
+- [ ] **Windows Installer** — `CloudShield-Setup.exe` (PyInstaller + Electron + Inno Setup)
+- [ ] **System Tray** — Minimize to tray, McAfee/Avast-style background operation
+- [ ] **Auto-Updater** — Push code updates via GitHub Releases (no reinstall)
+- [ ] **Linux Package** — `.AppImage` and `.deb` builds
+- [ ] **Email Report Viewer** — Browser-accessible scan reports (no localhost required)
+- [ ] **Scheduled Scans** — Cron-based automated scanning
+- [ ] **Multi-Region Dashboard** — Per-region finding heatmap
+- [ ] **Compliance Reports** — CIS AWS Benchmark, NIST export
+
+---
+
+## 🤝 Contributing
+
+This project is currently **private**. Contribution guidelines will be published before public release.
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+Built with ❤️ for AWS security professionals<br/>
+<strong>AWS Cloud Control Panel</strong> — Scan. Detect. Remediate.
+</div>

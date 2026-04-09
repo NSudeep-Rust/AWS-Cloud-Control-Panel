@@ -7,6 +7,7 @@ import {
     CheckCircle, XCircle, Info, Globe, Key, Server,
     Database, Eye, Lock, Shield, Zap, Activity, ChevronDown, ChevronUp,
 } from 'lucide-react'
+import { getModuleGroup } from '@/utils/getModuleGroup'
 
 const API = 'http://localhost:8000'
 
@@ -55,17 +56,9 @@ function findingIcon(type = '') {
     return <Shield size={13} />
 }
 
-function getModule(type = '') {
-    if (type.startsWith('IAM')) return 'IAM'
-    if (type.startsWith('EC2') || type.startsWith('EBS')) return 'EC2'
-    if (type.startsWith('S3')) return 'S3'
-    if (type.startsWith('CLOUDTRAIL') || type.startsWith('CLOUDWATCH')) return 'CloudTrail'
-    if (type.startsWith('VPC')) return 'VPC'
-    if (type.startsWith('SECURITY_GROUP') || type.startsWith('PUBLIC_SECURITY') || type.startsWith('NACL') || type.startsWith('FIREWALL')) return 'Firewall'
-    if (type.startsWith('RDS')) return 'RDS'
-    if (type.startsWith('NETWORK')) return 'Network'
-    return 'Other'
-}
+// getModule is aliased to the shared canonical getModuleGroup utility.
+const getModule = getModuleGroup
+
 
 const SCAN_BANNERS = [
     { icon: '🔑', title: 'IAM Security', sub: 'Analyzing admin policies & privilege escalation paths' },

@@ -16,9 +16,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # ── How many threads to use ─────────────────────────────────────────────────
-# Each region runs all scanners in parallel; global scanners run concurrently
-# alongside the regional work.  Keep this reasonable to avoid AWS throttling.
-MAX_WORKERS = 12
+# Outer: 1 task per region + 3 global tasks, all run concurrently.
+# Inner: sub-scanners per region. Capped at 5 to prevent AWS ThrottlingException.
+#        (Previously len(scanner_map)=9 → 9×9=81 concurrent calls → throttled→ slow)
+MAX_WORKERS       = 12   # outer pool — handles all region + global tasks
+INNER_MAX_WORKERS = 5    # inner pool — sub-scanners within one region
 
 
 class Scanner:
@@ -106,7 +108,9 @@ class Scanner:
         }
 
         # Run all scanner functions for this region concurrently
-        with ThreadPoolExecutor(max_workers=len(scanner_map)) as inner:
+        # Cap at INNER_MAX_WORKERS (5) to prevent AWS ThrottlingException from
+        # too many simultaneous API calls (was len(scanner_map)=9 → throttled)
+        with ThreadPoolExecutor(max_workers=INNER_MAX_WORKERS) as inner:
             futures = {inner.submit(fn): name for name, fn in scanner_map.items()}
             for fut in as_completed(futures):
                 name = futures[fut]

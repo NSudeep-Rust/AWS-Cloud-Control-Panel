@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
 import { Wrench, CheckCircle, AlertTriangle, Clock, Play, Zap, RotateCcw, Shield } from 'lucide-react'
+import { getServiceTag } from '@/utils/getModuleGroup'
 
 const API = 'http://localhost:8000'
 
@@ -155,7 +156,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
           if (mine.status === 'EXECUTED') {
             clearInterval(pollRef.current); setPhase('done'); return
           }
-          if (['FAILED', 'SKIPPED', 'MANUAL_REQUIRED', 'BLOCKED'].includes(mine.status)) {
+          if (['FAILED', 'SKIPPED', 'MANUAL_REQUIRED', 'BLOCKED', 'BLOCKED_BY_POLICY', 'NOT_RECOVERABLE'].includes(mine.status)) {
             clearInterval(pollRef.current)
             setErrorReason(mine.reason || 'Execution failed — check AWS permissions.')
             setPhase('error'); return
@@ -452,23 +453,16 @@ export default function RemediationSection({ dark, onNav }) {
   const autoFindings   = findings.filter(f => f.remediation_type === 'AUTO' && !executedIds.has(f.id))
   const manualFindings = findings.filter(f => f.remediation_type === 'MANUAL')
 
-  const uniqueSvcs = [...new Set((tab === 'auto' ? autoFindings : manualFindings).map(f => {
-    const t = (f.type||'').toUpperCase()
-    if (t.includes('IAM')) return 'IAM'; if (t.includes('S3')) return 'S3'
-    if (t.includes('EC2')) return 'EC2'; if (t.includes('EBS')) return 'EBS'
-    if (t.includes('VPC')) return 'VPC'; if (t.includes('RDS')) return 'RDS'
-    if (t.includes('KMS')) return 'KMS'; if (t.includes('CLOUDTRAIL')) return 'CloudTrail'
-    if (t.includes('SG') || t.includes('SECURITY_GROUP')) return 'SecGroup'
-    return 'Other'
-  }))]
+  // Build unique service tags from active tab findings using canonical mapping
+  const uniqueSvcs = [...new Set(
+    (tab === 'auto' ? autoFindings : manualFindings).map(f => getServiceTag(f.type))
+  )].sort()
 
   function applyFilters(list) {
     return list.filter(f => {
       if (filterSev !== 'ALL' && (f.severity||'').toUpperCase() !== filterSev) return false
-      if (filterSvc !== 'ALL') {
-        const t = (f.type||'').toUpperCase(), sv = filterSvc.toUpperCase()
-        if (!t.includes(sv === 'SECGROUP' ? 'SG' : sv)) return false
-      }
+      // Use canonical getServiceTag for match — fixes broken .includes() mismatches
+      if (filterSvc !== 'ALL' && getServiceTag(f.type) !== filterSvc) return false
       if (searchQ.trim()) {
         const q = searchQ.toLowerCase()
         if (!(f.type||'').toLowerCase().replace(/_/g,' ').includes(q) && !(f.resource_id||'').toLowerCase().includes(q)) return false

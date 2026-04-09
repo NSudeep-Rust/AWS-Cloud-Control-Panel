@@ -116,13 +116,18 @@ export default function PanelPage() {
                 @keyframes radarSweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
                 @keyframes radarBlip { 0%{opacity:0} 25%{opacity:1} 60%{opacity:0.5} 100%{opacity:0} }
                 @keyframes overviewPulseRing { 0%{transform:scale(0.6);opacity:0.9} 100%{transform:scale(1.8);opacity:0} }
+                /* ── Responsive breakpoints ── */
+                body { min-width: 860px; overflow-x: hidden; }
+                @media (max-width: 1279px) { .cs-main-content { padding: 18px 20px !important; } }
+                @media (max-width: 1024px) { .cs-main-content { padding: 14px 16px !important; } .cs-grid-3 { grid-template-columns: repeat(2,1fr) !important; } }
+                @media (max-width: 900px)  { .cs-main-content { padding: 10px 12px !important; } .cs-grid-3,.cs-grid-2 { grid-template-columns: 1fr !important; } }
             `}</style>
 
             <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
                 <Sidebar active={active} onNav={handleNav} dark={dark} onToggleDark={() => setDark(d => !d)} />
-                <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)', minHeight: 0 }}>
+                <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)', minHeight: 0, minWidth: 0 }}>
                     {/* NOTE: key removed — we don't remount sections on nav so scan stays alive */}
-                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px', animation: 'fadeUp 0.3s ease both' }}>
+                    <div className="cs-main-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px', animation: 'fadeUp 0.3s ease both' }}>
                         <Section onNav={handleNav} dark={dark} />
                     </div>
                 </main>

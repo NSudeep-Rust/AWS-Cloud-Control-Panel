@@ -57553,5 +57553,242 @@
         }
       }
     ]
+  },
+  {
+    "timestamp": "2026-04-09T13:17:17.531346",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "58fe2aec-397c-46aa-9fd5-de2255f63e8a",
+          "resource_id": "sg-021c7c4691d7b7586",
+          "region": "us-east-1",
+          "action": "DELETE_UNUSED_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": {
+            "GroupId": "sg-021c7c4691d7b7586",
+            "IpPermissionsEgress": [
+              {
+                "IpProtocol": "-1",
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              }
+            ],
+            "VpcId": "vpc-0335a783434b5be15",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:596953737128:security-group/sg-021c7c4691d7b7586",
+            "OwnerId": "596953737128",
+            "GroupName": "launch-wizard-7",
+            "Description": "launch-wizard-7 created 2026-04-06T08:58:35.853Z",
+            "IpPermissions": [
+              {
+                "IpProtocol": "-1",
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              },
+              {
+                "IpProtocol": "tcp",
+                "FromPort": 3389,
+                "ToPort": 3389,
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              }
+            ]
+          },
+          "revoked_rules": null,
+          "timestamp": "2026-04-09T13:17:17.531346"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-09T13:19:33.834895",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "aa8c7bf5-65ae-4ab0-9301-e353b7954bec",
+          "resource_id": "sg-02927f4657708fbbb",
+          "region": "us-east-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ],
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "timestamp": "2026-04-09T13:19:33.834895"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-09T13:21:29.184232",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "4d98053a-0e59-42cc-b724-eae939e482a7",
+          "resource_id": "sg-056dd5cdf8478ebc4",
+          "region": "us-east-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 3389,
+              "ToPort": 3389,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ],
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 3389,
+              "ToPort": 3389,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "timestamp": "2026-04-09T13:21:29.184232"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-09T13:24:17.481772",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "972877a0-6563-48f1-bde5-30528bf3b925",
+          "resource_id": "sg-081758c6e11578a9c",
+          "region": "us-east-1",
+          "action": "RESTRICT_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 3389,
+              "ToPort": 3389,
+              "UserIdGroupPairs": [],
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ],
+              "Ipv6Ranges": [],
+              "PrefixListIds": []
+            }
+          ],
+          "revoked_rules": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": 3389,
+              "ToPort": 3389,
+              "IpRanges": [
+                {
+                  "CidrIp": "0.0.0.0/0"
+                }
+              ]
+            }
+          ],
+          "timestamp": "2026-04-09T13:24:17.481772"
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-04-09T13:25:41.669173",
+    "event_type": "REMEDIATION_EXECUTION",
+    "count": 1,
+    "details": [
+      {
+        "execution": {
+          "execution_id": "b73bc6cf-8fc0-4d47-b8e2-90ea457f4efb",
+          "resource_id": "sg-0dbf4c34a9855e21c",
+          "region": "us-east-1",
+          "action": "DELETE_UNUSED_SECURITY_GROUP",
+          "status": "EXECUTED",
+          "snapshot_before": {
+            "GroupId": "sg-0dbf4c34a9855e21c",
+            "IpPermissionsEgress": [
+              {
+                "IpProtocol": "-1",
+                "UserIdGroupPairs": [],
+                "IpRanges": [
+                  {
+                    "CidrIp": "0.0.0.0/0"
+                  }
+                ],
+                "Ipv6Ranges": [],
+                "PrefixListIds": []
+              }
+            ],
+            "VpcId": "vpc-0e253b7ad74b0aadb",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:596953737128:security-group/sg-0dbf4c34a9855e21c",
+            "OwnerId": "596953737128",
+            "GroupName": "launch-wizard-3",
+            "Description": "launch-wizard-3 created 2026-04-01T11:11:50.972Z",
+            "IpPermissions": []
+          },
+          "revoked_rules": null,
+          "timestamp": "2026-04-09T13:25:41.669173"
+        }
+      }
+    ]
   }
 ]

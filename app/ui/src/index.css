@@ -157,3 +157,30 @@ button {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT — CloudShield Security Panel
+   Breakpoints: ≥1280px → default | 900-1279px → compact | <900px → min
+   ═══════════════════════════════════════════════════════════════ */
+
+body { min-width: 860px; overflow-x: hidden; }
+
+@media (max-width: 1279px) {
+    .cs-main-content { padding: 18px 20px !important; max-width: 100% !important; }
+}
+
+@media (max-width: 1024px) {
+    .cs-main-content { padding: 14px 16px !important; }
+    .cs-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+    .cs-stat-bar { flex-wrap: wrap; }
+    .cs-stat-card { min-width: 90px !important; flex: 1 1 90px !important; }
+}
+
+@media (max-width: 900px) {
+    .cs-main-content { padding: 10px 12px !important; }
+    .cs-grid-3, .cs-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+/* Thin scrollbar inside sidebar nav */
+nav::-webkit-scrollbar { width: 3px; }
+nav::-webkit-scrollbar-thumb { background: rgba(35,47,62,0.18); border-radius: 2px; }
+nav::-webkit-scrollbar-track { background: transparent; }

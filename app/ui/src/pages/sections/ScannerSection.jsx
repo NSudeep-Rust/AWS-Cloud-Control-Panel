@@ -5,6 +5,7 @@ import {
     Search, Shield, Globe, Key, Server, Database, Eye, Lock,
     CheckCircle, ChevronRight, Zap, Activity, XCircle, Square
 } from 'lucide-react'
+import { getModuleGroup } from '@/utils/getModuleGroup'
 
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.07)', border: 'rgba(209,50,18,0.45)', rank: 0 },
@@ -26,28 +27,10 @@ function ModuleIcon({ type, size = 13, color }) {
     return <Shield size={size} color={color} />
 }
 
-function moduleOf(type = '') {
-    // ── ORDER MATTERS: longer/more specific prefixes MUST come before shorter ones ──
-    if (type.startsWith('S3')) return 'S3'
-    if (type.startsWith('IAM')) return 'IAM'
-    if (type.startsWith('EC2') || type.startsWith('EBS')) return 'EC2'
-    if (type.startsWith('RDS')) return 'RDS'
-    if (type.startsWith('CLOUDTRAIL')) return 'CloudTrail'
-    if (type.startsWith('CLOUDWATCH')) return 'CloudWatch'
-    // VPC_FLOW must be checked BEFORE VPC (VPC_FLOW starts with VPC)
-    if (type.startsWith('VPC_FLOW')) return 'CloudTrail'
-    if (type.startsWith('VPC')) return 'VPC'
-    if (type.startsWith('SECURITY_GROUP') || type.startsWith('PUBLIC_SECURITY') || type.startsWith('NACL')) return 'Firewall'
-    // ROUTE_TABLE must be checked BEFORE ROUTE (in case both exist)
-    if (type.startsWith('ROUTE_TABLE') || type.startsWith('ROUTE')) return 'Network'
-    if (type.startsWith('INTERNET') || type.startsWith('PUBLIC_SUBNET')) return 'Network'
-    if (type.startsWith('KMS')) return 'KMS'
-    if (type.startsWith('LAMBDA')) return 'Lambda'
-    if (type.startsWith('EKS') || type.startsWith('ECS')) return 'Containers'
-    if (type.startsWith('SNS') || type.startsWith('SQS')) return 'Messaging'
-    if (type.startsWith('CONFIG')) return 'Config'
-    return 'Security'
-}
+// moduleOf is now the shared canonical getModuleGroup utility (imported above).
+// Alias kept for zero-diff readability in this file.
+const moduleOf = getModuleGroup
+
 
 const AWS_FACTS = [
     { icon: '🌐', title: 'AWS Global Infrastructure', stat: '33 Regions', desc: 'AWS operates across 33 geographic regions with 105+ Availability Zones worldwide.' },
@@ -67,24 +50,29 @@ const AWS_FACTS = [
 const SCAN_LINES = [
     'Initializing AWS session...',
     'Authenticating credentials...',
+    'Enumerating IAM users and roles...',
+    'Checking for admin policy attachments...',
+    'Scanning IAM access key rotation status...',
+    'Verifying MFA enforcement on IAM users...',
+    'Checking for external role trust policies...',
     'Enumerating S3 buckets...',
-    'Checking bucket policies & ACLs...',
-    'Scanning IAM users and roles...',
-    'Analyzing attached policies...',
-    'Probing EC2 instances [us-east-1]...',
-    'Checking security groups...',
-    'Scanning EBS volumes...',
-    'Evaluating encryption status...',
-    'Checking CloudTrail logging...',
-    'Scanning VPC flow logs...',
-    'Analyzing network ACLs...',
-    'Checking route tables...',
-    'Scanning KMS key rotation...',
-    'Probing EC2 instances [eu-north-1]...',
-    'Evaluating public endpoints...',
-    'Cross-referencing findings...',
-    'Calculating severity scores...',
-    'Finalizing scan results...',
+    'Checking S3 bucket policies and ACLs...',
+    'Verifying S3 public access block settings...',
+    'Checking S3 versioning and access logging...',
+    'Probing EC2 instances [us-east-1, us-west-2]...',
+    'Scanning security groups for open ports...',
+    'Checking IMDSv2 enforcement on instances...',
+    'Scanning EBS volumes for encryption...',
+    'Analyzing RDS instance configurations...',
+    'Scanning VPC flow log settings...',
+    'Checking network ACL inbound/outbound rules...',
+    'Verifying CloudTrail logging status...',
+    'Checking CloudWatch log group retention...',
+    'Scanning KMS key rotation policies...',
+    'Analyzing route tables for internet exposure...',
+    'Cross-referencing findings across modules...',
+    'Calculating risk scores and severity...',
+    'Finalizing scan report...',
 ]
 
 // 9 regions — 6 original + 3 most-used additions
@@ -168,7 +156,7 @@ export function ScannerSection({ onNav, dark }) {
         LOW: findings.filter(f => f.severity === 'LOW').length,
     }
 
-    const pct = Math.min(100, Math.round((scanLineIdx / SCAN_LINES.length) * 100))
+    const pct = Math.min(100, Math.round((scanLineIdx / (SCAN_LINES.length - 1)) * 100))
     const fact = AWS_FACTS[factIdx]
     const scanLine = SCAN_LINES[scanLineIdx]
 
@@ -421,7 +409,7 @@ export function ScannerSection({ onNav, dark }) {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flexShrink: 0 }}>
                             {[
                                 { label: 'Elapsed', val: `${elapsed}s`, color: '#0972d3' },
-                                { label: 'Step', val: `${scanLineIdx + 1}/${SCAN_LINES.length}`, color: '#FF9900' },
+                                { label: 'Step', val: `${Math.min(scanLineIdx + 1, SCAN_LINES.length)}/${SCAN_LINES.length}`, color: '#FF9900' },
                                 { label: 'Regions', val: 'Multi-Region', color: '#8B5CF6' },
                                 { label: 'Mode', val: 'DRY RUN', color: '#067340' },
                             ].map(c => (

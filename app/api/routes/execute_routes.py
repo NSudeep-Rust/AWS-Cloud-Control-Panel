@@ -123,7 +123,7 @@ def process_execution(request: ExecuteRequest, db: Session):
         # ── Execution loop ──
         for finding in selected_findings:
             execution_id = str(uuid.uuid4())
-            print("\n➡️ Executing:", finding.get("id"))
+            print("\n\u27a1\ufe0f Executing:", finding.get("id"))
 
             remediation = planner.plan(finding)
             finding["remediation"] = remediation
@@ -132,6 +132,10 @@ def process_execution(request: ExecuteRequest, db: Session):
                 result = executor.execute({**finding, "force_execute": True})
             else:
                 result = executor.execute(finding)
+
+            # 🔥 Safety guard: execute() now always returns dict, but guard anyway
+            if result is None:
+                result = {"status": "FAILED", "reason": "Executor returned no result", "metadata": {}}
 
             print("Result:", result)
 
@@ -144,7 +148,7 @@ def process_execution(request: ExecuteRequest, db: Session):
             approval_token_value = None
             if result.get("status") in ["BLOCKED_BY_POLICY", "REQUIRE_APPROVAL"] and not force_execute:
                 approval_token_value = str(uuid.uuid4())
-                # ── Token persisted only in DB now (APPROVAL_STORAGE removed) ──
+                # \u2500\u2500 Token persisted only in DB now (APPROVAL_STORAGE removed) \u2500\u2500
 
             execution = Execution(
                 execution_id=result.get("execution_id", execution_id),
@@ -169,8 +173,31 @@ def process_execution(request: ExecuteRequest, db: Session):
         })
 
     except Exception as e:
-        print("❌ BACKGROUND ERROR:", str(e))
-        # Still broadcast so frontend knows something happened
+        print("\u274c BACKGROUND ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
+
+        # 🔥 CRITICAL FIX: Write FAILED rows to DB so frontend sees terminal status
+        # instead of polling for 90s and showing a misleading timeout message.
+        try:
+            for finding in selected_findings:
+                failed_exec = Execution(
+                    execution_id=str(uuid.uuid4()),
+                    scan_id=request.scan_id,
+                    finding_id=finding.get("id"),
+                    action=None,
+                    status="FAILED",
+                    reason=f"Execution error: {str(e)}",
+                    approval_token=None,
+                    resource_name=finding.get("bucket_name") or finding.get("resource_id"),
+                    meta={}
+                )
+                db.add(failed_exec)
+            db.commit()
+        except Exception as db_err:
+            print("\u274c Could not write FAILED rows to DB:", str(db_err))
+
+        # Still broadcast so frontend refreshes
         ws_manager.broadcast_sync({
             "event":   "execution_complete",
             "scan_id": request.scan_id,

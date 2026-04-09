@@ -1,5 +1,16 @@
 import boto3
+import functools
 from botocore.exceptions import NoCredentialsError, ProfileNotFound, ClientError
+from botocore.config import Config
+
+# Applied to every boto3 client: prevents any single API call from
+# hanging the scan for 60s (the boto3 default). Max per-call: 18s.
+# retries=1 so throttled calls get one retry but don't spiral.
+_FAST_CONFIG = Config(
+    connect_timeout=5,
+    read_timeout=18,
+    retries={'max_attempts': 1},
+)
 
 
 class AWSSession:
@@ -50,6 +61,19 @@ class AWSSession:
             identity = sts.get_caller_identity()
 
             print("✅ ACTIVE AWS ACCOUNT:", identity.get("Account"))
+
+            # Patch session.client() so ALL scanners automatically get
+            # _FAST_CONFIG (18s read timeout, no 60s hangs).
+            # Callers that pass their own config= keep it unchanged.
+            _orig_client = self.session.client
+
+            @functools.wraps(_orig_client)
+            def _fast_client(service_name, *args, **kwargs):
+                if 'config' not in kwargs:
+                    kwargs['config'] = _FAST_CONFIG
+                return _orig_client(service_name, *args, **kwargs)
+
+            self.session.client = _fast_client
 
         except ProfileNotFound:
             raise RuntimeError(

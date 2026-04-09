@@ -389,10 +389,26 @@ class RemediationExecutor:
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
         # -----------------------------------
-        # Fetch current Security Group
+        # Fetch current Security Group — GUARDED
         # -----------------------------------
-        response = ec2.describe_security_groups(GroupIds=[resource_id])
-        sg = response["SecurityGroups"][0]
+        try:
+            response = ec2.describe_security_groups(GroupIds=[resource_id])
+            sgs = response.get("SecurityGroups", [])
+            if not sgs:
+                return {
+                    "status": "FAILED",
+                    "action": "RESTRICT_SECURITY_GROUP",
+                    "reason": f"Security group {resource_id} not found in region {region}",
+                    "metadata": {}
+                }
+            sg = sgs[0]
+        except ClientError as e:
+            return {
+                "status": "FAILED",
+                "action": "RESTRICT_SECURITY_GROUP",
+                "reason": f"AWS error fetching security group: {str(e)}",
+                "metadata": {}
+            }
 
         snapshot_before = sg.get("IpPermissions", [])
 
@@ -412,6 +428,15 @@ class RemediationExecutor:
                         "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
                     })
 
+        # If no public rules, nothing to do
+        if not targeted_rules:
+            return {
+                "status": "SKIPPED",
+                "action": "RESTRICT_SECURITY_GROUP",
+                "reason": "No 0.0.0.0/0 inbound rules found — already restricted",
+                "metadata": {"security_group_id": resource_id, "region": region}
+            }
+
         # -----------------------------------
         # DRY RUN
         # -----------------------------------
@@ -422,7 +447,8 @@ class RemediationExecutor:
                 "resource_id": resource_id,
                 "region": region,
                 "recommended_fix": remediation.get("recommended_fix"),
-                "targeted_rules": targeted_rules
+                "targeted_rules": targeted_rules,
+                "metadata": {}
             }
 
         # -----------------------------------
@@ -431,12 +457,20 @@ class RemediationExecutor:
         execution_id = str(uuid.uuid4())
         revoked_rules = []
 
-        for rule in targeted_rules:
-            ec2.revoke_security_group_ingress(
-                GroupId=resource_id,
-                IpPermissions=[rule]
-            )
-            revoked_rules.append(rule)
+        try:
+            for rule in targeted_rules:
+                ec2.revoke_security_group_ingress(
+                    GroupId=resource_id,
+                    IpPermissions=[rule]
+                )
+                revoked_rules.append(rule)
+        except ClientError as e:
+            return {
+                "status": "FAILED",
+                "action": "RESTRICT_SECURITY_GROUP",
+                "reason": f"Failed to revoke rule: {str(e)}",
+                "metadata": {"security_group_id": resource_id, "region": region}
+            }
 
         # -----------------------------------
         # SAVE HISTORY (rollback support)
@@ -2638,8 +2672,24 @@ class RemediationExecutor:
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
         # Collect rules that open port 22 to 0.0.0.0/0
-        response = ec2.describe_security_groups(GroupIds=[resource_id])
-        sg = response["SecurityGroups"][0]
+        try:
+            response = ec2.describe_security_groups(GroupIds=[resource_id])
+            sgs = response.get("SecurityGroups", [])
+            if not sgs:
+                return {
+                    "status": "FAILED",
+                    "action": "REVOKE_UNRESTRICTED_SSH",
+                    "reason": f"Security group {resource_id} not found in region {region}",
+                    "metadata": {}
+                }
+            sg = sgs[0]
+        except ClientError as e:
+            return {
+                "status": "FAILED",
+                "action": "REVOKE_UNRESTRICTED_SSH",
+                "reason": f"AWS error fetching security group: {str(e)}",
+                "metadata": {}
+            }
 
         rules_to_revoke = []
         for permission in sg.get("IpPermissions", []):
@@ -2732,8 +2782,24 @@ class RemediationExecutor:
 
         ec2 = self.aws_session.session.client("ec2", region_name=region)
 
-        response = ec2.describe_security_groups(GroupIds=[resource_id])
-        sg = response["SecurityGroups"][0]
+        try:
+            response = ec2.describe_security_groups(GroupIds=[resource_id])
+            sgs = response.get("SecurityGroups", [])
+            if not sgs:
+                return {
+                    "status": "FAILED",
+                    "action": "REVOKE_UNRESTRICTED_RDP",
+                    "reason": f"Security group {resource_id} not found in region {region}",
+                    "metadata": {}
+                }
+            sg = sgs[0]
+        except ClientError as e:
+            return {
+                "status": "FAILED",
+                "action": "REVOKE_UNRESTRICTED_RDP",
+                "reason": f"AWS error fetching security group: {str(e)}",
+                "metadata": {}
+            }
 
         rules_to_revoke = []
         for permission in sg.get("IpPermissions", []):
@@ -3357,17 +3423,22 @@ class RemediationExecutor:
                 # ✅ Only apply re-check logic for SG restriction
                 if action == "RESTRICT_SECURITY_GROUP":
 
-                    ec2 = self.aws_session.session.client("ec2", region_name=region)
-                    response = ec2.describe_security_groups(GroupIds=[resource_id])
-                    sg = response["SecurityGroups"][0]
+                    try:
+                        ec2 = self.aws_session.session.client("ec2", region_name=region)
+                        response = ec2.describe_security_groups(GroupIds=[resource_id])
+                        sgs = response.get("SecurityGroups", [])
+                        sg = sgs[0] if sgs else None
+                    except Exception:
+                        sg = None
 
                     still_public = False
 
-                    for permission in sg.get("IpPermissions", []):
-                        for ip_range in permission.get("IpRanges", []):
-                            if ip_range.get("CidrIp") == "0.0.0.0/0":
-                                still_public = True
-                                break
+                    if sg:
+                        for permission in sg.get("IpPermissions", []):
+                            for ip_range in permission.get("IpRanges", []):
+                                if ip_range.get("CidrIp") == "0.0.0.0/0":
+                                    still_public = True
+                                    break
 
                     if not still_public:
                         return {
@@ -3414,18 +3485,40 @@ class RemediationExecutor:
                 }
 
         # -----------------------------------
-        # HANDLER EXECUTION (SAFE NOW)
+        # HANDLER EXECUTION - FULLY GUARDED
         # -----------------------------------
 
         handler = self.action_handlers.get(action)
         if handler:
-            result = handler(finding, remediation)
+            try:
+                result = handler(finding, remediation)
+            except Exception as handler_exc:
+                import traceback
+                traceback.print_exc()
+                result = {
+                    "status": "FAILED",
+                    "reason": f"Handler error [{action}]: {str(handler_exc)}",
+                    "action": action,
+                    "resource_id": finding.get("resource_id"),
+                    "metadata": {}
+                }
 
             # 🔥 GUARANTEE metadata ALWAYS EXISTS
+            if not isinstance(result, dict):
+                result = {"status": "FAILED", "reason": "Handler returned non-dict", "metadata": {}}
             if "metadata" not in result or result["metadata"] is None:
                 result["metadata"] = {}
 
             return result
+        else:
+            # 🔥 CRITICAL FIX: always return a dict — never None
+            return {
+                "status": "FAILED",
+                "reason": f"No handler implemented for action: {action}",
+                "action": action,
+                "resource_id": finding.get("resource_id"),
+                "metadata": {}
+            }
 
     # =========================================================
     # DELETE DEFAULT VPC — cascade deletes all dependencies

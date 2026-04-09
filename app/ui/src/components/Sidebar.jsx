@@ -245,7 +245,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
             </div>
 
             {/* ── Nav ── */}
-            <nav style={{ flex: 1, padding: '6px 6px', overflowY: 'auto' }}>
+            <nav style={{ flex: 1, padding: '6px 6px', overflowY: 'auto', minHeight: 0 }}>
                 {NAV_GROUPS.map((group, gi) => (
                     <div key={gi} style={{ marginBottom: 2 }}>
                         {group.label && (

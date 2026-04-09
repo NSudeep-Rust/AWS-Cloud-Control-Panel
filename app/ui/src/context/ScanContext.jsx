@@ -115,8 +115,10 @@ export function ScanProvider({ children }) {
     useEffect(() => {
         if (status !== 'scanning') { clearInterval(lineRef.current); return }
         lineRef.current = setInterval(() => {
-            setScanLineIdx(i => (i + 1) % 20)
-        }, 1100)
+            // Advance to next line but STOP at the last one (don't loop)
+            // 25 lines × 4s = 100s, matching typical 60-90s backend scan duration
+            setScanLineIdx(i => Math.min(i + 1, 24))
+        }, 4000)
         return () => clearInterval(lineRef.current)
     }, [status])
 
