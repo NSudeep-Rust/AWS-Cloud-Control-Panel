@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
@@ -40,11 +40,22 @@ app = FastAPI(
 @app.on_event("startup")
 async def on_startup():
     """Auto-create SQLite tables on first run, start background scheduler."""
-    from app.database.base import Base
-    from app.database.db import engine
-    from app.database import models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
-    scheduler_service.start()
+    import logging
+    _log = logging.getLogger("cloudshield.startup")
+    try:
+        from app.database.base import Base
+        from app.database.db import engine
+        from app.database import models  # noqa: F401
+        Base.metadata.create_all(bind=engine)
+        _log.info("Database tables ready")
+    except Exception as e:
+        _log.error("Database init failed: %s", e)
+
+    try:
+        scheduler_service.start()
+        _log.info("Scheduler started")
+    except Exception as e:
+        _log.error("Scheduler failed to start (non-fatal): %s", e)
 
 
 app.add_middleware(
