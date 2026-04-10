@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const SCAN_REGIONS = [
     'us-east-1',
@@ -28,7 +28,6 @@ export function ScanProvider({ children }) {
     const [highlightFindingId, setHighlightFindingId] = useState(null)
 
     const timerRef  = useRef(null)
-    const lineRef   = useRef(null)
     const factRef   = useRef(null)
     const abortRef  = useRef(null)  // AbortController
     const wsRef     = useRef(null)  // WebSocket for push events
@@ -40,7 +39,7 @@ export function ScanProvider({ children }) {
     useEffect(() => {
         function connect() {
             try {
-                const ws = new WebSocket('ws://localhost:8000/ws/alerts')
+                const ws = new WebSocket('ws://127.0.0.1:8000/ws/alerts')
                 wsRef.current = ws
 
                 ws.onmessage = (e) => {
@@ -93,13 +92,8 @@ export function ScanProvider({ children }) {
         return () => clearInterval(timerRef.current)
     }, [status])
 
-    useEffect(() => {
-        if (status !== 'scanning') { clearInterval(lineRef.current); return }
-        lineRef.current = setInterval(() => {
-            setScanLineIdx(i => Math.min(i + 1, 24))
-        }, 4000)
-        return () => clearInterval(lineRef.current)
-    }, [status])
+    // scanLineIdx is derived from elapsed — no separate interval needed.
+    // This keeps it perfectly in sync with the real elapsed timer.
 
     useEffect(() => {
         if (status !== 'scanning') { clearInterval(factRef.current); return }
@@ -161,7 +155,6 @@ export function ScanProvider({ children }) {
     const stopScan = useCallback(() => {
         if (abortRef.current) abortRef.current.abort()
         clearInterval(timerRef.current)
-        clearInterval(lineRef.current)
         clearInterval(factRef.current)
         setStatus('idle')
     }, [])
@@ -198,7 +191,9 @@ export function ScanProvider({ children }) {
 
     const value = {
         status, findings, scanId, elapsed,
-        scanLineIdx, factIdx, factVisible,
+        // scanLineIdx derived from elapsed — always in sync, no drift
+        scanLineIdx: Math.min(24, Math.floor(elapsed / 4)),
+        factIdx, factVisible,
         scanMeta, SCAN_REGIONS,
         highlightFindingId, setHighlightFindingId,
         refreshToken, latestScheduledScan,

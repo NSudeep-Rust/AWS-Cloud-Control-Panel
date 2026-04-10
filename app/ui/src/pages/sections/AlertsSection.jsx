@@ -4,7 +4,7 @@ import axios from 'axios'
 import { driftAPI } from '@/api'
 import { Bell, CheckCircle, ChevronDown, RefreshCcw, ShieldAlert, Radio, Square, Wrench } from 'lucide-react'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const SEV = {
   CRITICAL: { color:'#d13212', bg:'rgba(209,50,18,0.08)', border:'rgba(209,50,18,0.3)',  glow:'rgba(209,50,18,0.2)',  badgeBg:'rgba(209,50,18,0.12)', icon:'🚨' },
@@ -91,20 +91,20 @@ function HeroAnimation({ monitorRunning, onToggle, toggling }) {
         {[{ s:160, a:'alPulse1', d:'2.8s', dl:'0s',   c:'rgba(209,50,18,0.38)' },
           { s:210, a:'alPulse2', d:'3.6s', dl:'0.7s', c:'rgba(209,50,18,0.15)' },
           { s:260, a:'alPulse3', d:'4.5s', dl:'1.4s', c:'rgba(209,50,18,0.08)' }].map((r,i) => (
-          <div key={i} style={{ position:'absolute', width:r.s*2, height:r.s*2, borderRadius:'50%', border:`1.5px solid ${r.c}`, top:0, left:0, transform:'translate(-50%,-50%)', animation:`${r.a} ${r.d} ease-in-out ${r.dl} infinite` }} />
+          <div key={i} style={{ position:'absolute', width:r.s*2, height:r.s*2, borderRadius:'50%', border:`1.5px solid ${r.c}`, top:0, left:0, transform:'translate(-50%,-50%)', animation:`${r.a} ${r.d} ease-in-out ${r.dl} infinite`, willChange:'transform, opacity' }} />
         ))}
       </div>
 
       {/* Radar sweep */}
       <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:240, height:240, borderRadius:'50%', overflow:'hidden', zIndex:1 }}>
-        <div style={{ position:'absolute', top:'50%', left:'50%', width:120, height:2, background:'linear-gradient(90deg,rgba(209,50,18,0.75),transparent)', transformOrigin:'0 50%', animation:`radarBeam ${monitorRunning?2:3.5}s linear infinite` }} />
+        <div style={{ position:'absolute', top:'50%', left:'50%', width:120, height:2, background:'linear-gradient(90deg,rgba(209,50,18,0.75),transparent)', transformOrigin:'0 50%', animation:`radarBeam ${monitorRunning?2:3.5}s linear infinite`, willChange:'transform' }} />
         <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1.5px solid rgba(209,50,18,0.25)' }} />
       </div>
 
       {/* Orbiting icons */}
       <div style={{ position:'absolute', top:'50%', left:'50%', zIndex:2 }}>
         {ORBS.map((o,i) => (
-          <div key={i} style={{ position:'absolute', top:0, left:0, transform:'translate(-50%,-50%)', animation:`${o.anim} ${o.dur} linear ${o.delay} infinite`, fontSize:22 }}>{o.emoji}</div>
+          <div key={i} style={{ position:'absolute', top:0, left:0, transform:'translate(-50%,-50%)', animation:`${o.anim} ${o.dur} linear ${o.delay} infinite`, fontSize:22, willChange:'transform' }}>{o.emoji}</div>
         ))}
       </div>
 
@@ -114,7 +114,7 @@ function HeroAnimation({ monitorRunning, onToggle, toggling }) {
           <ShieldAlert size={52} color="#d13212" strokeWidth={1.5} />
         </div>
         <div>
-          <div style={{ fontSize:26, fontWeight:900, color:'#0f1111', marginBottom:8 }}>🔔 Alerts Center</div>
+          <div style={{ fontSize:26, fontWeight:900, color:'var(--text)', marginBottom:8 }}>🔔 Alerts Center</div>
           <div style={{ fontSize:13, color:'#565959', lineHeight:1.7, maxWidth:360, marginBottom:16 }}>
             {monitorRunning
               ? <><strong style={{ color:'#d13212' }}>CRITICAL</strong> &amp; <strong style={{ color:'#e07b00' }}>HIGH</strong> security alerts surface here automatically. Monitoring your AWS environment live.</>
@@ -162,7 +162,7 @@ function FindingCard({ finding, onDismiss, idx }) {
   return (
     <div
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ borderRadius:14, overflow:'hidden', background:'#fff', border:`1.5px solid ${expanded||hovered?s.border:s.border.replace('0.3','0.16')}`, boxShadow:expanded?`0 0 0 2px ${s.glow},0 8px 32px ${s.glow}`:hovered?`0 8px 24px ${s.glow}`:'0 2px 8px rgba(15,17,17,0.06)', transition:'all 0.22s ease', animation:`alSlide 0.28s ease ${idx*0.04}s both` }}>
+      style={{ borderRadius:14, overflow:'hidden', background:'var(--bg2)', border:`1.5px solid ${expanded||hovered?s.border:s.border.replace('0.3','0.16')}`, boxShadow:expanded?`0 0 0 2px ${s.glow},0 8px 32px ${s.glow}`:hovered?`0 8px 24px ${s.glow}`:'0 2px 8px rgba(15,17,17,0.06)', transition:'all 0.22s ease', animation:`alSlide 0.28s ease ${idx*0.04}s both` }}>
 
       {/* Severity stripe */}
       <div style={{ height:4, background:`linear-gradient(90deg,${s.color},${s.color}55)`, position:'relative', overflow:'hidden' }}>
@@ -177,14 +177,14 @@ function FindingCard({ finding, onDismiss, idx }) {
         {/* Content */}
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-            <div style={{ flex:1, fontSize:13.5, fontWeight:800, color:'#0f1111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            <div style={{ flex:1, fontSize:13.5, fontWeight:800, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {typeLabel}
             </div>
             <span style={{ fontSize:9, fontWeight:800, color:s.color, background:s.badgeBg, borderRadius:4, padding:'3px 8px', textTransform:'uppercase', letterSpacing:0.8, border:`1px solid ${s.color}30`, flexShrink:0 }}>{finding.severity}</span>
           </div>
           <div style={{ display:'flex', gap:10, fontSize:10.5, color:'#8d9191', flexWrap:'wrap', alignItems:'center' }}>
             {finding.resource_id && finding.resource_id !== '—' && (
-              <span style={{ fontFamily:'monospace', background:'#f5f5f5', border:'1px solid #e5e8ed', borderRadius:4, padding:'2px 7px', maxWidth:260, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              <span style={{ fontFamily:'monospace', background:'var(--bg3)', border:`1px solid var(--border)`, borderRadius:4, padding:'2px 7px', maxWidth:260, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                 🔗 {finding.resource_id}
               </span>
             )}
@@ -212,11 +212,11 @@ function FindingCard({ finding, onDismiss, idx }) {
             {/* Description */}
             <div style={{ gridColumn:'1/-1', padding:'14px 16px', borderRadius:10, background:'#fff', border:`1px solid ${s.border}` }}>
               <div style={{ fontSize:10, fontWeight:800, color:s.color, textTransform:'uppercase', letterSpacing:1.1, marginBottom:7 }}>📋 What This Means</div>
-              <div style={{ fontSize:12.5, color:'#3d4f60', lineHeight:1.75 }}>{getDesc(finding.finding_type)}</div>
+              <div style={{ fontSize:12.5, color:'var(--text2)', lineHeight:1.75 }}>{getDesc(finding.finding_type)}</div>
             </div>
 
             {/* Severity */}
-            <div style={{ padding:'12px 16px', borderRadius:10, background:'#fff', border:`1px solid ${s.border}` }}>
+            <div style={{ padding:'12px 16px', borderRadius:10, background:'var(--bg2)', border:`1px solid ${s.border}` }}>
               <div style={{ fontSize:10, fontWeight:800, color:'#8d9191', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Risk Level</div>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <div style={{ width:36, height:36, borderRadius:8, background:s.badgeBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{s.icon}</div>
@@ -228,9 +228,9 @@ function FindingCard({ finding, onDismiss, idx }) {
             </div>
 
             {/* Remediation action */}
-            <div style={{ padding:'12px 16px', borderRadius:10, background:'#fff', border:`1px solid ${s.border}` }}>
+            <div style={{ padding:'12px 16px', borderRadius:10, background:'var(--bg2)', border:`1px solid ${s.border}` }}>
               <div style={{ fontSize:10, fontWeight:800, color:'#8d9191', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Recommended Fix</div>
-              <div style={{ fontSize:11.5, color:'#3d4f60', lineHeight:1.65 }}>
+              <div style={{ fontSize:11.5, color:'var(--text2)', lineHeight:1.65 }}>
                 {finding.remediation_action ? getAction(finding.remediation_action) : getAction(null)}
               </div>
               {finding.remediation_reason && (
@@ -256,7 +256,7 @@ function FindingCard({ finding, onDismiss, idx }) {
   )
 }
 
-export function AlertsSection({ onNav }) {
+export function AlertsSection({ onNav, dark }) {
   const { account, sessionStart } = useAuth()
 
   const [findings,          setFindings]         = useState([])
@@ -265,9 +265,10 @@ export function AlertsSection({ onNav }) {
   const [toggling,          setToggling]         = useState(false)
   const [loading,           setLoading]          = useState(true)
   const [filter,            setFilter]           = useState('all')
-  const [sortOrder,         setSortOrder]        = useState('desc')   // 'desc'=newest first, 'asc'=oldest first
+  const [sortOrder,         setSortOrder]        = useState('desc')
   const [lastRefresh,       setLastRefresh]      = useState(null)
   const [drift,             setDrift]            = useState(null)
+  const [monitorStartTime,  setMonitorStartTime] = useState(null)  // ISO string of when monitor was started this session
   const findingPollRef = useRef(null)
   const monitorPollRef = useRef(null)
 
@@ -289,23 +290,27 @@ export function AlertsSection({ onNav }) {
       const params = accountDbId ? { account_db_id: accountDbId } : {}
       const r = await axios.get(`${API}/api/live-findings/`, { params })
       const all = r.data?.data?.findings || []
-      const sessionFiltered = sessionStart
-        ? all.filter(f => {
-            const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
-            return t >= sessionStart
-          })
+
+      // Only show findings from THIS monitor session (since monitor was last started).
+      // Python datetime.utcnow().isoformat() gives "2024-01-01T12:00:00" (no Z suffix).
+      // JavaScript new Date() parses no-Z strings as LOCAL time, so we append 'Z' to force UTC.
+      const parseUTC = s => s ? new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z') : new Date(0)
+
+      const sessionFindings = monitorStartTime
+        ? all.filter(f => parseUTC(f.detected_at) >= new Date(monitorStartTime))
         : all
-      setFindings(sessionFiltered)
+
+      setFindings(sessionFindings)
       setLastRefresh(new Date())
     } catch { /* ignore */ }
     setLoading(false)
-  }, [accountDbId, sessionStart])
+  }, [accountDbId, monitorStartTime])
 
   useEffect(() => {
     setLoading(true)
     fetchMonitorStatus()
     loadFindings()
-    monitorPollRef.current = setInterval(fetchMonitorStatus, 3000)
+    monitorPollRef.current = setInterval(fetchMonitorStatus, 6000)
     findingPollRef.current = setInterval(loadFindings, 8000)
     driftAPI.get(accountDbId).then(r => {
       const d = r.data?.data
@@ -322,8 +327,12 @@ export function AlertsSection({ onNav }) {
     try {
       if (wasRunning) {
         await axios.post(`${API}/api/threats/monitor/stop`)
+        // Keep existing findings visible — user can see what was found this session
       } else {
         await axios.post(`${API}/api/threats/monitor/start`, { account_id: awsId })
+        // Record the session start time so loadFindings only shows NEW findings from now on
+        setMonitorStartTime(new Date().toISOString())
+        setFindings([])  // clear previous session's findings
       }
       setTimeout(() => { fetchMonitorStatus(); setToggling(false) }, 500)
     } catch { setMonitorOptimistic(wasRunning); setToggling(false) }
@@ -355,11 +364,11 @@ export function AlertsSection({ onNav }) {
             {monitorRunning && <div style={{ position:'absolute', top:-3, right:-3, width:9, height:9, borderRadius:'50%', background:'#1d8102', border:'2px solid #fff', animation:'livePulse 1.5s ease-in-out infinite' }} />}
           </div>
           <div>
-            <h1 style={{ fontSize:20, fontWeight:800, color:'#0f1111', margin:0, display:'flex', alignItems:'center', gap:8 }}>
+            <h1 style={{ fontSize:20, fontWeight:800, color:'var(--text)', margin:0, display:'flex', alignItems:'center', gap:8 }}>
               Alerts
               {monitorRunning && <span style={{ fontSize:10, fontWeight:700, color:'#1d8102', background:'rgba(29,128,2,0.1)', border:'1px solid rgba(29,128,2,0.25)', borderRadius:5, padding:'2px 8px', animation:'alBlink 2s ease infinite' }}>● LIVE</span>}
             </h1>
-            <div style={{ fontSize:11, color:'#565959' }}>
+            <div style={{ fontSize:11, color:'var(--text3)' }}>
               {monitorRunning ? 'Threat monitor active — findings update in real-time' : 'Critical & High severity findings from live threat monitor'}
             </div>
           </div>
@@ -384,7 +393,7 @@ export function AlertsSection({ onNav }) {
         <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
           <HeroAnimation monitorRunning={monitorRunning} onToggle={toggleMonitor} toggling={toggling} />
           {/* Info bar */}
-          <div style={{ display:'flex', gap:1, background:'#fff', border:'1px solid #e5e8ed', borderRadius:14, overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.06)' }}>
+          <div style={{ display:'flex', gap:1, background:'var(--bg2)', border:`1px solid var(--border)`, borderRadius:14, overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.06)' }}>
             {[
               { icon:'🚨', title:'Critical Alerts',  sub:'Immediate action needed',    color:'#d13212' },
               { icon:'⚠️',  title:'High Severity',    sub:'Significant risk detected',  color:'#e07b00' },
@@ -394,7 +403,7 @@ export function AlertsSection({ onNav }) {
               <div key={i} style={{ flex:1, padding:'18px 20px', borderRight:i<3?'1px solid #e5e8ed':'none' }}>
                 <div style={{ fontSize:22, marginBottom:8 }}>{item.icon}</div>
                 <div style={{ fontSize:12.5, fontWeight:800, color:item.color, marginBottom:3 }}>{item.title}</div>
-                <div style={{ fontSize:11, color:'#8d9191' }}>{item.sub}</div>
+                <div style={{ fontSize:11, color:'var(--text3)' }}>{item.sub}</div>
               </div>
             ))}
           </div>
@@ -433,8 +442,8 @@ export function AlertsSection({ onNav }) {
               </div>
               {highFindings.length>0 && <div style={{ marginLeft:'auto', fontSize:10, fontWeight:700, color:'#e07b00', background:'rgba(224,123,0,0.1)', border:'1px solid rgba(224,123,0,0.2)', borderRadius:5, padding:'4px 10px' }}>● FLAGGED</div>}
             </div>
-            <div style={{ padding:'16px 20px', borderRadius:12, background:'#f8f8f8', border:'1px solid #e5e8ed', display:'flex', alignItems:'center', gap:12, minWidth:130 }}>
-              <div style={{ fontSize:30, fontWeight:900, color:'#0f1111' }}>{findings.length}</div>
+            <div style={{ padding:'16px 20px', borderRadius:12, background:'var(--bg3)', border:`1px solid var(--border)`, display:'flex', alignItems:'center', gap:12, minWidth:130 }}>
+              <div style={{ fontSize:30, fontWeight:900, color:'var(--text)' }}>{findings.length}</div>
               <div>
                 <div style={{ fontSize:11, fontWeight:700, color:'#8d9191', textTransform:'uppercase', letterSpacing:0.8, marginBottom:2 }}>Total</div>
                 <div style={{ fontSize:10, color:'#8d9191' }}>Needs action</div>
@@ -443,7 +452,7 @@ export function AlertsSection({ onNav }) {
           </div>
 
           {/* Filter tabs + Sort toggle */}
-          <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:16, borderBottom:'1px solid #e5e8ed' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:16, borderBottom:`1px solid var(--border)` }}>
             {[
               { key:'all',      label:`All (${findings.length})`,                  color: filter==='all'?'#0972d3':'#565959' },
               { key:'critical', label:`🚨 Critical (${criticalFindings.length})`,  color: filter==='critical'?'#d13212':'#565959' },

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { getModuleGroup } from '@/utils/getModuleGroup'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.08)', border: 'rgba(209,50,18,0.22)', label: 'CRITICAL' },
@@ -332,19 +332,21 @@ export default function ThreatsSection({ dark }) {
     const filtered = allFindings.filter(f => {
         const modOk = moduleFilter === 'ALL' || getModule(f.type) === moduleFilter
         if (!modOk) return false
+        const sev = (f.severity || '').toUpperCase()
         if (filter === 'ALL') return true
         if (filter === 'AUTO-FIX') return f.execution?.status === 'PLANNED'
         if (filter === 'MANUAL') return f.execution?.status === 'INFO'
-        return f.severity === filter
+        return sev === filter
     })
+    const modOk = f => moduleFilter === 'ALL' || getModule(f.type) === moduleFilter
     const counts = {
-        ALL: allFindings.filter(f => moduleFilter === 'ALL' || getModule(f.type) === moduleFilter).length,
-        CRITICAL: allFindings.filter(f => f.severity === 'CRITICAL' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
-        HIGH: allFindings.filter(f => f.severity === 'HIGH' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
-        MEDIUM: allFindings.filter(f => f.severity === 'MEDIUM' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
-        LOW: allFindings.filter(f => f.severity === 'LOW' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
-        'AUTO-FIX': allFindings.filter(f => f.execution?.status === 'PLANNED' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
-        'MANUAL': allFindings.filter(f => f.execution?.status === 'INFO' && (moduleFilter === 'ALL' || getModule(f.type) === moduleFilter)).length,
+        ALL:        allFindings.filter(f => modOk(f)).length,
+        CRITICAL:   allFindings.filter(f => modOk(f) && (f.severity||'').toUpperCase() === 'CRITICAL').length,
+        HIGH:       allFindings.filter(f => modOk(f) && (f.severity||'').toUpperCase() === 'HIGH').length,
+        MEDIUM:     allFindings.filter(f => modOk(f) && (f.severity||'').toUpperCase() === 'MEDIUM').length,
+        LOW:        allFindings.filter(f => modOk(f) && (f.severity||'').toUpperCase() === 'LOW').length,
+        'AUTO-FIX': allFindings.filter(f => modOk(f) && f.execution?.status === 'PLANNED').length,
+        'MANUAL':   allFindings.filter(f => modOk(f) && f.execution?.status === 'INFO').length,
     }
 
     const hasScan = !!(activeScanId)

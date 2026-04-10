@@ -28,6 +28,14 @@
       {
         "from": "../app/ui/dist",
         "to": "ui"
+      },
+      {
+        "from": "../installer/images/icon.ico",
+        "to": "app/icon.ico"
+      },
+      {
+        "from": "../installer/images/tray_icon.ico",
+        "to": "app/tray_icon.ico"
       }
     ],
     "asar": true

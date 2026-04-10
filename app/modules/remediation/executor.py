@@ -417,12 +417,17 @@ class RemediationExecutor:
 
             for ip_range in permission.get("IpRanges", []):
                 if ip_range.get("CidrIp") == "0.0.0.0/0":
-                    targeted_rules.append({
+                    # Build rule without FromPort/ToPort when they are None
+                    # (protocol="-1" all-traffic rules have no ports)
+                    rule = {
                         "IpProtocol": protocol,
-                        "FromPort": from_port,
-                        "ToPort": to_port,
                         "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
-                    })
+                    }
+                    if from_port is not None:
+                        rule["FromPort"] = from_port
+                    if to_port is not None:
+                        rule["ToPort"] = to_port
+                    targeted_rules.append(rule)
 
         if not targeted_rules:
             return {
@@ -726,17 +731,18 @@ class RemediationExecutor:
             if key["AccessKeyId"] == access_key_id:
                 key_metadata = key
                 break
-        safe_metadata = key_metadata.copy()
 
-        if "CreateDate" in safe_metadata:
-            safe_metadata["CreateDate"] = safe_metadata["CreateDate"].isoformat()
-
+        # Guard BEFORE .copy() — if key not found, key_metadata is None
         if not key_metadata:
             return {
                 "status": "FAILED",
                 "reason": "Access key not found",
                 "user_name": user_name
             }
+
+        safe_metadata = key_metadata.copy()
+        if "CreateDate" in safe_metadata:
+            safe_metadata["CreateDate"] = safe_metadata["CreateDate"].isoformat()
 
         if key_metadata["Status"] != "Inactive":
             return {
@@ -1619,17 +1625,19 @@ class RemediationExecutor:
 
         volume_id = finding.get("resource_id")
         region = finding.get("region")
+
+        # Resolve region FIRST, then build the client before any describe calls
+        if not region or region == "global":
+            region = self.aws_session.session.region_name or "us-east-1"
+
+        ec2 = self.aws_session.session.client("ec2", region_name=region)
+
         original_volume = ec2.describe_volumes(VolumeIds=[volume_id])["Volumes"][0]
 
         attachments = original_volume.get("Attachments", [])
 
         instance_id = attachments[0]["InstanceId"] if attachments else None
         device_name = attachments[0]["Device"] if attachments else None
-
-        if not region or region == "global":
-            region = self.aws_session.session.region_name
-
-        ec2 = self.aws_session.session.client("ec2", region_name=region)
 
         if self.execution_mode == "DRY_RUN":
             return {
@@ -2423,19 +2431,25 @@ class RemediationExecutor:
 
         rules_to_revoke = []
         for permission in sg.get("IpPermissions", []):
-            from_port = permission.get("FromPort", 0)
-            to_port = permission.get("ToPort", 65535)
-            protocol = permission.get("IpProtocol", "")
+            from_port = permission.get("FromPort")   # None for protocol="-1" all-traffic
+            to_port   = permission.get("ToPort")     # None for protocol="-1" all-traffic
+            protocol  = permission.get("IpProtocol", "")
+
+            # For -1 (all-traffic), port check must use sentinel values only for comparison
+            fp_cmp = from_port if from_port is not None else 0
+            tp_cmp = to_port   if to_port   is not None else 65535
 
             for ip_range in permission.get("IpRanges", []):
                 if ip_range.get("CidrIp") == "0.0.0.0/0":
-                    if protocol in ["-1", "tcp"] and from_port <= 22 <= to_port:
-                        rules_to_revoke.append({
-                            "IpProtocol": protocol,
-                            "FromPort": from_port,
-                            "ToPort": to_port,
-                            "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
-                        })
+                    if protocol in ["-1", "tcp"] and fp_cmp <= 22 <= tp_cmp:
+                        # Only include FromPort/ToPort when they are not None
+                        # (protocol="-1" rules have no ports; including them causes AWS to reject the revoke)
+                        rule = {"IpProtocol": protocol, "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}
+                        if from_port is not None:
+                            rule["FromPort"] = from_port
+                        if to_port is not None:
+                            rule["ToPort"] = to_port
+                        rules_to_revoke.append(rule)
 
         if self.execution_mode == "DRY_RUN":
             return {
@@ -2530,19 +2544,22 @@ class RemediationExecutor:
 
         rules_to_revoke = []
         for permission in sg.get("IpPermissions", []):
-            from_port = permission.get("FromPort", 0)
-            to_port = permission.get("ToPort", 65535)
-            protocol = permission.get("IpProtocol", "")
+            from_port = permission.get("FromPort")   # None for protocol="-1" all-traffic
+            to_port   = permission.get("ToPort")     # None for protocol="-1" all-traffic
+            protocol  = permission.get("IpProtocol", "")
+
+            fp_cmp = from_port if from_port is not None else 0
+            tp_cmp = to_port   if to_port   is not None else 65535
 
             for ip_range in permission.get("IpRanges", []):
                 if ip_range.get("CidrIp") == "0.0.0.0/0":
-                    if protocol in ["-1", "tcp"] and from_port <= 3389 <= to_port:
-                        rules_to_revoke.append({
-                            "IpProtocol": protocol,
-                            "FromPort": from_port,
-                            "ToPort": to_port,
-                            "IpRanges": [{"CidrIp": "0.0.0.0/0"}]
-                        })
+                    if protocol in ["-1", "tcp"] and fp_cmp <= 3389 <= tp_cmp:
+                        rule = {"IpProtocol": protocol, "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}
+                        if from_port is not None:
+                            rule["FromPort"] = from_port
+                        if to_port is not None:
+                            rule["ToPort"] = to_port
+                        rules_to_revoke.append(rule)
 
         if self.execution_mode == "DRY_RUN":
             return {

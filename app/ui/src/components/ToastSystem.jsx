@@ -4,7 +4,7 @@ import axios from 'axios'
 import { useAuth } from '@/context/AuthContext'
 import { ShieldAlert, AlertTriangle, Info, X, ChevronRight, Shield } from 'lucide-react'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 const POLL_MS = 15_000          // poll every 15 seconds
 const AUTO_DISMISS_MS = 12_000   // toast stays for 12 seconds
 const MAX_TOASTS = 3            // max visible at once (capped to prevent stacking)
@@ -70,6 +70,7 @@ function Toast({ toast, onDismiss, onNav }) {
 
     useEffect(() => {
         const start = Date.now()
+        // 250ms is smooth enough for a visual progress bar and avoids 12.5 state updates/sec per toast
         const iv = setInterval(() => {
             const elapsed = Date.now() - start
             const pct = Math.max(0, 100 - (elapsed / AUTO_DISMISS_MS) * 100)
@@ -78,7 +79,7 @@ function Toast({ toast, onDismiss, onNav }) {
                 clearInterval(iv)
                 dismiss()
             }
-        }, 80)
+        }, 250)
         return () => clearInterval(iv)
     }, [])
 
@@ -239,24 +240,25 @@ export default function ToastSystem({ onNav }) {
 
     const fireNativeNotif = useCallback((alert, displayType) => {
         if (!NOTIFY_SEVERITIES.has(alert.severity)) return
-        if (!('Notification' in window) || Notification.permission !== 'granted') return
         const sevLabel = { CRITICAL: '🔴 CRITICAL', HIGH: '🟠 HIGH', MEDIUM: '🟡 MEDIUM', LOW: '🔵 LOW' }
-        const title = `${sevLabel[alert.severity] || '⚠️'} AWS Security Alert`
-        const body = `${displayType.replace(/_/g, ' ')}: ${alert.message || 'New issue detected'}`
+        const title = `${sevLabel[alert.severity] || '⚠️'} AWS Security Alert — ${alert.severity}`
+        const body  = `${displayType.replace(/_/g, ' ')}: ${alert.message || 'New issue detected'}`
+
+        // Route through Electron main process so the app icon + "AWS CloudShield" name shows on
+        // ALL notifications — fixes the plain 'electron.app.CloudShield' no-icon issue.
+        if (window.electronAPI?.showNativeNotif) {
+            window.electronAPI.showNativeNotif(title, body, alert.severity)
+            return
+        }
+
+        // Fallback for dev-browser mode (no Electron IPC)
         try {
-            const notif = new Notification(title, {
-                body,
-                tag: String(alert.id),
-                requireInteraction: alert.severity === 'CRITICAL' || alert.severity === 'HIGH',
-                silent: false,
-            })
-            notif.onclick = () => {
-                window.focus()
-                notif.close()
-                onNav('threats')
-            }
+            if (!('Notification' in window) || Notification.permission !== 'granted') return
+            const notif = new Notification(title, { body, tag: String(alert.id), silent: false })
+            notif.onclick = () => { window.focus(); notif.close(); onNav('threats') }
         } catch { /* ignore */ }
     }, [onNav])
+
 
     const showAlert = useCallback((alert) => {
         if (!seenRef.current) return
@@ -305,7 +307,7 @@ export default function ToastSystem({ onNav }) {
         if (wsRef.current?.readyState === WebSocket.OPEN) return
 
         try {
-            const ws = new WebSocket('ws://localhost:8000/ws/alerts')
+            const ws = new WebSocket('ws://127.0.0.1:8000/ws/alerts')
             wsRef.current = ws
 
             ws.onopen = () => {

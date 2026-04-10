@@ -1,0 +1,126 @@
+372 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.4
+373 INFO: Python: 3.14.2
+420 INFO: Platform: Windows-11-10.0.26220-SP0
+420 INFO: Python environment: P:\CloudSecurityPanel\venv
+2250 INFO: Module search paths (PYTHONPATH):
+['p:\\CloudSecurityPanel\\venv\\Scripts\\pyinstaller.exe',
+ 'C:\\Users\\qi163\\AppData\\Local\\Python\\pythoncore-3.14-64\\python314.zip',
+ 'C:\\Users\\qi163\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs',
+ 'C:\\Users\\qi163\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib',
+ 'C:\\Users\\qi163\\AppData\\Local\\Python\\pythoncore-3.14-64',
+ 'P:\\CloudSecurityPanel\\venv',
+ 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages',
+ 'p:\\CloudSecurityPanel']
+2914 INFO: Appending 'datas' from .spec
+3596 INFO: checking Analysis
+4099 INFO: Building because excludes changed
+4099 INFO: Looking for Python shared library...
+4099 INFO: Using Python shared library: C:\Users\qi163\AppData\Local\Python\pythoncore-3.14-64\python314.dll
+4099 INFO: Running Analysis Analysis-00.toc
+4099 INFO: Target bytecode optimization level: 0
+4099 INFO: Initializing module dependency graph...
+4103 INFO: Initializing module graph hook caches...
+4140 INFO: Analyzing modules for base_library.zip ...
+6989 INFO: Processing standard module hook 'hook-encodings.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7740 INFO: Processing standard module hook 'hook-pickle.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8314 INFO: Processing standard module hook 'hook-difflib.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8336 INFO: Processing standard module hook 'hook-heapq.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12127 INFO: Caching module dependency graph...
+12168 INFO: Analyzing p:\CloudSecurityPanel\backend_entry.py
+12231 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12384 INFO: Processing standard module hook 'hook-xml.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12889 INFO: Processing standard module hook 'hook-sysconfig.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12897 INFO: Processing standard module hook 'hook-_ctypes.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+12949 INFO: Processing standard module hook 'hook-uvicorn.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+15212 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+15215 INFO: SetuptoolsInfo: initializing cached setuptools info...
+16822 INFO: Processing standard module hook 'hook-platform.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18915 INFO: Processing standard module hook 'hook-websockets.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+20933 INFO: Processing standard module hook 'hook-anyio.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+23796 INFO: Processing standard module hook 'hook-pydantic.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+P:\CloudSecurityPanel\venv\Lib\site-packages\PyInstaller\utils\hooks\__init__.py:665: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  __import__(name)
+25604 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+29790 INFO: Processing standard module hook 'hook-boto3.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+33669 INFO: Processing standard module hook 'hook-botocore.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+36025 INFO: Processing standard module hook 'hook-dateutil.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+36205 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+36737 INFO: Processing standard module hook 'hook-urllib3.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+37037 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+37038 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+37064 INFO: Processing standard module hook 'hook-setuptools.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+37127 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+37245 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+37246 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+37278 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+37279 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+37838 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+38336 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+38338 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+38889 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+38889 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+38950 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+39110 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+39111 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+39747 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+39748 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+41004 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41005 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+42167 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+45934 INFO: Processing standard module hook 'hook-sqlalchemy.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+57030 INFO: Analyzing hidden import 'uvicorn.loops'
+57031 INFO: Analyzing hidden import 'uvicorn.loops.auto'
+57071 INFO: Analyzing hidden import 'uvicorn.protocols.http.auto'
+57087 INFO: Analyzing hidden import 'uvicorn.protocols.websockets.auto'
+57102 INFO: Analyzing hidden import 'uvicorn.lifespan'
+57102 INFO: Analyzing hidden import 'uvicorn.lifespan.on'
+57114 INFO: Analyzing hidden import 'uvicorn.lifespan.off'
+57129 INFO: Analyzing hidden import 'sqlalchemy.dialects.sqlite'
+57347 INFO: Processing standard module hook 'hook-sqlite3.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+57916 INFO: Analyzing hidden import 'app.database.init_db'
+57917 INFO: Analyzing hidden import 'plyer.platforms.win.notification'
+58001 INFO: Processing module hooks (post-graph stage)...
+59651 WARNING: Hidden import "tzdata" not found!
+61021 INFO: Processing standard module hook 'hook-sqlalchemy.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+61626 WARNING: Hidden import "pysqlite2" not found!
+61626 WARNING: Hidden import "MySQLdb" not found!
+64369 INFO: Performing binary vs. data reclassification (8103 entries)
+181810 INFO: Looking for ctypes DLLs
+181886 INFO: Analyzing run-time hooks ...
+181893 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+181912 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+181932 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+181948 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'P:\\CloudSecurityPanel\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+182223 INFO: Creating base_library.zip...
+182248 INFO: Looking for dynamic libraries
+P:\CloudSecurityPanel\venv\Lib\site-packages\PyInstaller\building\build_main.py:227: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  __import__(package)
+184630 INFO: Extra DLL search directories (AddDllDirectory): []
+184630 INFO: Extra DLL search directories (PATH): []
+185406 WARNING: Library not found: could not resolve 'libnode.dll', dependency of 'p:\\CloudSecurityPanel\\app\\ui\\node_modules\\@rollup\\rollup-win32-x64-gnu\\rollup.win32-x64-gnu.node'.
+185721 INFO: Warnings written to p:\CloudSecurityPanel\build\cloudshield\warn-cloudshield.txt
+185860 INFO: Graph cross-reference written to p:\CloudSecurityPanel\build\cloudshield\xref-cloudshield.html
+186324 INFO: checking PYZ
+186364 INFO: Building because p:\CloudSecurityPanel\app\api\main.py changed
+186364 INFO: Building PYZ (ZlibArchive) p:\CloudSecurityPanel\build\cloudshield\PYZ-00.pyz
+187336 INFO: Building PYZ (ZlibArchive) p:\CloudSecurityPanel\build\cloudshield\PYZ-00.pyz completed successfully.
+187368 INFO: checking PKG
+187384 INFO: Building because p:\CloudSecurityPanel\build\cloudshield\PYZ-00.pyz changed
+187385 INFO: Building PKG (CArchive) cloudshield-backend.pkg
+187417 INFO: Building PKG (CArchive) cloudshield-backend.pkg completed successfully.
+187418 INFO: Bootloader P:\CloudSecurityPanel\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+187418 INFO: checking EXE
+187437 INFO: Rebuilding EXE-00.toc because pkg is more recent
+187437 INFO: Building EXE from EXE-00.toc
+187438 INFO: Copying bootloader EXE to p:\CloudSecurityPanel\build\cloudshield\cloudshield-backend.exe
+187442 INFO: Copying icon to EXE
+187446 INFO: Copying 0 resources to EXE
+187446 INFO: Embedding manifest in EXE
+187449 INFO: Appending PKG archive to EXE
+187523 INFO: Fixing EXE headers
+187627 INFO: Building EXE from EXE-00.toc completed successfully.
+187754 INFO: checking COLLECT
+187989 INFO: Building COLLECT COLLECT-00.toc
+196627 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+196831 INFO: Build complete! The results are available in: p:\CloudSecurityPanel\dist
+BUILD_SUCCESS 

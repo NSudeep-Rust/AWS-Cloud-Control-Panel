@@ -1,21 +1,29 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.api.schemas import ScanRequest
 from app.config import security_config
 from app.api.response_formatter import format_response
 from app.api.logger import logger
 from app.core.aws_session import AWSSession
-from app.modules.scanner.scanner import Scanner
-from sqlalchemy.orm import Session
-from fastapi import Depends
-from app.database.db import get_db
-from app.database.models import Scan, Finding
-from app.database.models import Account
 from app.modules.scanner.scanner import run_full_scan
 from app.core.email_service import EmailService
-from app.database.db import SessionLocal
+from app.database.db import SessionLocal, get_db
+from app.database.models import Scan, Finding, Account
 from app.modules.reporter.html_reporter import HTMLReporter
+from sqlalchemy.orm import Session
 import uuid
 import threading
+import os
+import datetime as _dt
+
+def _log(msg):
+    """Write to backend.log so scan activity is visible in diagnostics."""
+    try:
+        _d = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'CloudSecurityPanel', 'logs')
+        with open(os.path.join(_d, 'backend.log'), 'a', encoding='utf-8') as f:
+            ts = _dt.datetime.now().strftime('%H:%M:%S')
+            f.write(f'[{ts}] [SCAN] {msg}\n')
+    except Exception:
+        pass
 
 
 router = APIRouter(
@@ -24,8 +32,37 @@ router = APIRouter(
 )
 
 
+@router.get("/test-aws")
+def test_aws_connection(account_id: int, db: Session = Depends(get_db)):
+    """Quick AWS connectivity test - calls STS only, no full scan."""
+    _log(f'TEST-AWS: account_id={account_id}')
+    try:
+        account = db.query(Account).filter(Account.id == account_id).first()
+        if not account:
+            _log(f'TEST-AWS: account {account_id} not found in DB')
+            return {"ok": False, "error": f"Account {account_id} not in DB"}
+        aws_session = AWSSession(
+            profile_name=account.profile_name,
+            role_arn=getattr(account, "role_arn", None),
+            access_key=getattr(account, "access_key", None),
+            secret_key=getattr(account, "secret_key", None),
+            region_name=account.region
+        )
+        aws_session.initialize()
+        sts = aws_session.session.client("sts")
+        identity = sts.get_caller_identity()
+        _log(f'TEST-AWS OK: {identity["Account"]}')
+        return {"ok": True, "aws_account_id": identity["Account"], "arn": identity["Arn"]}
+    except Exception as e:
+        import traceback
+        _log(f'TEST-AWS ERROR: {e}')
+        _log(traceback.format_exc())
+        return {"ok": False, "error": str(e)}
+
+
 @router.post("/")
 def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
+    _log(f'REQUEST RECEIVED: account_id={request.account_id} mode={request.mode}')
 
     effective_mode = request.mode
 
@@ -59,11 +96,9 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             region_name=account.region
         )
         aws_session.initialize()
-        print("USING AWS PROFILE:", account.profile_name)
-
-        scanner = Scanner(aws_session)
-
+        _log(f'session initialized for account_id={request.account_id} profile={account.profile_name}')
         findings = run_full_scan(aws_session, source="API")
+        _log(f'scan complete - {len(findings)} findings')
 
         scan_id = str(uuid.uuid4())
 
@@ -94,7 +129,7 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         db.commit()
 
         def _notify(acct_id, acct_name, scan_findings, sid):
-            """Runs in a daemon thread — won't block the HTTP response."""
+            """Runs in a daemon thread - won't block the HTTP response."""
             try:
                 bg_db = SessionLocal()
                 cfg   = EmailService.get_config(acct_id, bg_db)
@@ -139,16 +174,16 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         t.start()
 
         print("\n" + "="*55)
-        print("🌐 API SCAN STARTED")
+        print("[API] SCAN STARTED")
         print("="*55)
 
-        print(f"👤 Profile: {account.profile_name}")
+        print(f"[Profile] {account.profile_name}")
 
-        print(f"📊 API FINAL TOTAL: {len(findings)}")
-        print(f"🔍 SAMPLE: {findings[:2]}")
+        print(f"[TOTAL] FINDINGS: {len(findings)}")
+        print(f"[SAMPLE] {findings[:2]}")
 
         print("="*55)
-        print("🌐 API SCAN COMPLETED")
+        print("[API] SCAN COMPLETED")
         print("="*55 + "\n")
 
         return format_response(
@@ -162,6 +197,9 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         )
 
     except Exception as e:
+        import traceback
+        _log(f'SCAN ERROR: {str(e)}')
+        _log(f'TRACEBACK: {traceback.format_exc()}')
         logger.error(f"Scanner execution failed: {str(e)}")
 
         return format_response(
@@ -203,7 +241,7 @@ def get_scan_history(account_id: int, limit: int = 5, db: Session = Depends(get_
 @router.get("/report/{scan_id}")
 def view_scan_report(scan_id: str):
     """Serve the saved HTML report for a scan directly in the browser.
-    Used by the in-app 'View Report' button — no localhost dependency."""
+    Used by the in-app 'View Report' button - no localhost dependency."""
     from fastapi.responses import HTMLResponse, JSONResponse
     path = HTMLReporter.get_path(scan_id)
     if path is None:

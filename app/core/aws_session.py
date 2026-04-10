@@ -1,12 +1,30 @@
 import boto3
+import os
+import sys
 import functools
 from botocore.exceptions import NoCredentialsError, ProfileNotFound, ClientError
 from botocore.config import Config
 
+# Resolve certifi CA bundle - MUST use _MEIPASS directly in PyInstaller bundle
+# because certifi.where() returns path inside PYZ archive (wrong) in frozen apps
+try:
+    if getattr(sys, 'frozen', False):
+        # In PyInstaller bundle: cacert.pem was placed at _MEIPASS/certifi/cacert.pem
+        _ca = os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+    else:
+        import certifi as _certifi
+        _ca = _certifi.where()
+    os.environ["SSL_CERT_FILE"]      = _ca
+    os.environ["REQUESTS_CA_BUNDLE"] = _ca
+    os.environ["AWS_CA_BUNDLE"]      = _ca
+    _SSL_VERIFY = _ca if os.path.exists(_ca) else True
+except Exception:
+    _SSL_VERIFY = True  # fall back to system CA bundle
+
 _FAST_CONFIG = Config(
-    connect_timeout=5,
-    read_timeout=18,
-    retries={'max_attempts': 1},
+    connect_timeout=10,
+    read_timeout=30,
+    retries={'max_attempts': 2},
 )
 
 
@@ -63,6 +81,9 @@ class AWSSession:
             def _fast_client(service_name, *args, **kwargs):
                 if 'config' not in kwargs:
                     kwargs['config'] = _FAST_CONFIG
+                # Always pass certifi CA bundle so SSL works in PyInstaller bundle
+                if 'verify' not in kwargs:
+                    kwargs['verify'] = _SSL_VERIFY
                 return _orig_client(service_name, *args, **kwargs)
 
             self.session.client = _fast_client
@@ -143,13 +164,13 @@ class AWSSession:
         Return only approved high-usage regions (performance optimized).
         """
         return [
-            "us-east-1",       # N. Virginia — highest traffic globally
-            "us-east-2",       # Ohio — US secondary
-            "us-west-2",       # Oregon — US West primary
-            "eu-west-1",       # Ireland — EU primary
-            "eu-central-1",    # Frankfurt — EU enterprise
+            "us-east-1",       # N. Virginia - highest traffic globally
+            "us-east-2",       # Ohio - US secondary
+            "us-west-2",       # Oregon - US West primary
+            "eu-west-1",       # Ireland - EU primary
+            "eu-central-1",    # Frankfurt - EU enterprise
             "eu-north-1",      # Stockholm
-            "ap-northeast-1",  # Tokyo — APAC primary
-            "ap-southeast-1",  # Singapore — SE Asia
-            "ap-south-1",      # Mumbai — South Asia
+            "ap-northeast-1",  # Tokyo - APAC primary
+            "ap-southeast-1",  # Singapore - SE Asia
+            "ap-south-1",      # Mumbai - South Asia
         ]

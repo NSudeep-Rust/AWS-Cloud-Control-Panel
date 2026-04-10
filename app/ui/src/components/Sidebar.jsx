@@ -50,20 +50,14 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
         async function fetchCounts() {
             try {
                 const params = accountDbId ? `?account_db_id=${accountDbId}` : ''
-                const r    = await fetch(`http://localhost:8000/api/live-findings/${params}`)
+                const r    = await fetch(`http://127.0.0.1:8000/api/live-findings/${params}`)
                 const json = await r.json()
                 const findings = json?.data?.findings || []
 
-                const sessionFindings = sessionStart
-                    ? findings.filter(f => {
-                        const t = f.detected_at ? new Date(f.detected_at).getTime() : 0
-                        return t >= sessionStart
-                      })
-                    : findings
-
+                // Show all live findings for count — same UTC-parsing fix as AlertsSection
                 setAlertCounts({
-                    critical: sessionFindings.filter(f => f.severity === 'CRITICAL').length,
-                    high:     sessionFindings.filter(f => f.severity === 'HIGH').length,
+                    critical: findings.filter(f => f.severity === 'CRITICAL').length,
+                    high:     findings.filter(f => f.severity === 'HIGH').length,
                 })
             } catch { /* ignore */ }
         }
@@ -78,7 +72,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
         setClearing(true)
         try {
             if (clearData) {
-                const API = 'http://localhost:8000'
+                const API = 'http://127.0.0.1:8000'
                 const awsId = account?.aws_account_id || account?.account_id
                 if (awsId) {
                     await fetch(

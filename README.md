@@ -1,19 +1,22 @@
 <div align="center">
 
-<img src="app/assets/aws_cloudshield.ico" alt="AWS Cloud Control Panel" width="80"/>
+<img src="app/assets/aws_cloudshield.ico" alt="AWS CloudShield" width="80"/>
 
-# ☁️ AWS Cloud Control Panel
+# 🛡️ AWS CloudShield
 
 **Enterprise-grade AWS security scanner, threat monitor & auto-remediation platform**
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev)
+[![Electron](https://img.shields.io/badge/Electron-Desktop-47848F?style=flat&logo=electron&logoColor=white)](https://electronjs.org)
 [![AWS](https://img.shields.io/badge/AWS-boto3-FF9900?style=flat&logo=amazonaws&logoColor=white)](https://aws.amazon.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
-*Scan · Detect · Remediate · Monitor — all from one beautiful panel*
+*Scan · Detect · Remediate · Monitor — all from one beautiful desktop panel*
+
+[⬇️ Download Installer](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest) &nbsp;·&nbsp; [📖 Docs](#-getting-started) &nbsp;·&nbsp; [🐛 Issues](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/issues)
 
 </div>
 
@@ -23,23 +26,39 @@
 
 ### Welcome & Account Selection
 ![Welcome Page](docs/screenshots/landing_page.png)
-> System health dashboard, AWS region coverage, security module overview, and multi-account switching
+> Clean onboarding experience — add multiple AWS accounts (Root or IAM), choose region, and launch your first scan in seconds
 
 ### Command Center — Overview
 ![Dashboard Overview](docs/screenshots/dashboard_overview.png)
-> Real-time risk score, finding severity breakdown, recent security events, and quick action shortcuts
+> Real-time risk score gauge, severity breakdown, recent findings summary, and live scan radar — all at a glance
 
-### Security Scanner — 176 Findings
+### Security Scanner
 ![Scanner Section](docs/screenshots/scanner_page.png)
-> Full scan results with filters by severity, module, and region — all findings ranked and actionable
+> Full scan results across 52+ checks — filter by severity (CRITICAL / HIGH / MEDIUM / LOW), module, and region. Each finding shows the affected resource, fix suggestion, and auto-fix availability
 
 ### Threat Monitor — Live Analysis
 ![Threat Monitor](docs/screenshots/threats_page.png)
-> 146 auto-fixable findings, 30 manual advisories — searchable by module, severity, and remediation type
+> Continuously monitors your AWS environment for new and resolved threats. Displays all analyzed findings with severity tags, auto-fix availability, and one-click remediation routing. Start the monitor for real-time WebSocket-based alerting
 
 ### Auto-Remediation Pipeline
 ![Remediation Section](docs/screenshots/remediation_page.png)
-> Dry-run preview → approve → apply fix to AWS. Full rollback support for every executed action
+> Four-stage pipeline: **Detect** findings → **Plan** the fix (dry-run preview) → **Execute** changes on AWS → **Fixed** and tracked. Every action is logged with full rollback support
+
+### Rollback & Restore Points
+![Rollback Section](docs/screenshots/rollback_page.png)
+> Every executed remediation creates a restore point. One-click **Recover** to undo any fix — whether it's detaching an IAM policy, removing an S3 ACL, or re-enabling a security group rule. No permanent lock-in
+
+### Audit History
+![Audit History](docs/screenshots/history_page.png)
+> Full timeline of every scan and remediation event. Filter by scan-only or remediation-only events, search by finding type or resource ID, and toggle to reveal the locked finding snapshot per scan
+
+### Security Analytics
+![Security Analytics](docs/screenshots/analytics_page.png)
+> Risk score over time, severity distribution, remediation rate, regional heatmap, top finding types, and compliance scorecards across **CIS AWS Benchmark**, **PCI DSS**, and **NIST CSF** — all live-updated after every scan
+
+### Live Alerts Monitor
+![Alerts Section](docs/screenshots/alerts_page.png)
+> Real-time alert feed for current session findings. Filters by severity, sortable by time — automatically surfaces new CRITICAL and HIGH findings the moment a scan completes. Desktop toast notifications on Windows
 
 ---
 
@@ -49,26 +68,45 @@
 - **52+ security checks** across IAM, S3, EC2, VPC, RDS, KMS, CloudTrail, CloudWatch, and more
 - **9 AWS regions** scanned concurrently with parallel per-region sub-scanners
 - Fully parallelized S3 (per-bucket) and IAM (per-user) checks for **~20–30s scan time**
-- Real-time progress log with module-specific status messages
+- Real-time progress log with elapsed time and module-specific status messages
 - Findings ranked by severity: `CRITICAL` → `HIGH` → `MEDIUM` → `LOW`
 
 ### 🛡️ Threat Monitor
-- Real-time continuous monitoring mode (live polling)
+- Real-time continuous monitoring mode (WebSocket-based live polling)
 - Filterable by module, severity, and remediation type (AUTO-FIX / MANUAL)
-- WebSocket-based instant alert delivery
-- System tray notifications (Windows)
+- **195+ threats analyzed** with auto-fix routing to the Remediation engine
+- Windows desktop toast notifications with CloudShield branding
 
 ### ⚡ Auto-Remediation Engine
 - **Dry-run preview** before any change is applied to AWS
 - One-click apply with danger guard for irreversible actions
-- Full **rollback** support — revert any executed fix from the Rollback section
-- Manual advisory panel for findings requiring human review
+- Auto-loads fixable findings directly from the latest scan
+- **Rollback** support — revert any executed fix from the Rollback section
 
-### 📊 Dashboard & Analytics
-- Risk Score engine (0–100) with CRITICAL/HIGH/MEDIUM/LOW categorisation
-- Scan history with per-scan finding breakdowns
-- Compliance posture tracking across time
-- Alerts & notifications system with localStorage persistence
+### 🔄 Rollback & Restore Points
+- Every executed fix automatically creates a timestamped restore point
+- One-click **Recover** per restore point — undo any change safely
+- Tracks: IAM policy detach, S3 ACL removal, VPC flow logs, security group restrictions, KMS key rotation
+- Permanent changes are tracked separately with clear warnings
+
+### 📜 Audit History
+- Full audit timeline of every scan and remediation event
+- Filter by: All Events, Scans Only, Remediations Only
+- Per-scan finding snapshots with locked counts — tap to reveal
+- Scheduled scan support (cron-based automation toggle)
+
+### 📊 Security Analytics
+- **Risk Score gauge** (0–100) with live trend chart across all scans
+- Severity breakdown, per-scan stacked bar charts, top finding types
+- **Regional heatmap** showing finding density per AWS region
+- **Compliance Scorecard** — CIS AWS Benchmark, PCI DSS, NIST CSF pass/fail per rule
+- Remediation rate tracking (detected vs. fixed vs. still active)
+
+### 🔔 Live Alerts
+- Real-time alert feed for the current session
+- Filters by severity (CRITICAL / HIGH / MEDIUM / LOW)
+- Automatic Windows toast notifications for new critical findings
+- Per-session isolation — clears on new scan start
 
 ### 🔐 Multi-Account Support
 - Add unlimited AWS accounts (Root or IAM user credentials)
@@ -81,16 +119,21 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  React / Vite Frontend                   │
-│   WelcomePage → PanelPage (Overview, Scanner, Threats,   │
-│   Remediation, Rollback, History, Analytics, Alerts)     │
-│   ScanContext · AuthContext · ToastSystem · Sidebar      │
+│              Electron Desktop Shell (Windows)            │
+│   Wraps React frontend · IPC bridge · Native notifs      │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────────┐
+│                  React / Vite Frontend                    │
+│  WelcomePage → PanelPage (Overview, Scanner, Threats,    │
+│  Remediation, Rollback, History, Analytics, Alerts)      │
+│  ScanContext · AuthContext · ToastSystem · Sidebar        │
 └───────────────────────┬─────────────────────────────────┘
                         │ REST API + WebSocket
 ┌───────────────────────▼─────────────────────────────────┐
 │              FastAPI Backend (port 8000)                  │
-│   /api/scan  /api/execute  /api/rollback  /api/alerts    │
-│   /api/history  /api/accounts  /api/monitor              │
+│  /api/scan  /api/execute  /api/rollback  /api/alerts     │
+│  /api/history  /api/accounts  /api/analytics             │
 └───┬───────────────┬───────────────┬─────────────────────┘
     │               │               │
 ┌───▼───┐     ┌─────▼────┐   ┌─────▼──────────────────┐
@@ -125,7 +168,16 @@
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Option A — Windows Installer (Recommended)
+
+1. [Download `CloudShield-Setup-v1.0.0.exe`](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest)
+2. Run the installer
+3. Launch **AWS CloudShield** from your desktop
+4. Add your AWS credentials → Run Scan
+
+### Option B — Run from Source
+
+#### Prerequisites
 
 | Requirement | Version |
 |-------------|---------|
@@ -133,40 +185,28 @@
 | Node.js | 18+ |
 | AWS Account | Root or IAM credentials |
 
-### Installation
-
 ```bash
 # 1. Clone the repository
-git clone https://github.com/NSudeep-Rust/CloudSecurityPanel.git
-cd CloudSecurityPanel
+git clone https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel.git
+cd AWS-Cloud-Control-Panel
 
 # 2. Create and activate Python virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/macOS
 
 # 3. Install Python dependencies
 pip install -r requirements.txt
 
-# 4. Install frontend dependencies and build
+# 4. Start the backend API
+python -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 5. In a new terminal — start the frontend
 cd app/ui
 npm install
-npm run build
-cd ../..
-
-# 5. Start the application
-python run.py
+npm run dev
 ```
 
-The app will be available at **http://localhost:8000**
-
-### First Run
-
-1. Open `http://localhost:8000` in your browser
-2. Click **"Add New Account"**
-3. Enter your AWS credentials (Access Key ID + Secret Access Key)
-4. Select your primary region
-5. Click **"Run Scan"** — results in ~20–30 seconds
+Open **http://localhost:5173** in your browser.
 
 ---
 
@@ -182,36 +222,21 @@ CloudSecurityPanel/
 │   │   └── aws_session.py       # boto3 session manager
 │   ├── modules/
 │   │   ├── scanner/             # 9 scanner engines
-│   │   │   ├── scanner.py       # Main orchestrator
-│   │   │   ├── iam_extra_scanner.py
-│   │   │   ├── s3_scanner.py
-│   │   │   ├── ec2_scanner.py
-│   │   │   ├── rds_scanner.py
-│   │   │   └── ...
 │   │   ├── remediation/
 │   │   │   ├── executor.py      # Applies fixes to AWS
 │   │   │   ├── planner.py       # Dry-run preview
 │   │   │   └── rollback.py      # Reverts executed fixes
-│   │   ├── iam_manager/
-│   │   │   └── iam_manager.py   # IAM-specific audits
 │   │   └── threat_monitor/      # Live monitoring engine
 │   ├── database/
 │   │   └── models.py            # SQLAlchemy ORM models
-│   ├── config/
-│   │   └── security_config.py   # Severity mappings
-│   └── ui/
-│       └── src/
-│           ├── pages/
-│           │   ├── WelcomePage.jsx
-│           │   ├── PanelPage.jsx
-│           │   └── sections/    # All panel sections
-│           ├── context/
-│           │   ├── AuthContext.jsx
-│           │   └── ScanContext.jsx
-│           └── components/
-│               ├── Sidebar.jsx
-│               └── ToastSystem.jsx
-├── run.py                       # Application entry point
+│   └── ui/src/
+│       ├── pages/sections/      # All panel sections
+│       ├── context/             # AuthContext, ScanContext
+│       └── components/          # Sidebar, ToastSystem
+├── electron/                    # Electron desktop shell
+├── updater/                     # Auto-updater (GitHub Releases)
+├── installer/                   # Inno Setup installer config
+├── run_b10.bat                  # Full production build script
 └── requirements.txt
 ```
 
@@ -221,34 +246,22 @@ CloudSecurityPanel/
 
 | Layer | Technology |
 |-------|-----------|
+| **Desktop Shell** | Electron 28 |
 | **Backend** | FastAPI (Python 3.11) |
 | **AWS SDK** | boto3 + botocore |
 | **Database** | SQLite via SQLAlchemy |
 | **Frontend** | React 18 + Vite 5 |
-| **Styling** | Vanilla CSS (no Tailwind) |
-| **API Docs** | OpenAPI 3.1 (auto-generated) |
-| **Auth** | JWT + bcrypt |
-| **Notifications** | winotify (Windows) |
+| **Styling** | Vanilla CSS (dark/light mode) |
 | **Real-time** | WebSocket (FastAPI) |
-
----
-
-## 🔮 Roadmap
-
-- [ ] **Windows Installer** — `CloudShield-Setup.exe` (PyInstaller + Electron + Inno Setup)
-- [ ] **System Tray** — Minimize to tray, McAfee/Avast-style background operation
-- [ ] **Auto-Updater** — Push code updates via GitHub Releases (no reinstall)
-- [ ] **Linux Package** — `.AppImage` and `.deb` builds
-- [ ] **Email Report Viewer** — Browser-accessible scan reports (no localhost required)
-- [ ] **Scheduled Scans** — Cron-based automated scanning
-- [ ] **Multi-Region Dashboard** — Per-region finding heatmap
-- [ ] **Compliance Reports** — CIS AWS Benchmark, NIST export
+| **Notifications** | Electron IPC → Windows Toast |
+| **Build** | PyInstaller + Inno Setup |
+| **Updates** | GitHub Releases + auto-updater |
 
 ---
 
 ## 🤝 Contributing
 
-This project is currently **private**. Contribution guidelines will be published before public release.
+This project is currently in active development. Issues and feature requests welcome via [GitHub Issues](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/issues).
 
 ---
 
@@ -260,5 +273,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 Built with ❤️ for AWS security professionals<br/>
-<strong>AWS Cloud Control Panel</strong> — Scan. Detect. Remediate.
+<strong>AWS CloudShield</strong> — Scan. Detect. Remediate.
 </div>

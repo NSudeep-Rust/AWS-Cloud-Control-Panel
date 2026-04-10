@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Check, Plus, User, Key, Cloud, Eye, EyeOff } from 'lucide-react'
+import { ChevronRight, Check, Plus, User, Key, Cloud } from 'lucide-react'
 import { accountsAPI } from '../api/index'
 import { useAuth } from '../context/AuthContext'
 
@@ -14,31 +14,31 @@ const AWS_REGIONS = [
 
 const PANELS = [
     {
-        service: 'IAM', color: '#8B5CF6', icon: 'ðŸ”‘',
+        service: 'IAM', color: '#8B5CF6',
         title: 'Identity & Access Management',
         desc: 'Securely control who can access what in your AWS environment.',
         facts: ['Role-based access control (RBAC)', 'Multi-factor authentication (MFA)', 'Free with every AWS account'],
     },
     {
-        service: 'EC2', color: '#FF9900', icon: 'ðŸ–¥ï¸',
+        service: 'EC2', color: '#FF9900',
         title: 'Elastic Compute Cloud',
         desc: 'Virtual servers that launch in seconds and scale in minutes.',
         facts: ['400+ instance types & families', 'Auto Scaling for demand spikes', 'Spot instances save up to 90%'],
     },
     {
-        service: 'S3', color: '#22C55E', icon: 'ðŸª£',
+        service: 'S3', color: '#22C55E',
         title: 'Simple Storage Service',
         desc: 'Object storage built for any amount of data, from anywhere.',
         facts: ['99.999999999% (11 9s) durability', 'Object versioning & lifecycle rules', 'AES-256 server-side encryption'],
     },
     {
-        service: 'VPC', color: '#0972d3', icon: 'ðŸ›¡ï¸',
+        service: 'VPC', color: '#0972d3',
         title: 'Virtual Private Cloud',
         desc: 'Your own logically isolated network inside AWS.',
         facts: ['Network-level isolation & segmentation', 'Security groups & Network ACLs', 'AWS Direct Connect & VPN support'],
     },
     {
-        service: 'Shield', color: '#d13212', icon: 'ðŸ”’',
+        service: 'Shield', color: '#d13212',
         title: 'AWS Shield & GuardDuty',
         desc: 'Always-on DDoS protection and ML-powered threat detection.',
         facts: ['Automatic DDoS mitigation', 'ML-powered anomaly detection', 'Real-time CloudTrail log analysis'],
@@ -185,13 +185,13 @@ export default function AccountSetupPage() {
         return (e.profile_name || e.aws_account_id || '?').slice(0, 2).toUpperCase()
     }
     function getTitle(e) { return e._type === 'iam' ? (e.username || 'IAM User') : e.aws_account_id }
-    function getMeta(e)  { return e._type === 'iam' ? `IAM Â· ${e.parent_aws_account_id || 'â€”'} Â· ${e.region}` : `${e.profile_name || 'default'} Â· ${e.region}` }
+    function getMeta(e)  { return e._type === 'iam' ? `IAM | ${e.parent_aws_account_id || ''} | ${e.region}` : `${e.profile_name || 'default'} | ${e.region}` }
 
     const panel = PANELS[bannerIndex]
     const TABS = [
-        { id: 'new',      label: '+ Add Account', },
-        { id: 'existing', label: 'âŠ™ Sign In',     },
-        { id: 'iam',      label: 'âš¿ IAM User',    },
+        { id: 'new',      label: '+ Add Account' },
+        { id: 'existing', label: 'Sign In'        },
+        { id: 'iam',      label: 'IAM User'       },
     ]
 
     return (
@@ -209,7 +209,6 @@ export default function AccountSetupPage() {
                 input:focus,select:focus{outline:none;border-color:#FF9900!important;box-shadow:0 0 0 2px rgba(255,153,0,0.18)!important}
             `}</style>
 
-            {/* â”€â”€ Background layers â”€â”€ */}
             <div style={{ position:'absolute', inset:0, pointerEvents:'none',
                 backgroundImage:'radial-gradient(circle, rgba(180,110,0,0.16) 1.5px, transparent 1.5px)',
                 backgroundSize:'22px 22px' }} />
@@ -222,7 +221,6 @@ export default function AccountSetupPage() {
                 background:'radial-gradient(circle,rgba(255,180,40,0.06) 0%,transparent 70%)',
                 filter:'blur(3px)' }} />
 
-            {/* â”€â”€ UFL-style mouse glow â€” direct DOM refs â”€â”€ */}
             <div ref={glowOuterRef} style={{
                 position:'absolute', left:-250, top:-250, width:500, height:500, borderRadius:'50%',
                 background:'radial-gradient(circle,rgba(255,180,0,0.20) 0%,rgba(255,160,0,0.10) 30%,rgba(255,140,0,0.03) 60%,transparent 80%)',
@@ -234,7 +232,6 @@ export default function AccountSetupPage() {
                 pointerEvents:'none', zIndex:0, filter:'blur(2px)',
             }} />
 
-            {/* â”€â”€ Back button â”€â”€ */}
             <button onClick={() => navigate(account ? '/panel' : '/')} style={s.backBtn}
                 onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.9)'; e.currentTarget.style.borderColor='rgba(255,153,0,0.35)' }}
                 onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.65)'; e.currentTarget.style.borderColor='rgba(35,47,62,0.2)' }}>
@@ -244,10 +241,9 @@ export default function AccountSetupPage() {
                 {account ? 'Back to Dashboard' : 'Back to Home'}
             </button>
 
-            {/* â”€â”€ 2-column layout â”€â”€ */}
             <div style={s.layout}>
 
-                {/* â•â•â• LEFT â€” Form card â•â•â• */}
+                {/* LEFT - Form card */}
                 <div style={{ ...s.card, animation:'fadeUp 0.4s ease both' }}>
                     {/* Logo */}
                     <div style={{ textAlign:'center', marginBottom:18 }}>
@@ -280,7 +276,7 @@ export default function AccountSetupPage() {
                         ))}
                     </div>
 
-                    {/* â”€â”€ SIGN IN TAB â”€â”€ */}
+                    {/* SIGN IN TAB */}
                     {tab === 'existing' && (
                         <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
                             {loading && (
@@ -343,7 +339,7 @@ export default function AccountSetupPage() {
                                 </div>
                             )}
 
-                            {error && <div style={s.errBox}>âš  {error}</div>}
+                            {error && <div style={s.errBox}>{error}</div>}
 
                             {entries.length > 0 && (
                                 <button style={{ ...s.primaryBtn, opacity: selectedKey ? 1 : 0.5 }}
@@ -369,7 +365,7 @@ export default function AccountSetupPage() {
                         </div>
                     )}
 
-                    {/* â”€â”€ ADD ACCOUNT TAB â”€â”€ */}
+                    {/* ADD ACCOUNT TAB */}
                     {tab === 'new' && (
                         <form style={{ display:'flex', flexDirection:'column', gap:10 }} onSubmit={handleCreateRoot}>
                             <FG label="AWS account ID" required>
@@ -385,18 +381,18 @@ export default function AccountSetupPage() {
                                     onChange={e => setRootForm(f => ({ ...f, region: e.target.value }))} />
                             </FG>
                             <div style={{ fontSize:12, fontWeight:700, color:'#414d5c', borderBottom:'1px solid rgba(35,47,62,0.1)', paddingBottom:5 }}>
-                                Credentials <span style={{ color:'#687078', fontWeight:400, fontSize:11 }}>â€” optional if using IAM role</span>
+                                Credentials <span style={{ color:'#687078', fontWeight:400, fontSize:11 }}>- optional if using IAM role</span>
                             </div>
                             <FG label="Access key ID">
                                 <FI value={rootForm.access_key} placeholder="AKIAIOSFODNN7EXAMPLE"
                                     onChange={e => setRootForm(f => ({ ...f, access_key: e.target.value }))} />
                             </FG>
                             <FG label="Secret access key">
-                                <FI type="password" value={rootForm.secret_key} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                <FI type="password" value={rootForm.secret_key} placeholder="Your secret key"
                                     onChange={e => setRootForm(f => ({ ...f, secret_key: e.target.value }))} />
                             </FG>
-                            {rootError   && <div style={s.errBox}>âš  {rootError}</div>}
-                            {rootSuccess && <div style={s.okBox}>âœ“ {rootSuccess}</div>}
+                            {rootError   && <div style={s.errBox}>{rootError}</div>}
+                            {rootSuccess && <div style={s.okBox}>{rootSuccess}</div>}
                             <button type="submit" style={s.primaryBtn} disabled={rootCreating}
                                 onMouseEnter={e => { if(!rootCreating) e.currentTarget.style.background='#ec8a00' }}
                                 onMouseLeave={e => { e.currentTarget.style.background='#FF9900' }}>
@@ -406,12 +402,12 @@ export default function AccountSetupPage() {
                         </form>
                     )}
 
-                    {/* â”€â”€ IAM USER TAB â”€â”€ */}
+                    {/* IAM USER TAB */}
                     {tab === 'iam' && (
                         <form style={{ display:'flex', flexDirection:'column', gap:10 }} onSubmit={handleCreateIam}>
                             <div style={{ display:'flex', alignItems:'flex-start', gap:9, background:'rgba(9,114,211,0.05)',
                                           border:'1px solid rgba(9,114,211,0.2)', borderRadius:7, padding:'9px 12px' }}>
-                                <span style={{ fontSize:14, flexShrink:0 }}>ðŸ”‘</span>
+                                <Key size={14} color="#0972d3" style={{ flexShrink:0, marginTop:1 }} />
                                 <p style={{ fontSize:12, color:'#0972d3', lineHeight:1.5, margin:0 }}>
                                     Select a root account then enter IAM credentials to connect with specific permissions.
                                 </p>
@@ -438,11 +434,11 @@ export default function AccountSetupPage() {
                                     onChange={e => setIamForm(f => ({ ...f, access_key: e.target.value }))} />
                             </FG>
                             <FG label="Secret access key" required>
-                                <FI type="password" value={iamForm.secret_key} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                <FI type="password" value={iamForm.secret_key} placeholder="Your secret key"
                                     onChange={e => setIamForm(f => ({ ...f, secret_key: e.target.value }))} />
                             </FG>
-                            {iamError   && <div style={s.errBox}>âš  {iamError}</div>}
-                            {iamSuccess && <div style={s.okBox}>âœ“ {iamSuccess}</div>}
+                            {iamError   && <div style={s.errBox}>{iamError}</div>}
+                            {iamSuccess && <div style={s.okBox}>{iamSuccess}</div>}
                             <button type="submit" style={s.primaryBtn} disabled={iamCreating}
                                 onMouseEnter={e => { if(!iamCreating) e.currentTarget.style.background='#ec8a00' }}
                                 onMouseLeave={e => { e.currentTarget.style.background='#FF9900' }}>
@@ -462,19 +458,14 @@ export default function AccountSetupPage() {
                     </div>
                 </div>
 
-                {/* â•â•â• RIGHT â€” Info panel (always visible) â•â•â• */}
+                {/* RIGHT - Info panel */}
                 <div style={{ ...s.infoCard, animation:'fadeUp 0.4s ease 0.15s both' }}>
-                    {/* Service badge + dots */}
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:22 }}>{panel.icon}</span>
-                            <span style={{ fontSize:10, fontWeight:800, color: panel.color,
-                                           background:`${panel.color}12`, border:`1px solid ${panel.color}30`,
-                                           borderRadius:5, padding:'3px 10px', fontFamily:'monospace', letterSpacing:1 }}>
-                                AWS {panel.service}
-                            </span>
-                        </div>
-                        {/* Dot navigation */}
+                        <span style={{ fontSize:10, fontWeight:800, color: panel.color,
+                                       background:`${panel.color}12`, border:`1px solid ${panel.color}30`,
+                                       borderRadius:5, padding:'3px 10px', fontFamily:'monospace', letterSpacing:1 }}>
+                            AWS {panel.service}
+                        </span>
                         <div style={{ display:'flex', gap:5 }}>
                             {PANELS.map((_, i) => (
                                 <button key={i} onClick={() => setBannerIndex(i)}
@@ -485,16 +476,10 @@ export default function AccountSetupPage() {
                         </div>
                     </div>
 
-                    {/* Info content */}
                     <div key={bannerIndex} style={{ animation:'panelIn 0.35s ease both' }}>
                         <h3 style={{ fontSize:17, fontWeight:800, color:'#16191f', margin:'0 0 8px', lineHeight:1.25 }}>{panel.title}</h3>
                         <p style={{ fontSize:12, color:'#687078', lineHeight:1.65, margin:'0 0 16px' }}>{panel.desc}</p>
-
-                        {/* Visual accent bar */}
-                        <div style={{ height:3, borderRadius:2, background:`linear-gradient(90deg,${panel.color},${panel.color}44)`,
-                                      marginBottom:16 }} />
-
-                        {/* Facts */}
+                        <div style={{ height:3, borderRadius:2, background:`linear-gradient(90deg,${panel.color},${panel.color}44)`, marginBottom:16 }} />
                         <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:18 }}>
                             {panel.facts.map((fact, i) => (
                                 <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -509,21 +494,19 @@ export default function AccountSetupPage() {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Pro tip */}
                         <div style={{ display:'flex', alignItems:'flex-start', gap:9, padding:'11px 13px', borderRadius:8,
                                       background:'rgba(255,153,0,0.05)', border:'1px solid rgba(255,153,0,0.18)' }}>
-                            <span style={{ fontSize:14, flexShrink:0 }}>ðŸ’¡</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF9900" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0, marginTop:1 }}>
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
                             <p style={{ fontSize:11, color:'#5a6a7a', lineHeight:1.6, margin:0 }}>
-                                <strong style={{ color:'#414d5c' }}>Pro tip:</strong> Use IAM roles with temporary credentials instead of long-term access keys. AWS recommends roles for all production workloads.
+                                <strong style={{ color:'#414d5c' }}>Pro tip:</strong> Use IAM roles with temporary credentials instead of long-term access keys for all production workloads.
                             </p>
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <div style={{ height:1, background:'rgba(180,100,0,0.10)', margin:'18px 0 14px' }} />
 
-                    {/* Quick stats */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
                         {[
                             { val:'52+', lbl:'Checks', color:'#FF9900' },
@@ -532,32 +515,26 @@ export default function AccountSetupPage() {
                         ].map(st => (
                             <div key={st.lbl} style={{ textAlign:'center', padding:'8px 4px', borderRadius:7,
                                                         background:`${st.color}08`, border:`1px solid ${st.color}20` }}>
-                                <div style={{ fontSize:16, fontWeight:900, color:st.color, fontFamily:'monospace',
-                                              background:`linear-gradient(90deg,${st.color},${st.color}99,${st.color})`,
-                                              backgroundSize:'200%', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-                                              animation:'shimmer 3s linear infinite' }}>{st.val}</div>
+                                <div style={{ fontSize:16, fontWeight:900, color:st.color, fontFamily:'monospace' }}>{st.val}</div>
                                 <div style={{ fontSize:9, color:'#8a9aaa', textTransform:'uppercase', letterSpacing:.7, marginTop:1 }}>{st.lbl}</div>
                             </div>
                         ))}
                     </div>
 
-                    {/* â”€â”€ What gets scanned on your account â”€â”€ */}
                     <div style={{ marginTop:14 }}>
-                        <div style={{ fontSize:9, fontWeight:800, color:'#687078',
-                                      textTransform:'uppercase', letterSpacing:.9, marginBottom:9 }}>
+                        <div style={{ fontSize:9, fontWeight:800, color:'#687078', textTransform:'uppercase', letterSpacing:.9, marginBottom:9 }}>
                             What We Scan On Your Account
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                             {[
-                                { icon:'ðŸ”‘', label:'IAM',        checks:8,  color:'#8B5CF6' },
-                                { icon:'ðŸª£', label:'S3',         checks:12, color:'#22C55E' },
-                                { icon:'ðŸ–¥ï¸', label:'EC2',        checks:9,  color:'#FF9900' },
-                                { icon:'ðŸ›¡ï¸', label:'VPC',        checks:7,  color:'#0972d3' },
-                                { icon:'ðŸ“‹', label:'CloudTrail', checks:6,  color:'#d13212' },
-                                { icon:'ðŸ”’', label:'KMS',        checks:10, color:'#687078' },
+                                { label:'IAM',        checks:8,  color:'#8B5CF6' },
+                                { label:'S3',         checks:12, color:'#22C55E' },
+                                { label:'EC2',        checks:9,  color:'#FF9900' },
+                                { label:'VPC',        checks:7,  color:'#0972d3' },
+                                { label:'CloudTrail', checks:6,  color:'#d13212' },
+                                { label:'KMS',        checks:10, color:'#687078' },
                             ].map(sc => (
                                 <div key={sc.label} style={{ display:'flex', alignItems:'center', gap:7 }}>
-                                    <span style={{ fontSize:11, flexShrink:0 }}>{sc.icon}</span>
                                     <span style={{ fontSize:10, fontWeight:700, color:'#414d5c', width:70, flexShrink:0 }}>{sc.label}</span>
                                     <div style={{ flex:1, height:4, borderRadius:3, background:'rgba(35,47,62,0.07)', overflow:'hidden' }}>
                                         <div style={{ height:'100%', borderRadius:3,
@@ -574,13 +551,12 @@ export default function AccountSetupPage() {
                     </div>
                 </div>
 
-
             </div>
         </div>
     )
 }
 
-/* â”€â”€ Sub-components â”€â”€ */
+/* Sub-components */
 function FG({ label, required, children }) {
     return (
         <div>
@@ -591,6 +567,7 @@ function FG({ label, required, children }) {
         </div>
     )
 }
+
 function FI({ value, onChange, placeholder, type = 'text' }) {
     const [show, setShow] = useState(false)
     const base = {
@@ -603,22 +580,37 @@ function FI({ value, onChange, placeholder, type = 'text' }) {
             style={{ ...base, padding:'8px 11px' }} />
     )
     return (
-        <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
-            <input type={show ? 'text' : 'password'} value={value} onChange={onChange}
-                placeholder={placeholder}
-                style={{ ...base, padding:'8px 38px 8px 11px', flex:1 }} />
-            <button type="button" tabIndex={-1} onClick={() => setShow(s => !s)}
+        <div style={{ position:'relative' }}>
+            <input
+                type={show ? 'text' : 'password'}
+                value={value} onChange={onChange} placeholder={placeholder}
+                style={{ ...base, padding:'8px 40px 8px 11px' }}
+            />
+            <button
+                type="button" tabIndex={-1}
+                onClick={() => setShow(s => !s)}
                 title={show ? 'Hide' : 'Show'}
-                style={{ position:'absolute', right:8, background:'none', border:'none',
-                         cursor:'pointer', padding:4, color:'#687078',
-                         display:'flex', alignItems:'center', borderRadius:4,
-                         transition:'color 0.15s' }}
+                style={{
+                    position:'absolute', right:8, top:'50%', transform:'translateY(-50%)',
+                    background:'none', border:'none', cursor:'pointer', padding:4,
+                    color:'#687078', display:'flex', alignItems:'center', borderRadius:4,
+                    transition:'color 0.15s',
+                }}
                 onMouseEnter={e => e.currentTarget.style.color='#FF9900'}
-                onMouseLeave={e => e.currentTarget.style.color='#687078'}>
-                {show
-                    ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                }
+                onMouseLeave={e => e.currentTarget.style.color='#687078'}
+            >
+                {show ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                )}
             </button>
         </div>
     )
@@ -638,7 +630,6 @@ function FS({ value, onChange, options, isObjOptions }) {
     )
 }
 
-/* â”€â”€ Styles â”€â”€ */
 const s = {
     page: {
         position:'fixed', inset:0, overflow:'hidden',

@@ -772,6 +772,9 @@ class RollbackEngine:
                 ec2 = self.aws_session.session.client("ec2", region_name=region)
 
                 try:
+                    if not instance_id:
+                        return self._fail(db, execution_id, "Cannot rollback EBS encryption: volume was not attached to an instance (instance_id is missing)")
+
                     ec2.stop_instances(InstanceIds=[instance_id])
 
                     waiter = ec2.get_waiter("instance_stopped")

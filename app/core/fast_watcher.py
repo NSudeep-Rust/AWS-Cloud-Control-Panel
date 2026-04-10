@@ -1,13 +1,19 @@
 
+import sys as _sys
 import time
 import uuid
 import threading
 from datetime import datetime
 
 import os as _os
-_ICON_PATH = _os.path.normpath(
-    _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets", "aws_cloudshield.png")
-)
+# Resolve icon path that works in both dev and PyInstaller bundle
+if getattr(_sys, 'frozen', False):
+    _ASSET_BASE = _os.path.join(_sys._MEIPASS, "app", "assets")
+else:
+    _ASSET_BASE = _os.path.normpath(
+        _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets")
+    )
+_ICON_PATH = _os.path.join(_ASSET_BASE, "aws_cloudshield.ico")  # ICO = sharp on Windows
 try:
     from winotify import Notification as _WiNotif
     _NOTIF_BACKEND = "winotify"

@@ -5,7 +5,7 @@ import axios from 'axios'
 import { Wrench, CheckCircle, AlertTriangle, Clock, Play, Zap, RotateCcw, Shield } from 'lucide-react'
 import { getServiceTag } from '@/utils/getModuleGroup'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const DANGER_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE', 'FORCE_TERMINATE_EC2_INSTANCE',
@@ -44,7 +44,7 @@ function EmptyPipeline() {
     { icon:'✅', label:'FIXED',   sub:'Mark resolved',     color:'#0972d3' },
   ]
   return (
-    <div style={{ background:'#fff', border:'1px solid rgba(255,153,0,0.2)', borderTop:'4px solid #FF9900', borderRadius:14, padding:'48px', boxShadow:'0 4px 24px rgba(255,153,0,0.10)', display:'flex', flexDirection:'column', gap:40, minHeight:'calc(100vh - 190px)' }}>
+    <div style={{ background:'var(--bg2)', border:'1px solid rgba(255,153,0,0.2)', borderTop:'4px solid #FF9900', borderRadius:14, padding:'48px', boxShadow:'0 4px 24px rgba(255,153,0,0.10)', display:'flex', flexDirection:'column', gap:40, minHeight:'calc(100vh - 190px)' }}>
       <style>{`
         @keyframes stageActive { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04);box-shadow:0 0 18px rgba(255,153,0,0.3)} }
         @keyframes dotFlow { 0%{left:-12px;opacity:0} 15%{opacity:1} 85%{opacity:1} 100%{left:calc(100% + 12px);opacity:0} }
@@ -180,7 +180,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
       `}</style>
 
       {/* Main card */}
-      <div onClick={() => !['executing'].includes(phase) && setOpen(x => !x)} style={{ background:'#fff', border:`1.5px solid ${isOpen||hovered ? ac.stripe+'aa' : ac.stripe+'30'}`, borderRadius: isOpen ? '14px 14px 0 0' : 14, overflow:'hidden', cursor:'pointer', boxShadow: isOpen ? `0 0 0 2px ${ac.stripe}20, 0 8px 32px ${ac.glow}` : hovered ? `0 8px 28px ${ac.glow}, 0 2px 8px rgba(0,0,0,0.07)` : '0 2px 8px rgba(15,17,17,0.06)', transition:'all 0.22s ease', userSelect:'none' }}>
+      <div onClick={() => !['executing'].includes(phase) && setOpen(x => !x)} style={{ background:'var(--bg2)', border:`1.5px solid ${isOpen||hovered ? ac.stripe+'aa' : ac.stripe+'30'}`, borderRadius: isOpen ? '14px 14px 0 0' : 14, overflow:'hidden', cursor:'pointer', boxShadow: isOpen ? `0 0 0 2px ${ac.stripe}20, 0 8px 32px ${ac.glow}` : hovered ? `0 8px 28px ${ac.glow}, 0 2px 8px rgba(0,0,0,0.07)` : '0 2px 8px rgba(15,17,17,0.06)', transition:'all 0.22s ease', userSelect:'none' }}>
         {/* Top color bar */}
         <div style={{ height:4, background:`linear-gradient(90deg, ${ac.stripe}, ${ac.stripe}88)`, position:'relative', overflow:'hidden' }}>
           {hovered && <div style={{ position:'absolute', top:0, width:80, height:'100%', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)', animation:'fcShine 0.7s ease forwards' }} />}
@@ -345,7 +345,7 @@ function ManualCard({ finding }) {
     : ['Review the resource in the AWS Console.', 'Apply recommended security hardening.', 'Re-run a scan to verify resolution.']
 
   return (
-    <div style={{ borderRadius:14, overflow:'hidden', background:'#fff', border:`1.5px solid ${hovered ? ac.stripe+'aa' : ac.stripe+'30'}`, boxShadow: hovered ? `0 8px 28px ${ac.glow}, 0 2px 8px rgba(0,0,0,0.07)` : '0 2px 8px rgba(15,17,17,0.06)', transform: hovered ? 'translateY(-2px)' : 'none', transition:'all 0.22s ease' }}
+    <div style={{ borderRadius:14, overflow:'hidden', background:'var(--bg2)', border:`1.5px solid ${hovered ? ac.stripe+'aa' : ac.stripe+'30'}`, boxShadow: hovered ? `0 8px 28px ${ac.glow}, 0 2px 8px rgba(0,0,0,0.07)` : '0 2px 8px rgba(15,17,17,0.06)', transform: hovered ? 'translateY(-2px)' : 'none', transition:'all 0.22s ease' }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <div style={{ height:4, background:`linear-gradient(90deg, ${ac.stripe}, ${ac.stripe}66)` }} />
       <div style={{ padding:'14px 18px', display:'flex', gap:14 }}>
@@ -450,9 +450,9 @@ export default function RemediationSection({ dark, onNav }) {
 
   const filteredAuto   = applyFilters(autoFindings)
   const filteredManual = applyFilters(manualFindings)
-  const border = '#e5e8ed'
-  const text   = '#0f1111'
-  const text2  = '#565959'
+  const border = 'var(--border)'
+  const text   = 'var(--text)'
+  const text2  = 'var(--text3)'
 
   return (
     <div style={{ fontFamily:"'Inter', -apple-system, sans-serif" }}>

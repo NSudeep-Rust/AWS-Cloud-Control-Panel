@@ -126,27 +126,50 @@ export function ScannerSection({ onNav, dark }) {
     const [search, setSearch] = useState('')
     const [hoverId, setHoverId] = useState(null)
 
+    const [testResult, setTestResult] = useState(null)
+    const [testing,    setTesting]    = useState(false)
+
+    async function testConnection() {
+        if (!dbId || testing) return
+        setTesting(true); setTestResult(null)
+        try {
+            const r = await fetch(`http://127.0.0.1:8000/api/scan/test-aws?account_id=${dbId}`)
+            const d = await r.json()
+            setTestResult(d)
+        } catch (e) {
+            setTestResult({ ok: false, error: String(e) })
+        } finally {
+            setTesting(false)
+        }
+    }
+
     function triggerScan() {
         if (!dbId || scanning) return
         startScan({ dbId, awsId, cacheKey })
     }
 
     const modules = [...new Set(findings.map(f => moduleOf(f.type)))].sort()
+    const normSev = f => (f.severity || '').toUpperCase().trim()
     const filtered = findings.filter(f => {
-        if (filterSev !== 'ALL' && f.severity !== filterSev) return false
+        if (filterSev !== 'ALL' && normSev(f) !== filterSev) return false
         if (filterMod !== 'ALL' && moduleOf(f.type) !== filterMod) return false
         if (search && !f.type.toLowerCase().includes(search.toLowerCase()) && !f.resource_id?.toLowerCase().includes(search.toLowerCase())) return false
         return true
     }).sort((a, b) => (SEV[a.severity]?.rank ?? 9) - (SEV[b.severity]?.rank ?? 9))
 
+    // Counts respect the active module filter so pill badges match filtered results
+    const modMatch = f => filterMod === 'ALL' || moduleOf(f.type) === filterMod
     const counts = {
-        CRITICAL: findings.filter(f => f.severity === 'CRITICAL').length,
-        HIGH: findings.filter(f => f.severity === 'HIGH').length,
-        MEDIUM: findings.filter(f => f.severity === 'MEDIUM').length,
-        LOW: findings.filter(f => f.severity === 'LOW').length,
+        CRITICAL: findings.filter(f => modMatch(f) && normSev(f) === 'CRITICAL').length,
+        HIGH:     findings.filter(f => modMatch(f) && normSev(f) === 'HIGH').length,
+        MEDIUM:   findings.filter(f => modMatch(f) && normSev(f) === 'MEDIUM').length,
+        LOW:      findings.filter(f => modMatch(f) && normSev(f) === 'LOW').length,
     }
 
-    const pct = Math.min(100, Math.round((scanLineIdx / (SCAN_LINES.length - 1)) * 100))
+    // Progress: use real elapsed time against expected scan duration.
+    // Capped at 95% until scan actually completes, then jumps to 100%.
+    const EXPECTED_SCAN_SEC = 75
+    const pct = hasScan ? 100 : Math.min(95, elapsed > 0 ? Math.round((elapsed / EXPECTED_SCAN_SEC) * 100) : 2)
     const fact = AWS_FACTS[factIdx]
     const scanLine = SCAN_LINES[scanLineIdx]
 
@@ -162,6 +185,14 @@ export function ScannerSection({ onNav, dark }) {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, height: 'calc(100vh - 64px)', minHeight: 0 }}>
+
+            {/* NULL ACCOUNT WARNING */}
+            {!dbId && (
+                <div style={{ margin: '12px 0 0', padding: '10px 16px', background: 'rgba(209,50,18,0.1)', border: '1px solid rgba(209,50,18,0.3)', borderRadius: 8, color: '#d13212', fontSize: 12, fontWeight: 600 }}>
+                    Not signed in - account ID is missing. Please sign out and sign back in.
+                    Debug: account={JSON.stringify(account)}
+                </div>
+            )}
 
             {/* ── HEADER ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
@@ -181,8 +212,20 @@ export function ScannerSection({ onNav, dark }) {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {/* Stop button — only shown while scanning */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Test AWS Connection */}
+                    {dbId && !scanning && (
+                        <button onClick={testConnection} disabled={testing} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, background: 'rgba(9,114,211,0.08)', color: '#0972d3', border: '1px solid rgba(9,114,211,0.25)', cursor: testing ? 'not-allowed' : 'pointer', fontSize: 11, fontWeight: 700, transition: 'all 0.15s' }}>
+                            {testing ? 'Testing...' : 'Test AWS'}
+                        </button>
+                    )}
+                    {testResult && (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: testResult.ok ? '#067340' : '#d13212', background: testResult.ok ? 'rgba(6,115,64,0.08)' : 'rgba(209,50,18,0.08)', border: `1px solid ${testResult.ok ? 'rgba(6,115,64,0.25)' : 'rgba(209,50,18,0.25)'}`, borderRadius: 6, padding: '4px 10px' }}>
+                            {testResult.ok ? `OK: ${testResult.aws_account_id}` : `FAIL: ${testResult.error?.slice(0, 60)}`}
+                        </span>
+                    )}
+
+                    {/* Stop button */}
                     {scanning && (
                         <button onClick={stopScan} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 6, background: 'rgba(209,50,18,0.1)', color: '#d13212', border: '1px solid rgba(209,50,18,0.3)', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background = 'rgba(209,50,18,0.18)'}

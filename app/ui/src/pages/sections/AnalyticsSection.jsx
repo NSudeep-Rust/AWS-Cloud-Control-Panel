@@ -31,15 +31,18 @@ const CSS = `
   @keyframes anlBar     { from{width:0} }
   @keyframes anlCount   { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
   @keyframes shimmer    { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-  .anl-card   { animation: anlFade 0.38s ease both; }
-  .anl-card-d { animation: anlFade 0.38s ease 0.06s both; }
-  .anl-card-dd{ animation: anlFade 0.38s ease 0.12s both; }
+  /* Dark-mode global overrides — !important beats inline styles */
+  .anl-card      { animation: anlFade 0.38s ease both; background: var(--bg2) !important; border-color: var(--border) !important; }
+  .anl-card-d    { animation: anlFade 0.38s ease 0.06s both; }
+  .anl-card-dd   { animation: anlFade 0.38s ease 0.12s both; }
+  .anl-outer     { background: var(--bg2) !important; border-color: var(--border) !important; }
+  .anl-row-sep   { border-bottom-color: var(--border) !important; }
   .anl-tab    { transition: all 0.14s; border: none; background: transparent; cursor: pointer; font-family: Inter,sans-serif; }
   .anl-tab:hover { color: #FF9900 !important; }
   .anl-btn    { transition: all 0.14s; }
   .anl-btn:hover{ background: rgba(9,114,211,0.07) !important; transform: translateY(-1px); }
   .anl-row    { transition: background 0.1s; }
-  .anl-row:hover { background: rgba(9,114,211,0.04) !important; }
+  .anl-row:hover { background: rgba(9,114,211,0.06) !important; }
   .skeleton   { background: linear-gradient(90deg,#f0f2f4 25%,#e8eaed 50%,#f0f2f4 75%); background-size:400px 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
 `
 
@@ -198,7 +201,7 @@ function AnimBar({ label, value, max, color, delay = 0, count }) {
 function KpiTile({ icon, label, value, color, sub, delay = 0 }) {
   const num = useCountUp(typeof value === 'number' ? value : 0)
   return (
-    <div className="anl-card" style={{ flex: 1, minWidth: 130, background: '#fff', border: '1.5px solid #e5e8ed', borderTop: `3px solid ${color}`, borderRadius: 12, padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', animationDelay: `${delay}s` }}>
+    <div className="anl-card" style={{ flex: 1, minWidth: 130, background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderTop: `3px solid ${color}`, borderRadius: 12, padding: '16px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', animationDelay: `${delay}s` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</span>
@@ -252,7 +255,7 @@ function EmptyAnalytics({ onNav }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 340, gap: 20, textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,153,0,0.08)', border: '2px solid rgba(255,153,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, animation: 'anlGlow 2s ease infinite' }}>📊</div>
       <div>
-        <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1111', marginBottom: 8 }}>No Analytics Data Yet</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', marginBottom: 8 }}>No Analytics Data Yet</div>
         <p style={{ fontSize: 13, color: '#565959', maxWidth: 360, lineHeight: 1.8, margin: 0 }}>
           Analytics populate automatically after each security scan. Run a scan first to see your risk score, trends, and compliance data.
         </p>
@@ -334,18 +337,18 @@ export function AnalyticsSection({ onNav }) {
   ]
 
   return (
-    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', background: '#f4f4f4', minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '20px 24px', gap: 16 }}>
+    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', background: 'var(--bg)', minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '20px 24px', gap: 16 }}>
       <style>{CSS}</style>
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderRadius: 14, flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
         <div style={{ padding: '18px 28px 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,rgba(255,153,0,0.18),rgba(9,114,211,0.12))', border: '1.5px solid rgba(255,153,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 2px 10px rgba(255,153,0,0.18)' }}>📊</div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f1111', margin: 0, letterSpacing: -0.5 }}>Security Analytics</h1>
+                  <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', margin: 0, letterSpacing: -0.5 }}>Security Analytics</h1>
                   {!load && !noData && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(29,128,2,0.09)', border: '1px solid rgba(29,128,2,0.25)', borderRadius: 20, padding: '2px 10px', fontSize: 9.5, fontWeight: 700, color: '#1d8102' }}>
                       <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#1d8102', animation: 'anlPulse 1.8s ease infinite' }} /> LIVE
@@ -367,7 +370,7 @@ export function AnalyticsSection({ onNav }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', padding: '0 28px', gap: 0, borderTop: '1.5px solid #e5e8ed' }}>
+        <div style={{ display: 'flex', padding: '0 28px', gap: 0, borderTop: `1.5px solid var(--border)` }}>
           {TABS.map(t => (
             <button key={t.k} className="anl-tab" onClick={() => setTab(t.k)}
               style={{ padding: '10px 18px', fontSize: 12, fontWeight: tab === t.k ? 700 : 500, color: tab === t.k ? '#FF9900' : '#8d9191', borderBottom: tab === t.k ? '2.5px solid #FF9900' : '2.5px solid transparent', letterSpacing: 0.2 }}>
@@ -407,7 +410,7 @@ export function AnalyticsSection({ onNav }) {
             <div style={{ display: 'grid', gridTemplateColumns: '240px 160px 1fr', gap: 14, marginBottom: 14 }}>
 
               {/* Gauge */}
-              <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.06s' }}>
+              <div className="anl-card" style={{ background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderRadius: 14, padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.06s' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Risk Score</div>
                 <RiskGauge score={score} />
                 <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 800, color: riskCol, background: `${riskCol}12`, border: `1px solid ${riskCol}30`, borderRadius: 20, padding: '3px 14px', letterSpacing: 0.5 }}>
@@ -416,7 +419,7 @@ export function AnalyticsSection({ onNav }) {
               </div>
 
               {/* Compliance */}
-              <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.1s' }}>
+              <div className="anl-card" style={{ background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderRadius: 14, padding: '20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.1s' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Compliance</div>
                 <ComplianceRing rating={rating} score={score} />
                 <div style={{ marginTop: 12, fontSize: 12, fontWeight: 800, color: rcolor }}>{rating}</div>
@@ -425,7 +428,7 @@ export function AnalyticsSection({ onNav }) {
 
               {/* Severity + Remediation bars */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.14s' }}>
+                <div className="anl-card" style={{ background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.14s' }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 13 }}>Severity Breakdown</div>
                   {[['CRITICAL', sev.CRITICAL || 0, C.critical], ['HIGH', sev.HIGH || 0, C.high], ['MEDIUM', sev.MEDIUM || 0, C.medium], ['LOW', sev.LOW || 0, C.low]].map(([k, v, c], i) => (
                     <AnimBar key={k} label={k} value={v} max={maxSev} color={c} delay={i * 70} />
@@ -441,7 +444,7 @@ export function AnalyticsSection({ onNav }) {
                   )}
                 </div>
 
-                <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.18s' }}>
+                <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.18s' }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 13 }}>Remediation Rate</div>
                   {[
                     ['Detected',    ar?.total_high_findings_detected || 0,  C.aws],
@@ -461,7 +464,7 @@ export function AnalyticsSection({ onNav }) {
 
             {/* Top finding types */}
             {types.length > 0 && (
-              <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '18px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.22s' }}>
+              <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '18px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.22s' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Top Finding Types</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 32px' }}>
                   {types.slice(0, 8).map((t, i) => (
@@ -476,9 +479,9 @@ export function AnalyticsSection({ onNav }) {
         {/* ═══ RISK TREND ════════════════════════════════════════════════════════ */}
         {!load && !noData && tab === 'trend' && (
           <>
-            <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 24px', marginBottom: 14, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+            <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 24px', marginBottom: 14, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f1111' }}>Risk Score Over Time</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Risk Score Over Time</div>
                 <div style={{ fontSize: 10, color: '#8d9191' }}>{tr.length} data point{tr.length !== 1 ? 's' : ''}</div>
               </div>
               <TrendChart trend={tr} />
@@ -492,15 +495,15 @@ export function AnalyticsSection({ onNav }) {
               </div>
             </div>
 
-            <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.08s' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f1111', marginBottom: 14 }}>Per-Scan Summary</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '4px 16px', fontSize: 9.5, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 0.8, paddingBottom: 10, borderBottom: '1.5px solid #e5e8ed', marginBottom: 4 }}>
+            <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.08s' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 14 }}>Per-Scan Summary</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '4px 16px', fontSize: 9.5, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 0.8, paddingBottom: 10, borderBottom: '1.5px solid var(--border)', marginBottom: 4 }}>
                 <span>Scan</span><span>Time</span><span>Score</span><span>Level</span><span>Active H+C</span>
               </div>
               {tr.map((t, i) => (
-                <div key={t.scan_id} className="anl-row" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '3px 16px', alignItems: 'center', padding: '8px 6px', borderBottom: '1px solid #f4f4f4', animation: `anlFade 0.3s ease ${i * 0.04}s both`, borderRadius: 6 }}>
+                <div key={t.scan_id} className="anl-row" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '3px 16px', alignItems: 'center', padding: '8px 6px', borderBottom: '1px solid var(--border)', animation: `anlFade 0.3s ease ${i * 0.04}s both`, borderRadius: 6 }}>
                   <span style={{ fontSize: 10, color: '#8d9191', fontFamily: 'monospace' }}>#{t.scan_id?.slice(0, 8)}</span>
-                  <span style={{ fontSize: 10.5, color: '#565959' }}>{relT(t.timestamp)}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>{relT(t.timestamp)}</span>
                   <span style={{ fontSize: 16, fontWeight: 900, color: RISK_C(t.risk_score) }}>{t.risk_score}</span>
                   <span style={{ fontSize: 9, fontWeight: 800, color: SEV_C[t.risk_level] || C.aws, background: `${SEV_C[t.risk_level] || C.aws}12`, border: `1px solid ${SEV_C[t.risk_level] || C.aws}28`, borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap' }}>{t.risk_level}</span>
                   <span style={{ fontSize: 13, fontWeight: 800, color: C.high }}>{t.active_high_findings}</span>
@@ -514,7 +517,7 @@ export function AnalyticsSection({ onNav }) {
         {!load && !noData && tab === 'breakdown' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             {/* Severity card */}
-            <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+            <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Severity Distribution</div>
               {/* Stacked bar */}
               <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 16 }}>
@@ -526,7 +529,7 @@ export function AnalyticsSection({ onNav }) {
                 <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 8, marginBottom: 6, background: bg, border: `1px solid ${border}`, animation: `anlFade 0.3s ease ${i * 0.07}s both` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
-                    <span style={{ fontSize: 11.5, fontWeight: 700, color: '#3d4f60' }}>{k}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text2)' }}>{k}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontSize: 10, color: '#8d9191' }}>{total > 0 ? Math.round(v / total * 100) : 0}%</span>
@@ -537,7 +540,7 @@ export function AnalyticsSection({ onNav }) {
             </div>
 
             {/* Finding types */}
-            <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.08s' }}>
+            <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.08s' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Top Finding Types</div>
               {types.map((t, i) => (
                 <AnimBar key={t.type} label={cap(t.type)} value={t.count} max={maxTyp}
@@ -547,7 +550,7 @@ export function AnalyticsSection({ onNav }) {
 
             {/* Per-scan stacked bars */}
             {Array.isArray(bd?.scan_totals) && bd.scan_totals.length > 0 && (
-              <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 22px', gridColumn: 'span 2', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.16s' }}>
+              <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 22px', gridColumn: 'span 2', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.16s' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Per-Scan Finding Counts</div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 88 }}>
                   {bd.scan_totals.map((s, i) => {
@@ -582,18 +585,18 @@ export function AnalyticsSection({ onNav }) {
 
         {/* ═══ REGIONS ═══════════════════════════════════════════════════════════ */}
         {!load && !noData && tab === 'regions' && (
-          <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '22px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f1111', marginBottom: 5 }}>Regional Finding Heatmap</div>
+          <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '22px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 5 }}>Regional Finding Heatmap</div>
             <p style={{ fontSize: 11, color: '#8d9191', margin: '0 0 20px' }}>Finding distribution across AWS regions — darker = more findings</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
               {regions.length > 0 ? regions.map((r, i) => {
                 const pct = r.count / maxReg
                 const col = pct > 0.7 ? C.critical : pct > 0.4 ? C.high : pct > 0.2 ? C.medium : C.low
                 return (
-                  <div key={r.region} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8f9fa', border: '1px solid #e5e8ed', borderLeft: `3px solid ${col}`, borderRadius: 8, animation: `anlSlide 0.3s ease ${i * 0.04}s both` }}>
+                  <div key={r.region} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderLeft: `3px solid ${col}`, borderRadius: 8, animation: `anlSlide 0.3s ease ${i * 0.04}s both` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: col, boxShadow: `0 0 6px ${col}99` }} />
-                      <span style={{ fontSize: 11.5, fontWeight: 600, color: '#3d4f60', fontFamily: 'monospace' }}>{r.region}</span>
+                      <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text2)', fontFamily: 'monospace' }}>{r.region}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 44, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 2, overflow: 'hidden' }}>
@@ -619,15 +622,15 @@ export function AnalyticsSection({ onNav }) {
                 ['Findings Evaluated', pv?.total_findings_evaluated || 0, C.aws],
                 ['Violations Found', pv?.total_violations || 0, (pv?.total_violations || 0) > 0 ? C.critical : C.low],
               ].map(([l, v, c], i) => (
-                <div key={l} className="anl-card" style={{ flex: 1, background: '#fff', border: '1.5px solid #e5e8ed', borderTop: `3px solid ${c}`, borderRadius: 12, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', animationDelay: `${i * 0.07}s` }}>
+                <div key={l} className="anl-card" style={{ flex: 1, background: 'var(--bg2)', border: `1.5px solid var(--border)`, borderTop: `3px solid ${c}`, borderRadius: 12, padding: '14px 18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', animationDelay: `${i * 0.07}s` }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#8d9191', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>{l}</div>
                   <div style={{ fontSize: typeof v === 'number' ? 26 : 16, fontWeight: 900, color: c }}>{typeof v === 'number' ? fmt(v) : v}</div>
                 </div>
               ))}
             </div>
 
-            <div className="anl-card" style={{ background: '#fff', border: '1.5px solid #e5e8ed', borderRadius: 14, padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.18s' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f1111', marginBottom: 14 }}>Violation Details</div>
+            <div className="anl-card" style={{ background: 'var(--bg2)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animationDelay: '0.18s' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 14 }}>Violation Details</div>
               {viol.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: '#1d8102', fontSize: 13, fontWeight: 600 }}>
                   <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
@@ -636,11 +639,11 @@ export function AnalyticsSection({ onNav }) {
               ) : viol.map((v, i) => {
                 const sC = SEV_C[v.severity] || C.blue
                 return (
-                  <div key={i} className="anl-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '12px 10px', borderBottom: '1px solid #f4f4f4', borderRadius: 6, animation: `anlFade 0.3s ease ${i * 0.05}s both` }}>
+                  <div key={i} className="anl-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '12px 10px', borderBottom: '1px solid var(--border)', borderRadius: 6, animation: `anlFade 0.3s ease ${i * 0.05}s both` }}>
                     <div style={{ width: 10, height: 10, borderRadius: '50%', background: sC, flexShrink: 0, marginTop: 4, boxShadow: `0 0 5px ${sC}77` }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f1111', marginBottom: 3 }}>{cap(v.policy || v.type)}</div>
-                      <div style={{ fontSize: 11, color: '#565959', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{cap(v.policy || v.type)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {v.resource_id || v.description || '—'}
                       </div>
                     </div>
@@ -690,7 +693,7 @@ function ComplianceScoreTab({ cs }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Overall banner */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5e8ed', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 24, boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+      <div className="anl-card" style={{ background: 'var(--bg2)', borderRadius: 12, border: '1.5px solid var(--border)', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 24, boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
         <svg width={88} height={88} viewBox="0 0 88 88" style={{ flexShrink: 0 }}>
           <circle cx={44} cy={44} r={36} fill="none" stroke="#f0f0f0" strokeWidth={8} />
           <circle cx={44} cy={44} r={36} fill="none" stroke={oCol} strokeWidth={8}
@@ -701,7 +704,7 @@ function ComplianceScoreTab({ cs }) {
           <text x={44} y={54} textAnchor="middle" fontSize={8} fill="#8d9191" fontFamily="Inter,sans-serif" letterSpacing={0.5}>OVERALL</text>
         </svg>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#0f1111', marginBottom: 4 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
             Overall Compliance: <span style={{ color: oCol }}>{overall}%</span>
           </div>
           <div style={{ fontSize: 12, color: '#8d9191', maxWidth: 500 }}>
@@ -725,7 +728,7 @@ function ComplianceScoreTab({ cs }) {
         const col = sc.score_pct >= 80 ? '#1d8102' : sc.score_pct >= 60 ? '#c8960c' : '#d13212'
         const isOpen = expanded[sc.key]
         return (
-          <div key={sc.key} style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5e8ed', overflow: 'hidden', boxShadow: '0 1px 5px rgba(0,0,0,0.04)' }}>
+          <div key={sc.key} className="anl-card" style={{ background: 'var(--bg2)', borderRadius: 12, border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 5px rgba(0,0,0,0.04)' }}>
             <div onClick={() => toggle(sc.key)} style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, userSelect: 'none' }}>
               <svg width={56} height={56} viewBox="0 0 56 56" style={{ flexShrink: 0 }}>
                 <circle cx={28} cy={28} r={22} fill="none" stroke="#f0f0f0" strokeWidth={6} />
@@ -736,7 +739,7 @@ function ComplianceScoreTab({ cs }) {
                 <text x={28} y={32} textAnchor="middle" fontSize={12} fontWeight={800} fill={col} fontFamily="Inter,sans-serif">{sc.score_pct}%</text>
               </svg>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: '#0f1111' }}>{sc.icon} {sc.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{sc.icon} {sc.label}</div>
                 <div style={{ fontSize: 11, color: '#8d9191', marginTop: 2 }}>
                   {sc.passing}/{sc.total} rules passing &nbsp;·&nbsp;
                   <span style={{ color: sc.failing > 0 ? '#d13212' : '#1d8102' }}>{sc.failing} failing</span>
@@ -759,7 +762,7 @@ function ComplianceScoreTab({ cs }) {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginBottom: 3 }}>
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0f1111' }}>{rule.rule_name}</span>
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>{rule.rule_name}</span>
                           <span style={{ fontSize: 9.5, fontWeight: 700, color: sC2, background: `${sC2}14`, borderRadius: 4, padding: '1px 7px', border: `1px solid ${sC2}30` }}>{rule.severity}</span>
                           {!pass && rule.affected_count > 0 && (
                             <span style={{ fontSize: 9.5, fontWeight: 700, color: '#d13212', background: 'rgba(209,50,18,0.08)', borderRadius: 4, padding: '1px 7px', border: '1px solid rgba(209,50,18,0.2)' }}>
@@ -768,7 +771,7 @@ function ComplianceScoreTab({ cs }) {
                           )}
                           <span style={{ fontSize: 9, color: '#8d9191', fontFamily: 'monospace' }}>{rule.framework_ref}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: '#565959', lineHeight: 1.5 }}>{rule.description}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>{rule.description}</div>
                         {!pass && rule.remediation && (
                           <div style={{ fontSize: 10.5, color: '#1a6296', marginTop: 6, padding: '6px 10px', background: 'rgba(9,114,211,0.05)', borderRadius: 6, borderLeft: '3px solid rgba(9,114,211,0.35)', lineHeight: 1.4 }}>
                             💡 {rule.remediation}

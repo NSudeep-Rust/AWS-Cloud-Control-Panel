@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
-import { RotateCcw, CheckCircle, AlertTriangle, Clock, Ban } from 'lucide-react'
+import { RotateCcw, CheckCircle, AlertTriangle, Clock, Ban, Trash2 } from 'lucide-react'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const NON_ROLLBACKABLE_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE',
@@ -85,7 +84,7 @@ function ConfirmModal({ execution, onConfirm, onCancel }) {
         @keyframes rbSpin { to { transform:rotate(360deg); } }
       `}</style>
         <div style={{
-          background: '#ffffff', borderRadius: 16,
+          background: 'var(--bg2)', borderRadius: 16,
           border: '2px solid rgba(9,114,211,0.35)',
           borderTop: '4px solid #0972d3',
           boxShadow: '0 8px 40px rgba(0,0,0,0.22), 0 2px 12px rgba(9,114,211,0.15)',
@@ -193,7 +192,7 @@ function EmptyState() {
   )
 }
 
-function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
+function ExecutionCard({ execution, exiting, rollingId, onRequestRollback, selectMode, selected, onToggleSelect }) {
   const s  = sevOr(execution.finding_severity)
   const st = statStyle(execution.status)
   const [hovered, setHovered] = useState(false)
@@ -207,11 +206,11 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 14, overflow: 'hidden', background: '#ffffff',
-        border: `1.5px solid ${hovered && !exiting && !isRolling ? accent+'aa' : accent+'30'}`,
-        boxShadow: isRolling ? `0 0 0 3px ${accent}30, 0 8px 28px rgba(0,0,0,0.1)` : hovered && !exiting ? '0 8px 28px rgba(91,155,213,0.15), 0 2px 8px rgba(0,0,0,0.07)' : '0 2px 8px rgba(15,17,17,0.06)',
-        transition: 'all 0.22s ease',
-        transform: exiting ? 'translateX(-55px) scaleY(0.93)' : hovered && !isRolling ? 'translateY(-2px)' : 'none',
+        borderRadius: 14, overflow: 'hidden', background: 'var(--bg2)',
+        border: `1.5px solid ${selected ? '#0972d3' : (hovered && !exiting && !isRolling ? accent+'aa' : accent+'30')}`,
+        boxShadow: selected ? '0 0 0 3px rgba(9,114,211,0.15)' : isRolling ? `0 0 0 3px ${accent}30, 0 8px 28px rgba(0,0,0,0.1)` : hovered && !exiting ? '0 8px 28px rgba(91,155,213,0.15), 0 2px 8px rgba(0,0,0,0.07)' : '0 2px 8px rgba(15,17,17,0.06)',
+        transition: 'all 0.22s ease', position: 'relative',
+        transform: exiting ? 'translateX(-55px) scaleY(0.93)' : hovered && !isRolling && !selected ? 'translateY(-2px)' : 'none',
         opacity: exiting ? 0 : 1,
         pointerEvents: exiting ? 'none' : 'auto',
       }}
@@ -221,7 +220,27 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
         {hovered && !isRolling && <div style={{ position:'absolute', top:0, width:80, height:'100%', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)', animation:'rbShine 0.65s ease forwards' }} />}
       </div>
 
-      <div style={{ padding: '14px 18px 16px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+      {/* Checkbox — only shown in select mode */}
+      {selectMode && (
+        <div
+          onClick={e => { e.stopPropagation(); onToggleSelect(execution.execution_id) }}
+          style={{ position:'absolute', top:10, right:10, zIndex:10,
+            width:20, height:20, borderRadius:5, cursor:'pointer',
+            border:`2px solid ${selected ? '#0972d3' : '#d5dbdb'}`,
+            background: selected ? '#0972d3' : '#fff',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'all 0.12s', boxShadow:'0 1px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          {selected && (
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
+      )}
+
+      <div style={{ padding: '14px 18px 16px', paddingRight: selectMode ? 38 : 18, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         {/* Icon */}
         <div style={{ width:46, height:46, borderRadius:10, flexShrink:0, background:s.light, border:`1.5px solid ${accent}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, transition:'transform 0.2s', transform:hovered&&!isRolling?'scale(1.07)':'none' }}>
           {icon}
@@ -263,22 +282,17 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
           {(execution.action||'').replace(/_/g,' ').toUpperCase()}
         </div>
         <div>
-          {/* Rolling spinner on card while API is in progress */}
           {isRolling && (
             <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 14px', borderRadius:8, background:`${accent}15`, border:`1px solid ${accent}40` }}>
               <div style={{ width:13, height:13, border:`2px solid ${accent}40`, borderTopColor:accent, borderRadius:'50%', animation:'rbSpin 0.75s linear infinite' }} />
               <span style={{ fontSize:11, fontWeight:700, color:accent }}>Rolling back…</span>
             </div>
           )}
-
-          {/* Non-rollbackable: permanent badge */}
           {!isRolling && isPermanent && (
             <div style={{ fontSize:10.5, color:'#8d4004', fontStyle:'italic', padding:'5px 12px', borderRadius:7, background:'rgba(141,64,4,0.07)', border:'1px solid rgba(141,64,4,0.2)', display:'flex', alignItems:'center', gap:6 }}>
               <Ban size={11} /> Permanent — cannot be undone
             </div>
           )}
-
-          {/* Rollbackable: Recover button */}
           {!isRolling && !isPermanent && execution.status === 'EXECUTED' && (
             <button
               onClick={() => onRequestRollback(execution)}
@@ -288,8 +302,6 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
               <RotateCcw size={12} /> ↩ Recover
             </button>
           )}
-
-          {/* Other non-EXECUTED, non-permanent states */}
           {!isRolling && !isPermanent && execution.status !== 'EXECUTED' && (
             <div style={{ fontSize:10.5, color:'#8d9191', fontStyle:'italic', padding:'5px 12px', borderRadius:7, background:'rgba(0,0,0,0.04)', border:'1px solid #e5e8ed', display:'flex', alignItems:'center', gap:6 }}>
               ⛔ Cannot rollback
@@ -302,7 +314,7 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback }) {
 }
 
 export default function RollbackSection({ onNav }) {
-  const { scanId: ctxScanId } = useScan()
+  const HIDDEN_KEY = 'rb_hidden_v1'
 
   const [executions, setExecutions]         = useState([])
   const [loading, setLoading]               = useState(true)
@@ -312,18 +324,19 @@ export default function RollbackSection({ onNav }) {
   const [confirmTarget, setConfirmTarget]   = useState(null)
   const [rollingId, setRollingId]           = useState(null)
   const [rollbackError, setRollbackError]   = useState(null)
+  // Delete selection
+  const [selectMode, setSelectMode]         = useState(false)
+  const [selectedIds, setSelectedIds]       = useState(new Set())
+  const [hiddenIds, setHiddenIds]           = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')) } catch { return new Set() }
+  })
   const pollRef = useRef(null)
 
   const loadExecutions = useCallback(async () => {
     try {
-      let sid = ctxScanId
-      if (!sid) {
-        const h = await axios.get(`${API}/api/scan/history`).catch(() => null)
-        sid = h?.data?.data?.scan_id || h?.data?.data?.scans?.[0]?.scan_id || null
-      }
-      if (!sid) { setExecutions([]); setLoading(false); return }
-
-      const r = await axios.get(`${API}/api/execute/executions?scan_id=${sid}`)
+      // Fetch ALL executions across ALL scans — no scan_id filter.
+      // This ensures remediations from previous scans are never lost after a re-scan.
+      const r = await axios.get(`${API}/api/execute/executions`)
       const all = r.data?.data?.executions || []
 
       const latestMap = {}
@@ -339,7 +352,7 @@ export default function RollbackSection({ onNav }) {
       setExecutions([...Object.values(latestMap), ...others])
     } catch { /* ignore */ }
     setLoading(false)
-  }, [ctxScanId])
+  }, [])  // no ctxScanId dependency — fetches all executions regardless
 
   useEffect(() => {
     setLoading(true)
@@ -351,6 +364,27 @@ export default function RollbackSection({ onNav }) {
   function handleRequestRollback(execution) {
     setRollbackError(null)
     setConfirmTarget(execution)
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function deleteSelected() {
+    const next = new Set([...hiddenIds, ...selectedIds])
+    setHiddenIds(next)
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...next])) } catch {}
+    setSelectedIds(new Set())
+    setSelectMode(false)
+  }
+
+  function restoreHidden() {
+    setHiddenIds(new Set())
+    try { localStorage.removeItem(HIDDEN_KEY) } catch {}
   }
 
   async function handleConfirmRollback() {
@@ -387,7 +421,7 @@ export default function RollbackSection({ onNav }) {
     }
   }
 
-  const visible = executions.filter(e => !removedIds.has(e.execution_id))
+  const visible = executions.filter(e => !removedIds.has(e.execution_id) && !hiddenIds.has(e.execution_id))
 
   const rollbackableList = visible.filter(e =>
     e.status === 'EXECUTED' && !NON_ROLLBACKABLE_ACTIONS.has(e.action)
@@ -406,9 +440,9 @@ export default function RollbackSection({ onNav }) {
     filter === 'other'     ? otherList        :
     visible
 
-  const text   = '#0f1111'
-  const text2  = '#565959'
-  const border = '#e5e8ed'
+  const text   = 'var(--text)'
+  const text2  = 'var(--text3)'
+  const border = 'var(--border)'
 
   return (
     <div style={{ fontFamily:"'Inter', -apple-system, sans-serif" }}>
@@ -431,11 +465,39 @@ export default function RollbackSection({ onNav }) {
           </div>
           <div>
             <h1 style={{ fontSize:20, fontWeight:800, color:text, margin:0 }}>Rollback</h1>
-            <div style={{ fontSize:11, color:text2 }}>Undo executed fixes · Permanent changes are tracked separately</div>
+            <div style={{ fontSize:11, color:text2 }}>All remediations · Undo executed fixes · Permanent changes tracked separately</div>
           </div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {visible.length > 0 && (
+          {hiddenIds.size > 0 && (
+            <button onClick={restoreHidden} style={{ padding:'6px 10px', borderRadius:6, border:`1px solid ${border}`, background:'rgba(9,114,211,0.06)', color:'#0972d3', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+              ↺ Restore {hiddenIds.size} hidden
+            </button>
+          )}
+          {visible.length > 0 && !selectMode && (
+            <button onClick={() => { setSelectMode(true); setSelectedIds(new Set()) }} style={{ padding:'6px 12px', borderRadius:6, border:`1px solid ${border}`, background:'transparent', color:text2, fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+              <Trash2 size={11} /> Select to Delete
+            </button>
+          )}
+          {selectMode && (
+            <>
+              <button
+                onClick={() => setSelectedIds(new Set(visible.map(e => e.execution_id)))}
+                style={{ padding:'6px 10px', borderRadius:6, border:`1px solid ${border}`, background:'transparent', color:text2, fontSize:11, cursor:'pointer' }}>
+                Select All
+              </button>
+              <button
+                onClick={deleteSelected}
+                disabled={selectedIds.size === 0}
+                style={{ padding:'6px 12px', borderRadius:6, border:'none', background: selectedIds.size > 0 ? '#d13212' : '#e5e8ed', color: selectedIds.size > 0 ? '#fff' : '#8d9191', fontSize:11, fontWeight:700, cursor: selectedIds.size > 0 ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', gap:5 }}>
+                <Trash2 size={11} /> Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+              </button>
+              <button onClick={() => { setSelectMode(false); setSelectedIds(new Set()) }} style={{ padding:'6px 10px', borderRadius:6, border:`1px solid ${border}`, background:'transparent', color:text2, fontSize:11, cursor:'pointer' }}>
+                Cancel
+              </button>
+            </>
+          )}
+          {visible.length > 0 && !selectMode && (
             <span style={{ fontSize:10, color:'#8d9191', background:'rgba(0,0,0,0.04)', border:`1px solid ${border}`, borderRadius:4, padding:'3px 8px' }}>
               🔄 Auto-refreshing
             </span>
@@ -506,6 +568,9 @@ export default function RollbackSection({ onNav }) {
                     exiting={exitingIds.has(e.execution_id)}
                     rollingId={rollingId}
                     onRequestRollback={handleRequestRollback}
+                    selectMode={selectMode}
+                    selected={selectedIds.has(e.execution_id)}
+                    onToggleSelect={toggleSelect}
                   />
                 ))}
               </div>

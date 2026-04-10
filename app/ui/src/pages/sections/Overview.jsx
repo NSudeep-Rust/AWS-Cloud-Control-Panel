@@ -15,7 +15,7 @@ import {
     Lock, Globe, Key, Database, Server, Eye, Square
 } from 'lucide-react'
 
-const API = 'http://localhost:8000'
+const API = 'http://127.0.0.1:8000'
 
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.1)', border: 'rgba(209,50,18,0.2)' },
@@ -117,7 +117,7 @@ function StatTile({ label, value, sub, valueColor = 'var(--text)', icon: Icon, o
     const [hov, setHov] = useState(false)
     return (
         <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-            style={{ background: 'var(--bg2)', border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s', boxShadow: hov && onClick ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 72 }}>
+            style={{ background: 'var(--bg2)', border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.15s, box-shadow 0.15s', boxShadow: hov && onClick ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 72 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
                 <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
                 {Icon && <Icon size={12} color="var(--text3)" strokeWidth={1.7} />}
@@ -191,106 +191,63 @@ const RADAR_BLIPS = [
     { a: 5.6, r: 0.62, c: '#0972d3' },
 ]
 
+// CSS-only radar — no canvas, no RAF, zero JS compute per frame.
+// Sweep and blips use @keyframes radarSweep / radarBlip (injected globally by PanelPage).
 function ScanningDisplay({ elapsed, radarFact }) {
-    const canvasRef = useRef(null)
-    const rafRef = useRef(null)
-    const angleRef = useRef(0)
-
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        const ctx = canvas.getContext('2d')
-        const SIZE = 120
-        canvas.width = SIZE
-        canvas.height = SIZE
-        const cx = SIZE / 2, cy = SIZE / 2, R = SIZE / 2 - 4
-
-        function draw() {
-            ctx.clearRect(0, 0, SIZE, SIZE)
-
-            ctx.beginPath()
-            ctx.arc(cx, cy, R, 0, Math.PI * 2)
-            ctx.fillStyle = 'rgba(255,153,0,0.04)'
-            ctx.fill()
-            ctx.strokeStyle = 'rgba(255,153,0,0.35)'
-            ctx.lineWidth = 1.2
-            ctx.stroke()
-
-            ;[0.33, 0.66].forEach(f => {
-                ctx.beginPath()
-                ctx.arc(cx, cy, R * f, 0, Math.PI * 2)
-                ctx.strokeStyle = 'rgba(255,153,0,0.12)'
-                ctx.lineWidth = 0.7
-                ctx.stroke()
-            })
-
-            ctx.beginPath()
-            ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy)
-            ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R)
-            ctx.strokeStyle = 'rgba(255,153,0,0.1)'
-            ctx.lineWidth = 0.7
-            ctx.stroke()
-
-            const sweepAngle = angleRef.current
-            const TRAIL = Math.PI * 1.1
-            for (let t = 0; t < 40; t++) {
-                const trailA = sweepAngle - (TRAIL * t / 40)
-                const alpha = (1 - t / 40) * 0.18
-                ctx.beginPath()
-                ctx.moveTo(cx, cy)
-                ctx.arc(cx, cy, R - 1, trailA - 0.08, trailA + 0.001)
-                ctx.closePath()
-                ctx.fillStyle = `rgba(255,153,0,${alpha})`
-                ctx.fill()
-            }
-
-            ctx.beginPath()
-            ctx.moveTo(cx, cy)
-            ctx.lineTo(cx + Math.cos(sweepAngle) * R, cy + Math.sin(sweepAngle) * R)
-            ctx.strokeStyle = 'rgba(255,153,0,0.95)'
-            ctx.lineWidth = 1.8
-            ctx.shadowColor = '#FF9900'
-            ctx.shadowBlur = 8
-            ctx.stroke()
-            ctx.shadowBlur = 0
-
-            RADAR_BLIPS.forEach(b => {
-                const bx = cx + Math.cos(b.a) * R * b.r
-                const by = cy + Math.sin(b.a) * R * b.r
-                let diff = (sweepAngle - b.a) % (Math.PI * 2)
-                if (diff < 0) diff += Math.PI * 2
-                const alpha = diff < 1.4 ? Math.max(0, 1 - diff / 1.4) : 0
-                ctx.beginPath()
-                ctx.arc(bx, by, alpha > 0.05 ? 3.5 : 2, 0, Math.PI * 2)
-                ctx.fillStyle = b.c
-                ctx.shadowColor = b.c
-                ctx.shadowBlur = alpha > 0.05 ? 8 * alpha : 0
-                ctx.globalAlpha = alpha > 0.05 ? (0.3 + alpha * 0.7) : 0.25
-                ctx.fill()
-                ctx.globalAlpha = 1
-                ctx.shadowBlur = 0
-            })
-
-            ctx.beginPath()
-            ctx.arc(cx, cy, 4.5, 0, Math.PI * 2)
-            ctx.fillStyle = '#FF9900'
-            ctx.shadowColor = '#FF9900'
-            ctx.shadowBlur = 10
-            ctx.fill()
-            ctx.shadowBlur = 0
-
-            angleRef.current = (sweepAngle + 0.038) % (Math.PI * 2)
-            rafRef.current = requestAnimationFrame(draw)
-        }
-
-        draw()
-        return () => cancelAnimationFrame(rafRef.current)
-    }, [])
-
+    const BLIPS = [
+        { x: 66, y: 34, c: '#FF9900', d: '0s'   },
+        { x: 78, y: 65, c: '#0972d3', d: '1.0s'  },
+        { x: 36, y: 76, c: '#1d8102', d: '2.0s'  },
+        { x: 84, y: 48, c: '#FF9900', d: '3.0s'  },
+        { x: 28, y: 44, c: '#d13212', d: '4.0s'  },
+        { x: 54, y: 84, c: '#0972d3', d: '5.0s'  },
+        { x: 90, y: 75, c: '#1d8102', d: '1.5s'  },
+        { x: 44, y: 30, c: '#FF9900', d: '3.5s'  },
+        { x: 70, y: 90, c: '#d13212', d: '4.8s'  },
+    ]
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '8px 14px', overflow: 'hidden' }}>
             <style>{`@keyframes regionPulse { 0%,100%{opacity:0.55} 50%{opacity:1} }`}</style>
-            <canvas ref={canvasRef} style={{ width: 120, height: 120, flexShrink: 0 }} />
+
+            {/* Pure CSS radar — GPU-composited, silky smooth */}
+            <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
+                {/* Outer ring — border only, no fill */}
+                <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.2px solid rgba(255,153,0,0.40)' }} />
+                {/* Inner rings */}
+                <div style={{ position: 'absolute', inset: '25%', borderRadius: '50%', border: '0.7px solid rgba(255,153,0,0.2)' }} />
+                <div style={{ position: 'absolute', inset: '50%', borderRadius: '50%', border: '0.7px solid rgba(255,153,0,0.14)' }} />
+                {/* Crosshairs */}
+                <div style={{ position: 'absolute', top: 'calc(50% - 0.5px)', left: 4, right: 4, height: 1, background: 'rgba(255,153,0,0.12)' }} />
+                <div style={{ position: 'absolute', left: 'calc(50% - 0.5px)', top: 4, bottom: 4, width: 1, background: 'rgba(255,153,0,0.12)' }} />
+                {/* Sweep cone — bright spot at 84°, needle at 90°; 44° total trail (clockwise-behind) */}
+                <div style={{
+                    position: 'absolute', inset: 0, borderRadius: '50%',
+                    background: 'conic-gradient(rgba(255,153,0,0) 0deg, rgba(255,153,0,0) 46deg, rgba(255,153,0,0.10) 68deg, rgba(255,153,0,0.22) 84deg, rgba(255,153,0,0) 94deg, rgba(255,153,0,0) 360deg)',
+                    animation: 'radarSweep 7s linear infinite',
+                    willChange: 'transform',
+                }} />
+                {/* Sweep needle */}
+                <div style={{
+                    position: 'absolute', top: 'calc(50% - 1px)', left: '50%', width: '50%', height: 2,
+                    background: 'linear-gradient(90deg, rgba(255,153,0,0.5), rgba(255,153,0,0.95))',
+                    transformOrigin: 'left center',
+                    animation: 'radarSweep 7s linear infinite',
+                    willChange: 'transform',
+                }} />
+                {/* Blips — fade in/out with radarBlip */}
+                {BLIPS.map((b, i) => (
+                    <div key={i} style={{
+                        position: 'absolute', left: b.x, top: b.y, width: 5, height: 5,
+                        borderRadius: '50%', background: b.c,
+                        boxShadow: `0 0 5px ${b.c}88`,
+                        animation: `radarBlip 7s linear ${b.d} infinite`,
+                        willChange: 'opacity',
+                    }} />
+                ))}
+                {/* Center dot */}
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', background: '#FF9900' }} />
+            </div>
+
             <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>Scanning your account...</div>
                 <div style={{ fontSize: 9, color: '#FF9900', fontFamily: 'monospace', fontWeight: 600,

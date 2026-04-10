@@ -1,4 +1,4 @@
-﻿; CloudShield Setup Script — Inno Setup 6
+; CloudShield Setup Script — Inno Setup 6
 ; Author: NSudeep
 
 #define AppName      "CloudShield"
@@ -46,7 +46,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon";  Description: "Create a &Desktop shortcut"; GroupDescription: "Additional icons:"
-Name: "startupentry"; Description: "Launch CloudShield at &Windows startup"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "startupentry"; Description: "Launch CloudShield at &Windows startup"; GroupDescription: "Startup:"
 
 [Files]
 Source: "..\electron\dist\win-unpacked\*";    DestDir: "{app}";                    Flags: ignoreversion recursesubdirs createallsubdirs

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.database.db import get_db
 from app.database.models import Alert, Scan, Finding
 from app.api.response_formatter import format_response
@@ -23,18 +24,23 @@ def get_alerts(
     """
 
     if account_id is not None:
-
         account_scan_ids = db.query(Scan.id).filter(Scan.account_id == account_id).subquery()
-
         account_finding_ids = (
             db.query(Finding.id)
             .filter(Finding.scan_id.in_(account_scan_ids))
             .subquery()
         )
+        # All DB finding IDs - used to identify standalone (live-monitor) alerts
+        all_db_finding_ids = db.query(Finding.id).subquery()
 
         alerts_query = (
             db.query(Alert)
-            .filter(Alert.finding_id.in_(account_finding_ids))
+            .filter(
+                or_(
+                    Alert.finding_id.in_(account_finding_ids),       # scan-linked alerts
+                    Alert.finding_id.notin_(all_db_finding_ids),     # standalone live-monitor alerts
+                )
+            )
             .order_by(Alert.created_at.desc())
         )
     else:
@@ -64,7 +70,7 @@ def get_alerts(
 
 @router.post("/{alert_id}/acknowledge")
 def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):
-    """Soft-acknowledge an alert — removes it from the active list."""
+    """Soft-acknowledge an alert - removes it from the active list."""
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
         return format_response(module="alerts", mode="WRITE", errors=["Alert not found"])

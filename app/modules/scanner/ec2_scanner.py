@@ -29,6 +29,10 @@ class EC2Scanner:
 
                 state = instance.get("State", {}).get("Name")
 
+                # Skip terminated instances — they no longer exist; reporting them is a false-positive.
+                if state == "terminated":
+                    continue
+
                 if state == "running":
                     finding_id = f"ec2-running-{instance_id}"
 

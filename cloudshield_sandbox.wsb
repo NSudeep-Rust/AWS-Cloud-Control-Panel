@@ -1,0 +1,12 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>P:\CloudSecurityPanel\dist\installer</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\CloudShield</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>C:\Users\WDAGUtilityAccount\Desktop\CloudShield\CloudShield-Setup-v1.0.0.exe</Command>
+  </LogonCommand>
+</Configuration>
