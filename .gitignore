@@ -104,3 +104,6 @@ electron/dist/
 
 # Updater build
 updater/dist/
+
+# Local release archives (large binaries — upload to GitHub Releases manually)
+releases/

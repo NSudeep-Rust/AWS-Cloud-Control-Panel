@@ -15,8 +15,8 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-MAX_WORKERS       = 12   # outer pool — handles all region + global tasks
-INNER_MAX_WORKERS = 5    # inner pool — sub-scanners within one region
+MAX_WORKERS       = 16   # outer pool — handles all region + global tasks
+INNER_MAX_WORKERS = 8    # inner pool — sub-scanners within one region
 
 
 class Scanner:
@@ -132,14 +132,21 @@ class Scanner:
 
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as outer:
             futures = {outer.submit(fn): name for name, fn in tasks.items()}
-            for fut in as_completed(futures):
-                name = futures[fut]
-                try:
-                    result = fut.result()
-                    all_findings.extend(result)
-                    print(f"   ✅ {name}: {len(result)} findings")
-                except Exception as e:
-                    print(f"[ERROR] Task '{name}' failed: {e}")
+            try:
+                for fut in as_completed(futures, timeout=90):  # hard cap 90s total
+                    name = futures[fut]
+                    try:
+                        result = fut.result()
+                        all_findings.extend(result)
+                        print(f"   ✅ {name}: {len(result)} findings")
+                    except Exception as e:
+                        print(f"[ERROR] Task '{name}' failed: {e}")
+            except Exception:
+                # timeout hit — collect whatever finished
+                for fut, name in futures.items():
+                    if fut.done() and not fut.exception():
+                        try: all_findings.extend(fut.result())
+                        except Exception: pass
 
         for f in all_findings:
             if not f.get("region"):

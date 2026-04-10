@@ -22,9 +22,10 @@ except Exception:
     _SSL_VERIFY = True  # fall back to system CA bundle
 
 _FAST_CONFIG = Config(
-    connect_timeout=10,
-    read_timeout=30,
+    connect_timeout=5,      # reduced from 10 — AWS auth handshakes are fast
+    read_timeout=15,         # reduced from 30 — AWS API calls rarely take >15s
     retries={'max_attempts': 2},
+    max_pool_connections=50, # handle many concurrent boto3 calls
 )
 
 

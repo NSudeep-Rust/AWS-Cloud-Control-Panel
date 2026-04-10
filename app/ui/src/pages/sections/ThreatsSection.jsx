@@ -546,8 +546,8 @@ export default function ThreatsSection({ dark }) {
                     ]
                     return (
                     <div style={{
-                        background: 'linear-gradient(160deg, #fffcf5 0%, #fff8ec 60%, #fffcf5 100%)',
-                        border: '1px solid rgba(232,154,0,0.28)',
+                        background: dark ? 'var(--bg2)' : 'linear-gradient(160deg, #fffcf5 0%, #fff8ec 60%, #fffcf5 100%)',
+                        border: `1px solid ${dark ? 'rgba(255,153,0,0.18)' : 'rgba(232,154,0,0.28)'}`,
                         borderRadius: 14, overflow: 'hidden',
                         boxShadow: '0 1px 8px rgba(255,153,0,0.08), 0 2px 16px rgba(15,17,17,0.06)',
                         marginBottom: 60,
@@ -592,7 +592,7 @@ export default function ThreatsSection({ dark }) {
                                     ))}
                                     <div style={{
                                         width: 72, height: 72, borderRadius: '50%',
-                                        background: '#fff9ee',
+                                        background: dark ? 'rgba(255,153,0,0.07)' : '#fff9ee',
                                         border: '2px solid rgba(232,154,0,0.45)',
                                         boxShadow: 'inset 0 0 24px rgba(255,153,0,0.12)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -627,10 +627,10 @@ export default function ThreatsSection({ dark }) {
                                     ].map((m, i) => (
                                         <div key={m.name}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                                <span style={{ fontSize: 9.5, color: '#3d4f60', fontWeight: 600 }}>{m.name}</span>
+                                                <span style={{ fontSize: 9.5, color: 'var(--text2)', fontWeight: 600 }}>{m.name}</span>
                                                 <span style={{ fontSize: 8.5, color: m.color, fontWeight: 700, fontFamily: 'monospace' }}>READY</span>
                                             </div>
-                                            <div style={{ height: 3, background: 'rgba(35,47,62,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                                            <div style={{ height: 3, background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(35,47,62,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                                                 <div style={{
                                                     height: '100%', borderRadius: 3,
                                                     background: `linear-gradient(90deg, ${m.color}, ${m.color}99)`,
@@ -641,7 +641,7 @@ export default function ThreatsSection({ dark }) {
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: '#8d9191', fontFamily: 'monospace' }}>
+                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace' }}>
                                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#1d8102', display: 'inline-block', animation: 'socBlink 1.2s ease infinite' }} />
                                     All engines online · Run a scan from Overview or Scanner to begin threat analysis
                                 </div>
@@ -662,7 +662,7 @@ export default function ThreatsSection({ dark }) {
                                 {[...MODULE_CARDS, ...MODULE_CARDS].map((b, i) => (
                                     <div key={i} style={{
                                         flexShrink: 0, width: 148,
-                                        background: '#ffffff',
+                                        background: dark ? 'var(--bg3)' : '#ffffff',
                                         border: `1px solid ${b.color}33`,
                                         borderLeft: `3px solid ${b.color}`,
                                         borderRadius: 8, padding: '10px 12px',
@@ -672,7 +672,7 @@ export default function ThreatsSection({ dark }) {
                                         <div style={{ position: 'absolute', top: -8, right: -8, fontSize: 30, opacity: 0.05 }}>{b.icon}</div>
                                         <div style={{ fontSize: 16, marginBottom: 5, position: 'relative' }}>{b.icon}</div>
                                         <div style={{ fontSize: 9.5, fontWeight: 800, color: b.color, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3, position: 'relative' }}>{b.title}</div>
-                                        <div style={{ fontSize: 9, color: '#565959', lineHeight: 1.4, position: 'relative' }}>{b.sub}</div>
+                                        <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.4, position: 'relative' }}>{b.sub}</div>
                                     </div>
                                 ))}
                             </div>

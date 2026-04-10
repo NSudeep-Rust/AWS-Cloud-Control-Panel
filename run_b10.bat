@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-title CloudShield — Full Build v1.0.0
+title CloudShield — Full Build v1.0.0.1
 
 set LOG=p:\CloudSecurityPanel\build10.log
 set ROOT=p:\CloudSecurityPanel
@@ -16,7 +16,7 @@ echo ============================================================ >> %LOG%
 
 echo.
 echo  ╔══════════════════════════════════════════════════════╗
-echo  ║       CloudShield  —  Full Build v1.0.0              ║
+echo  ║       CloudShield  —  Full Build v1.0.0.1              ║
 echo  ║  React · Backend · Updater · Electron · Installer    ║
 echo  ╚══════════════════════════════════════════════════════╝
 echo.
@@ -152,6 +152,24 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 
 :: ──────────────────────────────────────────────────────────────────────────
+:: STEP 7 — Archive to versioned releases\ folder (NEVER overwrites old builds)
+:: ──────────────────────────────────────────────────────────────────────────
+echo  [7/7] Archiving to releases\v%APP_VER%\...
+set RELEASE_DIR=%ROOT%\releases\v%APP_VER%
+if exist "%RELEASE_DIR%" (
+    echo  [WARN]  releases\v%APP_VER%\ already exists - skipping copy to avoid overwrite
+    echo  [WARN]  To build a sub-version: update VERSION file to %APP_VER%a or %APP_VER%b first
+    echo [WARN] Release folder already exists >> %LOG%
+) else (
+    mkdir "%RELEASE_DIR%"
+    copy /Y "%INSTALLER%" "%RELEASE_DIR%\" >> %LOG%
+    if exist "%ZIP_PATH%"  copy /Y "%ZIP_PATH%" "%RELEASE_DIR%\" >> %LOG%
+    echo  [OK]   Archived: releases\v%APP_VER%\
+    echo [OK] Archived to releases\v%APP_VER% >> %LOG%
+)
+echo.
+
+:: ──────────────────────────────────────────────────────────────────────────
 :: DONE
 :: ──────────────────────────────────────────────────────────────────────────
 echo ============================================================ >> %LOG%
@@ -163,11 +181,9 @@ echo  ║   BUILD COMPLETE  ✓                                  ║
 echo  ╚══════════════════════════════════════════════════════╝
 echo.
 echo  Artifacts:
-echo   • CloudShield.exe      -^> electron\dist\win-unpacked\
-echo   • cloudshield-backend  -^> dist\cloudshield-backend\
-echo   • CloudShield-Updater  -^> dist\CloudShield-Updater.exe
-echo   • Installer            -^> %INSTALLER%
-echo   • Update ZIP           -^> dist\%ZIP_NAME%
+echo   • Installer  -^> %INSTALLER%
+echo   • Update ZIP -^> dist\%ZIP_NAME%
+echo   • Archived   -^> releases\v%APP_VER%\
 echo.
 echo  Upload to GitHub Release v%APP_VER%:
 echo     1. %INSTALLER%

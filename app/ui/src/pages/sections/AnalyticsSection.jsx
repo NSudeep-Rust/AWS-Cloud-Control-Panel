@@ -890,13 +890,13 @@ function EmailNotificationsTab({ accountId }) {
   const mismatch = form.smtp_username && form.smtp_host && !isCustom &&
     !form.smtp_host.includes(senderDomain) && !['office365.com','outlook.com'].includes(senderDomain)
 
-  const inp = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1.5px solid #e5e8ed', fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box', background:'#fff', color:'#0f1111' }
-  const lbl = { fontSize:11.5, fontWeight:700, color:'#565959', marginBottom:5, display:'block', textTransform:'uppercase', letterSpacing:0.5 }
-  const sec = { background:'#fff', borderRadius:12, border:'1.5px solid #e5e8ed', padding:'20px 22px', boxShadow:'0 1px 5px rgba(0,0,0,0.04)' }
+  const inp = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1.5px solid var(--border)', fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box', background:'var(--bg)', color:'var(--text)' }
+  const lbl = { fontSize:11.5, fontWeight:700, color:'var(--text2)', marginBottom:5, display:'block', textTransform:'uppercase', letterSpacing:0.5 }
+  const sec = { background:'var(--bg2)', borderRadius:12, border:'1.5px solid var(--border)', padding:'20px 22px', boxShadow:'0 1px 5px rgba(0,0,0,0.04)' }
 
   if (loading) return (
-    <div style={{ padding:60, textAlign:'center', color:'#8d9191' }}>
-      <div style={{ width:20, height:20, border:'2.5px solid #e5e8ed', borderTopColor:'#FF9900', borderRadius:'50%', display:'inline-block', animation:'anlSpin 0.8s linear infinite', marginBottom:10 }} />
+    <div style={{ padding:60, textAlign:'center', color:'var(--text3)' }}>
+      <div style={{ width:20, height:20, border:'2.5px solid var(--border)', borderTopColor:'#FF9900', borderRadius:'50%', display:'inline-block', animation:'anlSpin 0.8s linear infinite', marginBottom:10 }} />
       <div style={{ fontSize:13 }}>Loading notification settings...</div>
     </div>
   )
@@ -916,8 +916,8 @@ function EmailNotificationsTab({ accountId }) {
 
       <div style={{ ...sec, display:'flex', alignItems:'center', gap:16 }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:15, fontWeight:800, color:'#0f1111', marginBottom:3 }}>Email Notifications</div>
-          <div style={{ fontSize:12, color:'#8d9191' }}>
+          <div style={{ fontSize:15, fontWeight:800, color:'var(--text)', marginBottom:3 }}>Email Notifications</div>
+          <div style={{ fontSize:12, color:'var(--text3)' }}>
             Receive security alerts, scan summaries, and drift warnings by email.
             {!form.smtp_username && <span style={{ color:'#c8960c', fontWeight:600 }}> Fill SMTP settings below and Save first.</span>}
           </div>
@@ -936,12 +936,12 @@ function EmailNotificationsTab({ accountId }) {
       </div>
 
       <div style={sec}>
-        <div style={{ fontSize:13, fontWeight:800, color:'#0f1111', marginBottom:14, paddingBottom:10, borderBottom:'1px solid #f0f0f0' }}>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--text)', marginBottom:14, paddingBottom:10, borderBottom:'1px solid var(--border)' }}>
           SMTP Server Settings
         </div>
 
         <div style={{ display:'flex', gap:6, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
-          <span style={{ fontSize:11, color:'#8d9191' }}>Quick fill:</span>
+          <span style={{ fontSize:11, color:'var(--text3)' }}>Quick fill:</span>
           {PRESETS.map(p => {
             const isSel = p.host === '__CUSTOM__' ? isCustom : form.smtp_host === p.host
             return (
@@ -954,14 +954,14 @@ function EmailNotificationsTab({ accountId }) {
                   }
                 }}
                 style={{ fontSize:11, fontWeight:600, padding:'4px 12px', borderRadius:6,
-                  border: isSel ? '1.5px solid #FF9900' : '1px solid #e5e8ed',
-                  background: isSel ? 'rgba(255,153,0,0.1)' : '#f8f8f8',
-                  color: isSel ? '#FF9900' : '#565959', cursor:'pointer' }}>
+                  border: isSel ? '1.5px solid #FF9900' : '1px solid var(--border)',
+                  background: isSel ? 'rgba(255,153,0,0.1)' : 'var(--bg3)',
+                  color: isSel ? '#FF9900' : 'var(--text3)', cursor:'pointer' }}>
                 {p.label}
               </button>
             )
           })}
-          <span style={{ fontSize:10, color:'#adb5bd', marginLeft:4 }}>Port 587=STARTTLS · 465=SSL</span>
+          <span style={{ fontSize:10, color:'var(--text3)', marginLeft:4 }}>Port 587=STARTTLS · 465=SSL</span>
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 120px', gap:12, marginBottom:12 }}>
@@ -998,7 +998,7 @@ function EmailNotificationsTab({ accountId }) {
                 onChange={e => set('smtp_password', e.target.value)}
                 placeholder={form.smtp_host.includes('gmail') ? '16-char Gmail App Password' : 'SMTP / App password'} />
               <button type="button" onClick={() => setShowPwd(v => !v)}
-                style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', fontSize:14, color:'#8d9191' }}>
+                style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', border:'none', background:'none', cursor:'pointer', fontSize:14, color:'var(--text3)' }}>
                 {showPwd ? 'Hide' : 'Show'}
               </button>
             </div>
@@ -1028,7 +1028,7 @@ function EmailNotificationsTab({ accountId }) {
           </div>
         </div>
 
-        <div style={{ marginTop:12, padding:'10px 14px', background:'rgba(9,114,211,0.05)', borderRadius:8, borderLeft:'3px solid rgba(9,114,211,0.3)', fontSize:11.5, color:'#3d4f60', lineHeight:1.6 }}>
+        <div style={{ marginTop:12, padding:'10px 14px', background:'rgba(9,114,211,0.05)', borderRadius:8, borderLeft:'3px solid rgba(9,114,211,0.3)', fontSize:11.5, color:'var(--text2)', lineHeight:1.6 }}>
           {form.smtp_host?.includes('gmail') && <>
             Gmail tip: Go to myaccount.google.com/apppasswords and create a 16-char App Password for "Mail". Requires 2FA on your Google account. Do NOT use your login password.
           </>}
@@ -1045,7 +1045,7 @@ function EmailNotificationsTab({ accountId }) {
       </div>
 
       <div style={sec}>
-        <div style={{ fontSize:13, fontWeight:800, color:'#0f1111', marginBottom:14, paddingBottom:10, borderBottom:'1px solid #f0f0f0' }}>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--text)', marginBottom:14, paddingBottom:10, borderBottom:'1px solid var(--border)' }}>
           Alert Triggers
         </div>
         {[
@@ -1053,10 +1053,10 @@ function EmailNotificationsTab({ accountId }) {
           { key:'notify_on_scan_complete', title:'Scan Complete Summary',      sub:'Sent after every scan with risk score and severity breakdown' },
           { key:'notify_on_drift',         title:'Drift Alert (New Findings)', sub:'Sent when a scan finds new findings vs the previous scan' },
         ].map(row => (
-          <div key={row.key} style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 0', borderBottom:'1px solid #f8f8f8' }}>
+          <div key={row.key} style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'#0f1111' }}>{row.title}</div>
-              <div style={{ fontSize:11, color:'#8d9191', marginTop:2 }}>{row.sub}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{row.title}</div>
+              <div style={{ fontSize:11, color:'var(--text3)', marginTop:2 }}>{row.sub}</div>
             </div>
             <div onClick={() => set(row.key, !form[row.key])}
               style={{ width:40, height:22, borderRadius:11, cursor:'pointer', position:'relative', flexShrink:0,
@@ -1071,8 +1071,8 @@ function EmailNotificationsTab({ accountId }) {
       <div style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
         <button type="submit" disabled={saving}
           style={{ padding:'10px 24px', borderRadius:9, border:'none',
-            background: saving ? '#e5e8ed' : 'linear-gradient(135deg,#FF9900,#e07b00)',
-            color: saving ? '#8d9191' : '#0f1111', fontWeight:800, fontSize:13,
+            background: saving ? 'var(--border)' : 'linear-gradient(135deg,#FF9900,#e07b00)',
+            color: saving ? 'var(--text3)' : '#0f1111', fontWeight:800, fontSize:13,
             cursor: saving ? 'wait' : 'pointer', boxShadow: saving ? 'none' : '0 4px 14px rgba(255,153,0,0.4)',
             transition:'all 0.16s', fontFamily:'Inter,sans-serif' }}>
           {saving ? 'Saving...' : 'Save Settings'}
@@ -1096,7 +1096,7 @@ function EmailNotificationsTab({ accountId }) {
         {saved && <span style={{ fontSize:12, color:'#1d8102', fontWeight:700 }}>Saved</span>}
       </div>
 
-      <div style={{ fontSize:11, color:'#adb5bd' }}>
+      <div style={{ fontSize:11, color:'var(--text3)' }}>
         Send Test Email auto-saves your current form first, then connects to your SMTP server and sends a real verification email.
       </div>
 
