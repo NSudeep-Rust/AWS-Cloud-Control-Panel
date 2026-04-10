@@ -138,10 +138,7 @@ set ZIP_NAME=cloudshield-update-v%APP_VER%.zip
 set ZIP_PATH=%ROOT%\dist\%ZIP_NAME%
 if exist "%ZIP_PATH%" del /f /q "%ZIP_PATH%"
 
-powershell -NoProfile -Command ^
-  "Compress-Archive -Path '%ROOT%\electron\dist\win-unpacked\*','%ROOT%\dist\cloudshield-backend' -DestinationPath '%ZIP_PATH%' -Force; ^
-   $sz = [math]::Round((Get-Item '%ZIP_PATH%').Length / 1MB, 1); ^
-   Write-Host ('Update zip: ' + $sz + ' MB  ->  %ZIP_PATH%')" >> %LOG% 2>&1
+powershell -NoProfile -Command "Compress-Archive -Path '%ROOT%\electron\dist\win-unpacked\*','%ROOT%\dist\cloudshield-backend' -DestinationPath '%ZIP_PATH%' -Force; $sz = [math]::Round((Get-Item '%ZIP_PATH%').Length / 1MB, 1); Write-Host ('Update zip: ' + $sz + ' MB -> %ZIP_PATH%')" >> %LOG% 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo  [WARN]  Update ZIP creation failed - installer still ready
     echo [WARN] Update ZIP failed >> %LOG%
