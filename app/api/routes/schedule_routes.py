@@ -41,14 +41,16 @@ def get_interval_td(interval_hours: int) -> timedelta:
 
 
 def _serialize(cfg: ScheduleConfig) -> dict:
+    def _iso(dt):
+        return (dt.isoformat() + "Z") if dt else None   # "Z" = UTC marker for JS Date()
     return {
         "id":             cfg.id,
         "account_db_id":  cfg.account_db_id,
         "enabled":        cfg.enabled,
         "interval_hours": cfg.interval_hours,
-        "last_run_at":    cfg.last_run_at.isoformat()  if cfg.last_run_at  else None,
-        "next_run_at":    cfg.next_run_at.isoformat()  if cfg.next_run_at  else None,
-        "updated_at":     cfg.updated_at.isoformat()   if cfg.updated_at   else None,
+        "last_run_at":    _iso(cfg.last_run_at),
+        "next_run_at":    _iso(cfg.next_run_at),
+        "updated_at":     _iso(cfg.updated_at),
     }
 
 

@@ -1,4 +1,7 @@
-﻿from app.config.security_config import SEVERITY_MAP
+from app.config.security_config import SEVERITY_MAP
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+
 
 class EncryptionScanner:
 
@@ -6,126 +9,136 @@ class EncryptionScanner:
         self.aws_session = aws_session
 
     def scan(self, region=None):
-
         session = self.aws_session.session
+
+        # FIX: all three clients MUST specify region_name —
+        # previously kms/rds defaulted to us-east-1 regardless of the scanned region
         ec2 = session.client("ec2", region_name=region)
+        kms = session.client("kms", region_name=region)
+        rds = session.client("rds", region_name=region)
 
         findings = []
-        seen_ids = set()
+        lock = threading.Lock()
 
-        try:
-            response = ec2.get_ebs_encryption_by_default()
+        def _add(f):
+            fid = f.get("id")
+            if not fid:
+                return
+            with lock:
+                if not any(x["id"] == fid for x in findings):
+                    findings.append(f)
 
-            if not response.get("EbsEncryptionByDefault"):
-                finding_id = "ebs-default-encryption-disabled"
-
-                if finding_id not in seen_ids:
-                    seen_ids.add(finding_id)
-                    findings.append({
-                        "id": finding_id,
-                        "type": "EBS_DEFAULT_ENCRYPTION_DISABLED",
-                        "severity": SEVERITY_MAP["EBS_DEFAULT_ENCRYPTION_DISABLED"],
+        # ── Check 1: EBS default encryption ──────────────────────────────────
+        def check_ebs_default():
+            try:
+                if not ec2.get_ebs_encryption_by_default().get("EbsEncryptionByDefault"):
+                    _add({
+                        "id":          "ebs-default-encryption-disabled",
+                        "type":        "EBS_DEFAULT_ENCRYPTION_DISABLED",
+                        "severity":    SEVERITY_MAP["EBS_DEFAULT_ENCRYPTION_DISABLED"],
                         "resource_id": "account",
-                        "region": region,
-                        "description": "EBS default encryption is not enabled for the account"
+                        "region":      region,
+                        "description": "EBS default encryption is not enabled for the account",
                     })
+            except Exception as e:
+                print("EBS default encryption error:", e)
 
-        except Exception as e:
-            print("EBS default encryption error:", str(e))
+        # ── Check 2: KMS key rotation (keys fetched + checked in parallel) ───
+        def check_kms():
+            try:
+                # Pre-fetch aliases and key list concurrently
+                alias_map = {}
+                keys = []
 
-        
+                def _get_aliases():
+                    try:
+                        for a in kms.list_aliases().get("Aliases", []):
+                            if "TargetKeyId" in a:
+                                alias_map[a["TargetKeyId"]] = a["AliasName"]
+                    except Exception as e:
+                        print("KMS alias error:", e)
 
-        kms = session.client("kms")
+                def _get_keys():
+                    try:
+                        keys.extend(kms.list_keys().get("Keys", []))
+                    except Exception as e:
+                        print("KMS list error:", e)
 
-        alias_map = {}
-        try:
-            aliases = kms.list_aliases()["Aliases"]
-            for a in aliases:
-                if "TargetKeyId" in a:
-                    alias_map[a["TargetKeyId"]] = a["AliasName"]
-        except Exception as e:
-            print("KMS alias error:", str(e))
+                with ThreadPoolExecutor(max_workers=2) as pre:
+                    list(pre.map(lambda fn: fn(), [_get_aliases, _get_keys]))
 
-        try:
-            keys = kms.list_keys()["Keys"]
+                if not keys:
+                    return
 
-            for key in keys:
-                key_id = key["KeyId"]
-
-                try:
-                    meta = kms.describe_key(KeyId=key_id)["KeyMetadata"]
-
-                    if meta["KeyManager"] != "CUSTOMER":
-                        continue
-
-                    rotation = kms.get_key_rotation_status(KeyId=key_id)
-
-                    if not rotation["KeyRotationEnabled"]:
-                        alias = alias_map.get(key_id)
-                        finding_id = f"kms-rotation-disabled-{key_id}"
-
-                        if finding_id not in seen_ids:
-                            seen_ids.add(finding_id)
-                            findings.append({
-                                "id": finding_id,
-                                "type": "KMS_KEY_ROTATION_DISABLED",
-                                "severity": SEVERITY_MAP["KMS_KEY_ROTATION_DISABLED"],
-                                "resource_id": key_id,
-                                "region": region,
+                # Check each customer key for rotation in parallel
+                def _check_key(key):
+                    key_id = key["KeyId"]
+                    try:
+                        meta = kms.describe_key(KeyId=key_id)["KeyMetadata"]
+                        if meta.get("KeyManager") != "CUSTOMER":
+                            return
+                        if not kms.get_key_rotation_status(KeyId=key_id).get("KeyRotationEnabled"):
+                            alias = alias_map.get(key_id)
+                            _add({
+                                "id":            f"kms-rotation-disabled-{key_id}",
+                                "type":          "KMS_KEY_ROTATION_DISABLED",
+                                "severity":      SEVERITY_MAP["KMS_KEY_ROTATION_DISABLED"],
+                                "resource_id":   key_id,
+                                "region":        region,
                                 "resource_name": alias or f"kms-key-{key_id[:8]}",
-                                "description": f"KMS key rotation is not enabled ({alias if alias else key_id})"
+                                "description":   f"KMS key rotation is not enabled ({alias or key_id})",
                             })
+                    except Exception as e:
+                        print(f"KMS key error ({key_id}):", e)
 
-                except Exception as e:
-                    print(f"KMS key error ({key_id}):", str(e))
+                with ThreadPoolExecutor(max_workers=min(len(keys), 10)) as kpool:
+                    list(kpool.map(_check_key, keys))
 
-        except Exception as e:
-            print("KMS list error:", str(e))
+            except Exception as e:
+                print("KMS check error:", e)
 
-        try:
-            snapshots = ec2.describe_snapshots(OwnerIds=["self"])["Snapshots"]
-
-            for snapshot in snapshots:
-                if not snapshot.get("Encrypted"):
-                    snapshot_id = snapshot["SnapshotId"]
-                    finding_id = f"ebs-snapshot-unencrypted-{snapshot_id}"
-
-                    if finding_id not in seen_ids:
-                        seen_ids.add(finding_id)
-                        findings.append({
-                            "id": finding_id,
-                            "type": "EBS_SNAPSHOT_NOT_ENCRYPTED",
-                            "severity": SEVERITY_MAP["EBS_SNAPSHOT_NOT_ENCRYPTED"],
-                            "resource_id": snapshot_id,
-                            "region": region,
-                            "description": "EBS snapshot is not encrypted"
+        # ── Check 3: Unencrypted EBS snapshots ───────────────────────────────
+        def check_ebs_snapshots():
+            try:
+                for snap in ec2.describe_snapshots(OwnerIds=["self"]).get("Snapshots", []):
+                    if not snap.get("Encrypted"):
+                        sid = snap["SnapshotId"]
+                        _add({
+                            "id":          f"ebs-snapshot-unencrypted-{sid}",
+                            "type":        "EBS_SNAPSHOT_NOT_ENCRYPTED",
+                            "severity":    SEVERITY_MAP["EBS_SNAPSHOT_NOT_ENCRYPTED"],
+                            "resource_id": sid,
+                            "region":      region,
+                            "description": "EBS snapshot is not encrypted",
                         })
+            except Exception as e:
+                print("EBS snapshot error:", e)
 
-        except Exception as e:
-            print("EBS snapshot error:", str(e))
-
-        rds = session.client("rds")
-
-        try:
-            databases = rds.describe_db_instances()["DBInstances"]
-
-            for db in databases:
-                if not db.get("StorageEncrypted"):
-                    db_id = db["DBInstanceIdentifier"]
-                    finding_id = f"rds-storage-unencrypted-{db_id}"
-
-                    if finding_id not in seen_ids:
-                        seen_ids.add(finding_id)
-                        findings.append({
-                            "id": finding_id,
-                            "type": "RDS_STORAGE_NOT_ENCRYPTED",
-                            "severity": SEVERITY_MAP["RDS_STORAGE_NOT_ENCRYPTED"],
+        # ── Check 4: Unencrypted RDS instances ───────────────────────────────
+        def check_rds():
+            try:
+                for db in rds.describe_db_instances().get("DBInstances", []):
+                    if not db.get("StorageEncrypted"):
+                        db_id = db["DBInstanceIdentifier"]
+                        _add({
+                            "id":          f"rds-storage-unencrypted-{db_id}",
+                            "type":        "RDS_STORAGE_NOT_ENCRYPTED",
+                            "severity":    SEVERITY_MAP["RDS_STORAGE_NOT_ENCRYPTED"],
                             "resource_id": db_id,
-                            "region": region,
-                            "description": "RDS database storage is not encrypted"
+                            "region":      region,
+                            "description": "RDS database storage is not encrypted",
                         })
+            except Exception as e:
+                print("RDS error:", e)
 
-        except Exception as e:
-            print("RDS error:", str(e))
+        # ── Run all 4 checks concurrently ────────────────────────────────────
+        checks = [check_ebs_default, check_kms, check_ebs_snapshots, check_rds]
+        with ThreadPoolExecutor(max_workers=len(checks)) as pool:
+            futs = [pool.submit(c) for c in checks]
+            for fut in as_completed(futs):
+                try:
+                    fut.result()
+                except Exception as e:
+                    print(f"[EncryptionScanner] check failed in {region}: {e}")
 
         return findings

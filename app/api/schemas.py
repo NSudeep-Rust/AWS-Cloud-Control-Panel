@@ -14,6 +14,7 @@ class ExecuteRequest(BaseModel):
     mode: str = "DRY_RUN"
     approval_token: str | None = None
     confirm: bool = False
+    source: str | None = None   # e.g. "attack_surface" — used to tag executions for separate rollback display
 
 
 class ThreatRequest(BaseModel):

@@ -194,7 +194,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
           {/* Content */}
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
-              <div style={{ flex:1, minWidth:0, fontSize:14, fontWeight:700, color:'#0f1111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fmtType(finding.type)}</div>
+              <div style={{ flex:1, minWidth:0, fontSize:14, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fmtType(finding.type)}</div>
               <span style={{ fontSize:9, fontWeight:800, color:ac.tag, background:ac.tagBg, borderRadius:4, padding:'3px 7px', letterSpacing:0.7, textTransform:'uppercase', border:`1px solid ${ac.tag}30`, flexShrink:0 }}>{finding.severity||'INFO'}</span>
               <span style={{ fontSize:9, fontWeight:700, color:'#0972d3', background:'rgba(9,114,211,0.1)', borderRadius:4, padding:'3px 7px', border:'1px solid rgba(9,114,211,0.2)', flexShrink:0 }}>{finding.remediation_type||'AUTO'}</span>
               {/* Phase indicator */}
@@ -207,7 +207,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
                 {phase==='error'     && <span style={{ fontSize:10, color:'#d13212', fontWeight:700 }}>✕ Error</span>}
               </div>
             </div>
-            <div style={{ fontSize:10.5, color:'#565959', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            <div style={{ fontSize:10.5, color:'var(--text3)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
               {finding.resource_id}{finding.region ? ` · ${finding.region}` : ''}
             </div>
           </div>
@@ -222,7 +222,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
 
       {/* Expandable drawer */}
       {isOpen && (
-        <div style={{ background:'#fffcf5', border:`1.5px solid ${ac.stripe}aa`, borderTop:`2px dashed ${ac.stripe}44`, borderRadius:'0 0 14px 14px', padding:'18px 20px 20px', boxShadow:`0 18px 48px ${ac.glow}, 0 4px 16px rgba(0,0,0,0.08)`, animation:'fcPop 0.22s ease' }}>
+        <div style={{ background:'var(--bg2)', border:`1.5px solid ${ac.stripe}aa`, borderTop:`2px dashed ${ac.stripe}44`, borderRadius:'0 0 14px 14px', padding:'18px 20px 20px', boxShadow:`0 18px 48px ${ac.glow}, 0 4px 16px rgba(0,0,0,0.08)`, animation:'fcPop 0.22s ease' }}>
 
           {/* Idle — show dry run CTA */}
           {phase === 'idle' && (
@@ -232,7 +232,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
                 onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow=`0 4px 18px ${ac.stripe}44` }}>
                 <Play size={13} fill="#fff" /> Run Dry Run
               </button>
-              <div style={{ fontSize:11, color:'#687078', lineHeight:1.6 }}>
+              <div style={{ fontSize:11, color:'var(--text3)', lineHeight:1.6 }}>
                 <strong style={{ color:'#3d4f60', display:'block', marginBottom:2 }}>Safe preview mode</strong>
                 Simulates the fix — no changes made to AWS until you approve
               </div>
@@ -244,8 +244,8 @@ function FindingCard({ finding, scanId, onExecuted }) {
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               <div style={{ width:18, height:18, border:`2.5px solid ${ac.stripe}`, borderTopColor:'transparent', borderRadius:'50%', animation:'fcSpin 0.7s linear infinite', flexShrink:0 }} />
               <div>
-                <div style={{ fontSize:12.5, fontWeight:700, color:'#0f1111' }}>Generating fix plan…</div>
-                <div style={{ fontSize:10, color:'#8d9191', marginTop:2 }}>Analysing {finding.resource_id}</div>
+                <div style={{ fontSize:12.5, fontWeight:700, color:'var(--text)' }}>Generating fix plan…</div>
+                <div style={{ fontSize:10, color:'var(--text3)', marginTop:2 }}>Analysing {finding.resource_id}</div>
               </div>
             </div>
           )}
@@ -254,7 +254,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
           {phase === 'planned' && plan && (
             <div style={{ animation:'fcPop 0.22s ease' }}>
               {/* Plan box */}
-              <div style={{ padding:'12px 16px', borderRadius:10, background:'#fffbef', border:'1.5px solid rgba(224,123,0,0.28)', marginBottom:14 }}>
+              <div style={{ padding:'12px 16px', borderRadius:10, background:'rgba(224,123,0,0.05)', border:'1.5px solid rgba(224,123,0,0.28)', marginBottom:14 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                   <span style={{ fontSize:10, fontWeight:800, color:'#c07000', textTransform:'uppercase', letterSpacing:1.1 }}>📋 Dry Run Plan</span>
                   <div style={{ flex:1, height:1, background:'rgba(192,112,0,0.2)' }} />
@@ -296,7 +296,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
                   onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='0 4px 16px rgba(255,153,0,0.45)' }}>
                   <Zap size={13} />⚡ Apply Fix to AWS
                 </button>
-                <button onClick={e => { e.stopPropagation(); setPhase('idle'); setOpen(false); setPlan(null); setDangerOk(false) }} style={{ padding:'10px 16px', borderRadius:9, border:'1px solid rgba(35,47,62,0.15)', background:'transparent', color:'#565959', fontSize:11.5, cursor:'pointer' }}>
+                <button onClick={e => { e.stopPropagation(); setPhase('idle'); setOpen(false); setPlan(null); setDangerOk(false) }} style={{ padding:'10px 16px', borderRadius:9, border:'1px solid var(--border)', background:'transparent', color:'var(--text3)', fontSize:11.5, cursor:'pointer' }}>
                   Cancel
                 </button>
               </div>
@@ -308,7 +308,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
             <div style={{ display:'flex', alignItems:'center', gap:14 }}>
               <div style={{ width:38, height:38, borderRadius:'50%', border:'3px solid rgba(255,153,0,0.15)', borderTopColor:'#FF9900', animation:'fcSpin 0.75s linear infinite', boxShadow:'0 0 14px rgba(255,153,0,0.25)', flexShrink:0 }} />
               <div>
-                <div style={{ fontSize:13, fontWeight:800, color:'#0f1111', marginBottom:3 }}>Applying fix to AWS…</div>
+                <div style={{ fontSize:13, fontWeight:800, color:'var(--text)', marginBottom:3 }}>Applying fix to AWS…</div>
                 <div style={{ fontSize:10.5, color:'#8d9191' }}>Making live changes to <strong style={{ fontFamily:'monospace' }}>{finding.resource_id}</strong></div>
                 <div style={{ fontSize:10, color:'#d13212', marginTop:4, fontWeight:600 }}>⚠ Do not close — changes are being applied</div>
               </div>
@@ -352,17 +352,17 @@ function ManualCard({ finding }) {
         <div style={{ width:46, height:46, borderRadius:10, flexShrink:0, background:ac.light, border:`1.5px solid ${ac.stripe}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>{icon}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-            <div style={{ flex:1, fontSize:14, fontWeight:700, color:'#0f1111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fmtType(finding.type)}</div>
+            <div style={{ flex:1, fontSize:14, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{fmtType(finding.type)}</div>
             <span style={{ fontSize:9, fontWeight:800, color:ac.tag, background:ac.tagBg, borderRadius:4, padding:'3px 7px', textTransform:'uppercase', border:`1px solid ${ac.tag}30`, flexShrink:0 }}>{finding.severity||'INFO'}</span>
             <span style={{ fontSize:9, fontWeight:700, color:'#5b9bd5', background:'rgba(91,155,213,0.1)', borderRadius:4, padding:'3px 7px', border:'1px solid rgba(91,155,213,0.2)', flexShrink:0 }}>MANUAL</span>
           </div>
-          <div style={{ fontSize:10.5, color:'#565959', fontFamily:'monospace', marginBottom:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{finding.resource_id}{finding.region ? ` · ${finding.region}` : ''}</div>
-          <div style={{ background:'#f0f7ff', border:'1px solid rgba(91,155,213,0.22)', borderRadius:9, padding:'10px 14px' }}>
+          <div style={{ fontSize:10.5, color:'var(--text3)', fontFamily:'monospace', marginBottom:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{finding.resource_id}{finding.region ? ` · ${finding.region}` : ''}</div>
+          <div style={{ background:'rgba(91,155,213,0.07)', border:'1px solid rgba(91,155,213,0.22)', borderRadius:9, padding:'10px 14px' }}>
             <div style={{ fontSize:10, fontWeight:800, color:'#1a6296', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>📋 Manual Steps Required</div>
             {steps.map((s, i) => (
               <div key={i} style={{ display:'flex', gap:10, marginBottom: i < steps.length-1 ? 7 : 0, alignItems:'flex-start' }}>
                 <div style={{ width:20, height:20, borderRadius:'50%', flexShrink:0, background:'rgba(91,155,213,0.15)', border:'1px solid rgba(91,155,213,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:'#1a6296' }}>{i+1}</div>
-                <div style={{ fontSize:11.5, color:'#3d4f60', lineHeight:1.65 }}>{s}</div>
+                <div style={{ fontSize:11.5, color:'var(--text)', lineHeight:1.65 }}>{s}</div>
               </div>
             ))}
           </div>
@@ -497,10 +497,10 @@ export default function RemediationSection({ dark, onNav }) {
 
           {/* Filter bar */}
           {(autoFindings.length > 0 || manualFindings.length > 0) && (
-            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, padding:'12px 16px', marginBottom:16, background:'#fafafa', border:`1px solid ${border}`, borderRadius:10 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, padding:'12px 16px', marginBottom:16, background:'var(--bg2)', border:`1px solid ${border}`, borderRadius:10 }}>
               <div style={{ position:'relative', flex:'1 1 160px', minWidth:140 }}>
                 <span style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', fontSize:11, color:text2, pointerEvents:'none' }}>🔍</span>
-                <input type="text" placeholder="Search name or resource…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ paddingLeft:28, paddingRight:10, paddingTop:6, paddingBottom:6, border:`1px solid ${border}`, borderRadius:7, background:'#fff', color:text, fontSize:11.5, width:'100%', outline:'none' }} />
+                <input type="text" placeholder="Search name or resource…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ paddingLeft:28, paddingRight:10, paddingTop:6, paddingBottom:6, border:`1px solid ${border}`, borderRadius:7, background:'var(--bg)', color:text, fontSize:11.5, width:'100%', outline:'none' }} />
               </div>
               <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
                 {['ALL','CRITICAL','HIGH','MEDIUM','LOW'].map(s => {
@@ -509,7 +509,7 @@ export default function RemediationSection({ dark, onNav }) {
                   return <button key={s} onClick={() => setFilterSev(s)} style={{ padding:'4px 10px', borderRadius:20, border:`1px solid ${active?c:border}`, background:active?(s==='ALL'?'#FF990020':`${c}18`):'transparent', color:active?(s==='ALL'?'#e07b00':c):text2, fontSize:10.5, fontWeight:active?700:500, cursor:'pointer', transition:'all 0.12s' }}>{s==='ALL'?'All Severity':s.charAt(0)+s.slice(1).toLowerCase()}</button>
                 })}
               </div>
-              <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} style={{ padding:'5px 10px', borderRadius:7, border:`1px solid ${filterSvc!=='ALL'?'#FF9900':border}`, background:'#fff', color:filterSvc!=='ALL'?'#e07b00':text, fontSize:11.5, cursor:'pointer', outline:'none' }}>
+              <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} style={{ padding:'5px 10px', borderRadius:7, border:`1px solid ${filterSvc!=='ALL'?'#FF9900':border}`, background:'var(--bg)', color:filterSvc!=='ALL'?'#e07b00':text, fontSize:11.5, cursor:'pointer', outline:'none' }}>
                 <option value="ALL">All Services</option>
                 {uniqueSvcs.map(s => <option key={s} value={s}>{s}</option>)}
               </select>

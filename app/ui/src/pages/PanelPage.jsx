@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext'
 import Sidebar from '@/components/Sidebar'
 import Overview from '@/pages/sections/Overview'
 import { ScannerSection, ThreatsSection, ExecuteSection, RollbackSection } from '@/pages/sections/Operations'
-import { HistorySection, AnalyticsSection, AlertsSection } from '@/pages/sections/DataSections'
+import { HistorySection, AnalyticsSection, AttackSurfaceSection } from '@/pages/sections/DataSections'
+import IAMViewSection from '@/pages/sections/IAMViewSection'
 import { ScanProvider } from '@/context/ScanContext'
 import ToastSystem from '@/components/ToastSystem'
 
@@ -17,14 +18,15 @@ const FONT_INJECT = `
 `
 
 const SECTIONS = {
-    overview: Overview,
-    scanner: ScannerSection,
-    threats: ThreatsSection,
-    execute: ExecuteSection,
-    rollback: RollbackSection,
-    history: HistorySection,
-    analytics: AnalyticsSection,
-    alerts: AlertsSection,
+    overview:         Overview,
+    scanner:          ScannerSection,
+    threats:          ThreatsSection,
+    'iam-view':       IAMViewSection,
+    execute:          ExecuteSection,
+    rollback:         RollbackSection,
+    history:          HistorySection,
+    analytics:        AnalyticsSection,
+    'attack-surface': AttackSurfaceSection,
 }
 
 export default function PanelPage() {

@@ -22,9 +22,9 @@ except Exception:
     _SSL_VERIFY = True  # fall back to system CA bundle
 
 _FAST_CONFIG = Config(
-    connect_timeout=5,      # reduced from 10 — AWS auth handshakes are fast
-    read_timeout=15,         # reduced from 30 — AWS API calls rarely take >15s
-    retries={'max_attempts': 2},
+    connect_timeout=5,       # 5s to establish TCP — keeps slow-region safety
+    read_timeout=8,          # was 15 — real AWS API responses never take >3s
+    retries={'max_attempts': 1},  # was 2 — 1 retry saves up to 8s per failing call
     max_pool_connections=50, # handle many concurrent boto3 calls
 )
 
@@ -48,7 +48,7 @@ class AWSSession:
         try:
 
             if self.access_key and self.secret_key:
-                print("🔐 Using ACCESS KEY authentication")
+                print("[AWS] Using ACCESS KEY authentication")
 
                 self.session = boto3.Session(
                     aws_access_key_id=self.access_key,
@@ -57,7 +57,7 @@ class AWSSession:
                 )
 
             elif self.profile_name:
-                print("👤 Using PROFILE authentication:", self.profile_name)
+                print("[AWS] Using PROFILE authentication:", self.profile_name)
 
                 self.session = boto3.Session(
                     profile_name=self.profile_name,
@@ -65,7 +65,7 @@ class AWSSession:
                 )
 
             else:
-                print("⚠️ Using DEFAULT boto3 session")
+                print("[AWS] WARNING: Using DEFAULT boto3 session")
 
                 self.session = boto3.Session(
                     region_name=self.region_name
@@ -74,7 +74,7 @@ class AWSSession:
             sts = self.session.client("sts")
             identity = sts.get_caller_identity()
 
-            print("✅ ACTIVE AWS ACCOUNT:", identity.get("Account"))
+            print("[AWS] ACTIVE ACCOUNT:", identity.get("Account"))
 
             _orig_client = self.session.client
 

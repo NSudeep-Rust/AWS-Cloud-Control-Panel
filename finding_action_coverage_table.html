@@ -1,0 +1,159 @@
+
+<style>
+:root { --col1:120px; --col2:230px; --col3:185px; --col4:100px; --col5:85px; }
+* { box-sizing: border-box; }
+body { margin:0; padding:0; }
+.wrap { padding: 16px 4px; font-family: var(--font-sans); }
+.section-title {
+  font-size:13px; font-weight:500; padding:8px 12px; border-radius:6px 6px 0 0;
+  margin-top:20px; margin-bottom:0; letter-spacing:.02em;
+}
+.green-hd  { background:#1D9E75; color:#E1F5EE; }
+.yellow-hd { background:#BA7517; color:#FAEEDA; }
+.red-hd    { background:#A32D2D; color:#FCEBEB; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th {
+  padding:7px 9px; text-align:left; font-weight:500; font-size:11px;
+  background:var(--color-background-secondary);
+  color:var(--color-text-secondary);
+  border-bottom:1px solid var(--color-border-secondary);
+}
+tbody td { padding:6px 9px; vertical-align:top; border-bottom:1px solid var(--color-border-tertiary); color:var(--color-text-primary); }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover td { background:var(--color-background-secondary); }
+.num { color:var(--color-text-secondary); font-size:11px; text-align:center; width:28px; }
+.finding { font-family:var(--font-mono); font-size:10.5px; color:var(--color-text-secondary); word-break:break-all; }
+.action  { font-family:var(--font-mono); font-size:10.5px; color:var(--color-text-primary); word-break:break-all; }
+.module  { font-size:11px; }
+.rollback { font-size:11px; }
+.badge {
+  display:inline-block; padding:2px 7px; border-radius:4px;
+  font-size:10px; font-weight:500; white-space:nowrap;
+}
+.b-full    { background:#E1F5EE; color:#0F6E56; }
+.b-partial { background:#FAEEDA; color:#854F0B; }
+.b-none    { background:#FCEBEB; color:#A32D2D; }
+.b-manual  { background:#E6F1FB; color:#185FA5; }
+.why { font-size:11px; color:var(--color-text-secondary); }
+.sev-high     { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:500; background:#FCEBEB; color:#A32D2D; }
+.sev-critical { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:500; background:#F7C1C1; color:#791F1F; }
+.sev-medium   { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:500; background:#FAEEDA; color:#854F0B; }
+.sev-low      { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:500; background:#EAF3DE; color:#3B6D11; }
+.legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; font-size:11px; align-items:center; }
+.legend span { display:flex; align-items:center; gap:5px; }
+</style>
+
+<div class="wrap">
+  <div style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;">Finding → Action Coverage Table</div>
+  <div class="legend">
+    <span><span class="badge b-full">✅ Full rollback</span></span>
+    <span><span class="badge b-partial">⚠️ Partial rollback</span></span>
+    <span><span class="badge b-none">❌ No rollback</span></span>
+    <span><span class="badge b-manual">🔵 Manual required</span></span>
+  </div>
+
+  <!-- GREEN SECTION -->
+  <div class="section-title green-hd">🟢 Full Autofix — Scan → Dry Run → Live Execute → Rollback (37 findings)</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th>Finding type</th>
+        <th>Action</th>
+        <th>Module</th>
+        <th>Rollback</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="finding">PUBLIC_SECURITY_GROUP</td><td class="action">RESTRICT_SECURITY_GROUP</td><td class="module">Firewall</td><td><span class="badge b-full">✅ Re-authorize revoked rules</span></td></tr>
+      <tr><td class="num">2</td><td class="finding">SECURITY_GROUP_UNRESTRICTED_SSH</td><td class="action">REVOKE_UNRESTRICTED_SSH</td><td class="module">Firewall/SG</td><td><span class="badge b-full">✅ Re-authorize SSH rule</span></td></tr>
+      <tr><td class="num">3</td><td class="finding">SECURITY_GROUP_UNRESTRICTED_RDP</td><td class="action">REVOKE_UNRESTRICTED_RDP</td><td class="module">Firewall/SG</td><td><span class="badge b-full">✅ Re-authorize RDP rule</span></td></tr>
+      <tr><td class="num">4</td><td class="finding">UNUSED_SECURITY_GROUP</td><td class="action">DELETE_UNUSED_SECURITY_GROUP</td><td class="module">Network</td><td><span class="badge b-full">✅ Recreate SG with all rules</span></td></tr>
+      <tr><td class="num">5</td><td class="finding">NACL_ALLOW_ALL_INBOUND</td><td class="action">RESTRICT_NACL_INBOUND</td><td class="module">Network</td><td><span class="badge b-full">✅ Restore removed NACL rules</span></td></tr>
+      <tr><td class="num">6</td><td class="finding">NACL_ALLOW_ALL_OUTBOUND</td><td class="action">RESTRICT_NACL_OUTBOUND</td><td class="module">Network</td><td><span class="badge b-full">✅ Restore removed NACL rules</span></td></tr>
+      <tr><td class="num">7</td><td class="finding">ROUTE_TABLE_PUBLIC_ROUTE</td><td class="action">REMOVE_PUBLIC_ROUTE</td><td class="module">Network</td><td><span class="badge b-full">✅ Re-create deleted route</span></td></tr>
+      <tr><td class="num">8</td><td class="finding">VPC_FLOW_LOGS_DISABLED</td><td class="action">ENABLE_VPC_FLOW_LOGS</td><td class="module">Logging</td><td><span class="badge b-full">✅ Delete the created flow log</span></td></tr>
+      <tr><td class="num">9</td><td class="finding">CLOUDTRAIL_DISABLED</td><td class="action">ENABLE_CLOUDTRAIL</td><td class="module">Logging</td><td><span class="badge b-full">✅ Stop + delete trail (+ bucket if created)</span></td></tr>
+      <tr><td class="num">10</td><td class="finding">CLOUDTRAIL_NOT_LOGGING</td><td class="action">START_CLOUDTRAIL_LOGGING</td><td class="module">Logging</td><td><span class="badge b-full">✅ Stop logging on trail</span></td></tr>
+      <tr><td class="num">11</td><td class="finding">S3_VERSIONING_DISABLED</td><td class="action">ENABLE_S3_VERSIONING</td><td class="module">S3</td><td><span class="badge b-full">✅ Restore previous versioning status</span></td></tr>
+      <tr><td class="num">12</td><td class="finding">S3_BLOCK_PUBLIC_ACCESS_DISABLED</td><td class="action">ENABLE_BLOCK_PUBLIC_ACCESS</td><td class="module">S3</td><td><span class="badge b-full">✅ Restore previous block config</span></td></tr>
+      <tr><td class="num">13</td><td class="finding">S3_PUBLIC_ACL</td><td class="action">REMOVE_PUBLIC_S3_ACL</td><td class="module">S3</td><td><span class="badge b-full">✅ Restore previous ACL grants</span></td></tr>
+      <tr><td class="num">14</td><td class="finding">S3_ACCESS_LOGGING_DISABLED</td><td class="action">ENABLE_S3_ACCESS_LOGGING</td><td class="module">S3</td><td><span class="badge b-full">✅ Restore prev logging + bucket policy</span></td></tr>
+      <tr><td class="num">15</td><td class="finding">IAM_ADMIN_USER</td><td class="action">DETACH_ADMIN_POLICY</td><td class="module">IAM</td><td><span class="badge b-full">✅ Re-attach AdministratorAccess</span></td></tr>
+      <tr><td class="num">16</td><td class="finding">IAM_INLINE_ADMIN_POLICY</td><td class="action">REMOVE_INLINE_POLICY</td><td class="module">IAM</td><td><span class="badge b-full">✅ Restore backed-up inline policies</span></td></tr>
+      <tr><td class="num">17</td><td class="finding">IAM_WILDCARD_POLICY</td><td class="action">REMOVE_INLINE_WILDCARD_POLICY</td><td class="module">IAM</td><td><span class="badge b-full">✅ Restore original policy document</span></td></tr>
+      <tr><td class="num">18</td><td class="finding">IAM_ACCESS_KEY_UNUSED</td><td class="action">DISABLE_ACCESS_KEY</td><td class="module">IAM</td><td><span class="badge b-full">✅ Re-enable key to previous status</span></td></tr>
+      <tr><td class="num">19</td><td class="finding">IAM_ACCESS_KEY_OLD_INACTIVE</td><td class="action">DELETE_ACCESS_KEY</td><td class="module">IAM</td><td><span class="badge b-partial">⚠️ Partial — creates NEW key (old deleted key cannot be restored)</span></td></tr>
+      <tr><td class="num">20</td><td class="finding">IAM_ACCESS_KEY_NOT_ROTATED</td><td class="action">DISABLE_STALE_ACCESS_KEY</td><td class="module">IAM</td><td><span class="badge b-full">✅ Re-enable key</span></td></tr>
+      <tr><td class="num">21</td><td class="finding">IAM_ROLE_EXTERNAL_TRUST</td><td class="action">RESTRICT_ROLE_EXTERNAL_TRUST</td><td class="module">IAM</td><td><span class="badge b-full">✅ Restore previous trust policy</span></td></tr>
+      <tr><td class="num">22</td><td class="finding">IAM_UNUSED_USER</td><td class="action">DELETE_UNUSED_IAM_USER</td><td class="module">IAM</td><td><span class="badge b-full">✅ Recreate user + restore policies/groups</span></td></tr>
+      <tr><td class="num">23</td><td class="finding">EC2_TERMINATION_PROTECTION_DISABLED</td><td class="action">ENABLE_TERMINATION_PROTECTION</td><td class="module">EC2</td><td><span class="badge b-full">✅ Restore previous protection state</span></td></tr>
+      <tr><td class="num">24</td><td class="finding">EC2_DEFAULT_SECURITY_GROUP</td><td class="action">REPLACE_SECURITY_GROUP</td><td class="module">EC2</td><td><span class="badge b-full">✅ Restore old SGs, delete new SG</span></td></tr>
+      <tr><td class="num">25</td><td class="finding">EC2_WITHOUT_IAM_ROLE</td><td class="action">ATTACH_IAM_ROLE_TO_INSTANCE</td><td class="module">EC2</td><td><span class="badge b-full">✅ Disassociate the attached profile</span></td></tr>
+      <tr><td class="num">26</td><td class="finding">EBS_UNENCRYPTED_VOLUME</td><td class="action">ENCRYPT_EBS_VOLUME</td><td class="module">EC2/Encryption</td><td><span class="badge b-full">✅ Reattach original volume, detach encrypted copy</span></td></tr>
+      <tr><td class="num">27</td><td class="finding">EC2_PUBLIC_ELASTIC_IP</td><td class="action">REMOVE_ELASTIC_IP</td><td class="module">EC2</td><td><span class="badge b-none">❌ Not supported — EIP permanently released</span></td></tr>
+      <tr><td class="num">28</td><td class="finding">PUBLIC_EC2_INSTANCE</td><td class="action">REMOVE_ELASTIC_IP</td><td class="module">EC2</td><td><span class="badge b-none">❌ Not supported — EIP permanently released</span></td></tr>
+      <tr><td class="num">29</td><td class="finding">EC2_INSTANCE_RUNNING</td><td class="action">STOP_EC2_INSTANCE</td><td class="module">EC2</td><td><span class="badge b-full">✅ Start instance back</span></td></tr>
+      <tr><td class="num">30</td><td class="finding">EC2_INSTANCE_STOPPED</td><td class="action">TERMINATE_EC2_INSTANCE</td><td class="module">EC2</td><td><span class="badge b-none">❌ Not supported — cannot restore terminated instance</span></td></tr>
+      <tr><td class="num">31</td><td class="finding">EC2_IMDSV1_ENABLED</td><td class="action">ENFORCE_IMDSV2</td><td class="module">EC2</td><td><span class="badge b-full">✅ Restore HttpTokens to optional</span></td></tr>
+      <tr><td class="num">32</td><td class="finding">EBS_SNAPSHOT_PUBLIC</td><td class="action">MAKE_SNAPSHOT_PRIVATE</td><td class="module">EC2/Encryption</td><td><span class="badge b-full">✅ Re-add 'all' group permission</span></td></tr>
+      <tr><td class="num">33</td><td class="finding">KMS_KEY_ROTATION_DISABLED</td><td class="action">ENABLE_KMS_KEY_ROTATION</td><td class="module">Encryption</td><td><span class="badge b-full">✅ Restore previous rotation state</span></td></tr>
+      <tr><td class="num">34</td><td class="finding">RDS_PUBLICLY_ACCESSIBLE</td><td class="action">DISABLE_RDS_PUBLIC_ACCESS</td><td class="module">RDS</td><td><span class="badge b-full">✅ Re-enable public access</span></td></tr>
+      <tr><td class="num">35</td><td class="finding">RDS_BACKUP_DISABLED</td><td class="action">ENABLE_RDS_BACKUP</td><td class="module">RDS</td><td><span class="badge b-full">✅ Restore previous retention period</span></td></tr>
+      <tr><td class="num">36</td><td class="finding">RDS_DELETION_PROTECTION_DISABLED</td><td class="action">ENABLE_RDS_DELETION_PROTECTION</td><td class="module">RDS</td><td><span class="badge b-full">✅ Disable deletion protection</span></td></tr>
+      <tr><td class="num">37</td><td class="finding">CLOUDWATCH_LOG_GROUP_NO_RETENTION</td><td class="action">SET_LOG_GROUP_RETENTION</td><td class="module">CloudWatch</td><td><span class="badge b-full">✅ Delete retention policy (restores "never expire")</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- YELLOW SECTION -->
+  <div class="section-title yellow-hd" style="margin-top:24px;">🟡 Advisory Only — Dry Run shows plan, Live Execute returns MANUAL_REQUIRED (1 finding)</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th>Finding type</th>
+        <th>Action in executor</th>
+        <th colspan="2">Why live fails</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="num">38</td>
+        <td class="finding">IAM_USER_WITHOUT_MFA</td>
+        <td class="action">ENABLE_MFA</td>
+        <td colspan="2"><span class="badge b-manual">🔵 Manual required</span> <span class="why" style="margin-left:6px;">AWS API cannot auto-enable MFA — requires device registration</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- RED SECTION -->
+  <div class="section-title red-hd" style="margin-top:24px;">🔴 Manual Only — Scanned with description + recommendation, no autofix (14 findings)</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th>Finding type</th>
+        <th>Why no autofix</th>
+        <th>Severity</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="num">39</td><td class="finding">PUBLIC_EC2_INSTANCE</td><td class="why">Needs infra architecture decision</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">40</td><td class="finding">IAM_POLICY_FULL_ADMIN</td><td class="why">May be intentional, critical risk</td><td><span class="sev-critical">CRITICAL</span></td></tr>
+      <tr><td class="num">41</td><td class="finding">IAM_PASSWORD_POLICY_MISSING</td><td class="why">Org-level config, needs admin</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">42</td><td class="finding">IAM_PASSWORD_NEVER_EXPIRES</td><td class="why">Org-level config, needs admin</td><td><span class="sev-medium">MEDIUM</span></td></tr>
+      <tr><td class="num">43</td><td class="finding">IAM_MULTIPLE_ACCESS_KEYS</td><td class="why">Needs manual review of which to delete</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">44</td><td class="finding">IAM_ROLE_ADMIN_POLICY</td><td class="why">Could be intentional service role</td><td><span class="sev-critical">CRITICAL</span></td></tr>
+      <tr><td class="num">45</td><td class="finding">PUBLIC_SUBNET_DETECTED</td><td class="why">Architecture-level design decision</td><td><span class="sev-medium">MEDIUM</span></td></tr>
+      <tr><td class="num">46</td><td class="finding">INTERNET_GATEWAY_ATTACHED</td><td class="why">Not a vulnerability, needed for internet</td><td><span class="sev-low">LOW</span></td></tr>
+      <tr><td class="num">47</td><td class="finding">VPC_WITHOUT_NAT_GATEWAY</td><td class="why">Cost/design choice</td><td><span class="sev-low">LOW</span></td></tr>
+      <tr><td class="num">48</td><td class="finding">EBS_DEFAULT_ENCRYPTION_DISABLED</td><td class="why">Account-level setting, broad impact</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">49</td><td class="finding">EBS_SNAPSHOT_NOT_ENCRYPTED</td><td class="why">No safe inline fix — needs new snapshot</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">50</td><td class="finding">RDS_STORAGE_NOT_ENCRYPTED</td><td class="why">Migration required, data-at-rest change</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">51</td><td class="finding">S3_NO_ENCRYPTION</td><td class="why">S3 default encryption now on by default in AWS, still flagged</td><td><span class="sev-high">HIGH</span></td></tr>
+      <tr><td class="num">52</td><td class="finding">EC2_INSTANCE_RUNNING</td><td class="why">Cost optimization — may be intentional</td><td><span class="sev-low">LOW</span></td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px;font-size:11px;color:var(--color-text-tertiary);text-align:right;">52 total findings across 4 tiers</div>
+</div>

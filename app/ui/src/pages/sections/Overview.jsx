@@ -10,9 +10,9 @@ import { useScan } from '@/context/ScanContext'
 
 import {
     Search, ShieldAlert, Play, RotateCcw, History,
-    BarChart2, Bell, AlertTriangle, CheckCircle, XCircle,
+    BarChart2, AlertTriangle, CheckCircle, XCircle,
     Zap, Shield, Activity, ChevronRight, RefreshCw,
-    Lock, Globe, Key, Database, Server, Eye, Square
+    Lock, Globe, Key, Database, Server, Eye, Square, Users
 } from 'lucide-react'
 
 const API = 'http://127.0.0.1:8000'
@@ -291,13 +291,12 @@ export default function Overview({ onNav, dark }) {
 
     const [riskData, setRiskData] = useState(null)
     const [riskTrend, setRiskTrend] = useState([])
-    const [alerts, setAlerts] = useState([])
     const [history, setHistory] = useState(null)
     const [loadingRisk, setLoadingRisk] = useState(true)
-    const [loadingAlerts, setLoadingAlerts] = useState(true)
     const [monitorStatus, setMonitorStatus] = useState(null)
     const [monitorToggling, setMonitorToggling] = useState(false)
     const [time, setTime] = useState(new Date())
+    const [appVersion, setAppVersion] = useState(null)
 
     const [radarFact, setRadarFact] = useState(0)
     const radarRef = useRef(null)
@@ -305,6 +304,10 @@ export default function Overview({ onNav, dark }) {
     useEffect(() => {
         const iv = setInterval(() => setTime(new Date()), 1000)
         return () => clearInterval(iv)
+    }, [])
+
+    useEffect(() => {
+        axios.get(`${API}/api/version`).then(r => setAppVersion(r.data?.version)).catch(() => {})
     }, [])
 
     useEffect(() => {
@@ -318,8 +321,8 @@ export default function Overview({ onNav, dark }) {
             if (k.startsWith('scan_v') && k !== cacheKey) localStorage.removeItem(k)
         })
         setRiskData(null); setRiskTrend([]); setHistory(null);
-        setAlerts([]); setMonitorStatus(null)
-        setLoadingRisk(true); setLoadingAlerts(true)
+        setMonitorStatus(null)
+        setLoadingRisk(true)
         restoreFromCache(cacheKey)
         fetchAll()
     }, [cacheKey])
@@ -342,14 +345,13 @@ export default function Overview({ onNav, dark }) {
         const t = setTimeout(() => {
             fetchRiskScore()
             fetchRiskTrend()
-            fetchAlerts()
             fetchHistory()
         }, 1000)
         return () => clearTimeout(t)
     }, [refreshToken])
 
     function q(url) { return dbId != null ? `${url}?account_id=${dbId}` : url }
-    function fetchAll() { fetchRiskScore(); fetchRiskTrend(); fetchAlerts(); fetchHistory(); fetchMonitorStatus() }
+    function fetchAll() { fetchRiskScore(); fetchRiskTrend(); fetchHistory(); fetchMonitorStatus() }
 
     async function fetchRiskScore() {
         setLoadingRisk(true)
@@ -359,11 +361,6 @@ export default function Overview({ onNav, dark }) {
     async function fetchRiskTrend() {
         try { const r = await axios.get(q(`${API}/api/analytics/risk-trend`)); setRiskTrend((r.data?.data?.trend || []).slice(-7)) }
         catch { setRiskTrend([]) }
-    }
-    async function fetchAlerts() {
-        setLoadingAlerts(true)
-        try { const r = await axios.get(q(`${API}/api/alerts/`)); setAlerts((r.data?.data?.alerts || r.data?.alerts || []).slice(0, 8)) }
-        catch { setAlerts([]) } finally { setLoadingAlerts(false) }
     }
     async function fetchHistory() {
         try { const r = await axios.get(q(`${API}/api/history/summary`)); setHistory(r.data?.data || null) }
@@ -446,11 +443,11 @@ export default function Overview({ onNav, dark }) {
                 onMouseEnter={() => setHov(true)}
                 onMouseLeave={() => setHov(false)}
                 style={{
-                    display: 'flex', alignItems: 'center', gap: 9,
+                    display: 'flex', alignItems: 'center', gap: 8,
                     background: hov ? (dark ? 'rgba(255,255,255,0.05)' : 'rgba(35,47,62,0.04)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(35,47,62,0.02)'),
                     border: `1px solid ${hov ? 'rgba(255,153,0,0.3)' : 'var(--border)'}`,
                     borderRadius: 6,
-                    padding: '7px 10px',
+                    padding: '5px 8px',
                     cursor: 'pointer', textAlign: 'left',
                     transition: 'all 0.12s', width: '100%',
                 }}>
@@ -528,7 +525,7 @@ export default function Overview({ onNav, dark }) {
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_MEDIUM__'); onNav('scanner') } : undefined} />
                 <StatTile label="Low" value={hasScan ? lowCount : '—'} sub="low priority" valueColor={lowCount > 0 ? '#0972d3' : 'var(--text)'} icon={Shield}
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_LOW__'); onNav('scanner') } : undefined} />
-                <StatTile label="Alerts" value={loadingAlerts ? '…' : alerts.length} sub="threat monitor" valueColor={alerts.length > 0 ? '#f59e0b' : 'var(--text)'} icon={Bell} onClick={() => onNav('alerts')} />
+                <StatTile label="Attack Surface" value="→" sub="exposure map" valueColor="#d13212" icon={ShieldAlert} onClick={() => onNav('attack-surface')} />
                 <StatTile label="Scan Events" value={history?.total_events ?? '—'} sub="history log" valueColor="var(--text)" icon={History} onClick={() => onNav('history')} />
             </div>
 
@@ -690,17 +687,19 @@ export default function Overview({ onNav, dark }) {
                 </Card>
 
                 {/* C. QUICK ACTIONS — moved to right, expanded with Alerts */}
-                <Card style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <Card style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 }}>
                     <CardLabel icon={Zap} label="Quick Actions" />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                        <QuickAction icon={Search} label="Full Scan" desc="Scan all regions" color="#0972d3" section="scanner" />
-                        <QuickAction icon={ShieldAlert} label="Threats" desc={monitorRunning ? 'Monitor running' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats" />
-                        <QuickAction icon={Play} label="Execute Fixes" desc="Apply remediations" color="#FF9900" section="execute" />
-                        <QuickAction icon={RotateCcw} label="Rollback" desc="Revert applied fixes" color="#e67e22" section="rollback" />
-                        <QuickAction icon={Bell} label="Alerts" desc={alerts.length > 0 ? `${alerts.length} active alerts` : 'No alerts'} color="#f59e0b" section="alerts" />
-                        <QuickAction icon={BarChart2} label="Analytics" desc="Risk score & reports" color="#8B5CF6" section="analytics" />
-                        <QuickAction icon={History} label="History" desc="Audit log & events" color="#0972d3" section="history" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                        <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner" />
+                        <QuickAction icon={ShieldAlert} label="Threats"       desc={monitorRunning ? 'Monitor running' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats" />
+                        <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#0972d3" section="iam-view" />
+                        <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute" />
+                        <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#e67e22" section="rollback" />
+                        <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface" />
+                        <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics" />
+                        <QuickAction icon={History}    label="History"        desc="Audit log & events"         color="#0972d3" section="history" />
                     </div>
+
                     <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)', flexShrink: 0, marginTop: 6 }}>
                         <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Account Info</div>
                         {[
@@ -708,6 +707,7 @@ export default function Overview({ onNav, dark }) {
                             { label: 'Identity', value: profile },
                             { label: 'Type', value: isIam ? 'IAM User' : 'Root Account' },
                             { label: 'Region', value: region },
+                            { label: 'Version', value: appVersion ? `v${appVersion}` : '—' },
                         ].map(row => (
                             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
                                 <span style={{ fontSize: 9, color: 'var(--text3)' }}>{row.label}</span>

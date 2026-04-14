@@ -15,8 +15,8 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-MAX_WORKERS       = 16   # outer pool — handles all region + global tasks
-INNER_MAX_WORKERS = 8    # inner pool — sub-scanners within one region
+MAX_WORKERS       = 24   # outer pool -- handles all region + global tasks concurrently
+INNER_MAX_WORKERS = 12   # inner pool -- 9 sub-scanners per region + headroom
 
 
 class Scanner:
@@ -117,6 +117,8 @@ class Scanner:
         Run FULL AWS security scan (all modules) concurrently.
         Global scanners (IAM, S3) run at the same time as all regional workers.
         """
+        import time
+        scan_start = time.time()
         all_findings = []
 
         tasks = {}
@@ -138,9 +140,11 @@ class Scanner:
                     try:
                         result = fut.result()
                         all_findings.extend(result)
-                        print(f"   ✅ {name}: {len(result)} findings")
+                        elapsed = round(time.time() - scan_start, 1)
+                        print(f"   ✅ [{elapsed}s] {name}: {len(result)} findings")
                     except Exception as e:
-                        print(f"[ERROR] Task '{name}' failed: {e}")
+                        elapsed = round(time.time() - scan_start, 1)
+                        print(f"[ERROR][{elapsed}s] Task '{name}' failed: {e}")
             except Exception:
                 # timeout hit — collect whatever finished
                 for fut, name in futures.items():

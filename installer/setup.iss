@@ -2,7 +2,7 @@
 ; Author: NSudeep
 
 #define AppName      "CloudShield"
-#define AppVersion   "1.0.0.1"
+#define AppVersion   "1.0.1"
 #define AppPublisher "NSudeep"
 #define AppURL       "https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel"
 #define AppExeName   "CloudShield.exe"

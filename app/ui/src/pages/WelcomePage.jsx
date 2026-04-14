@@ -38,23 +38,28 @@ export default function WelcomePage() {
     const [showPicker,   setShowPicker]   = useState(false)
     const [hoveredCov,   setHoveredCov]   = useState(null)
     const [hoveredReg,   setHoveredReg]   = useState(null)
+    const [appVersion,   setAppVersion]   = useState(null)
 
     const glowOuterRef = useRef(null)
     const glowInnerRef = useRef(null)
 
     useEffect(() => {
+        let rafId = null
         const handleMove = (e) => {
-            if (glowOuterRef.current) {
-                glowOuterRef.current.style.left = (e.clientX - 250) + 'px'
-                glowOuterRef.current.style.top  = (e.clientY - 250) + 'px'
-            }
-            if (glowInnerRef.current) {
-                glowInnerRef.current.style.left = (e.clientX - 70) + 'px'
-                glowInnerRef.current.style.top  = (e.clientY - 70) + 'px'
-            }
+            if (rafId) return   // already a frame queued — skip this event
+            rafId = requestAnimationFrame(() => {
+                if (glowOuterRef.current)
+                    glowOuterRef.current.style.transform = `translate(${e.clientX - 250}px,${e.clientY - 250}px)`
+                if (glowInnerRef.current)
+                    glowInnerRef.current.style.transform = `translate(${e.clientX - 70}px,${e.clientY - 70}px)`
+                rafId = null
+            })
         }
-        window.addEventListener('mousemove', handleMove)
-        return () => window.removeEventListener('mousemove', handleMove)
+        window.addEventListener('mousemove', handleMove, { passive: true })
+        return () => {
+            window.removeEventListener('mousemove', handleMove)
+            if (rafId) cancelAnimationFrame(rafId)
+        }
     }, [])
 
     useEffect(() => {
@@ -72,6 +77,9 @@ export default function WelcomePage() {
             setApiOnline(true)
             setLoadingAccts(false)
         }).catch(() => { setApiOnline(false); setLoadingAccts(false) })
+
+        // Fetch installed version
+        fetch(`${API}/api/version`).then(r => r.json()).then(d => setAppVersion(d.version)).catch(() => {})
     }, [])
 
     function signInWith(acc) {
@@ -107,33 +115,31 @@ export default function WelcomePage() {
             <div style={{ position:'absolute', inset:0, pointerEvents:'none',
                 backgroundImage:'radial-gradient(circle, rgba(180,110,0,0.18) 1.5px, transparent 1.5px)',
                 backgroundSize:'22px 22px' }} />
-            {/* Amber blob — bottom-left (softer for white bg) */}
+            {/* Amber blob — bottom-left */}
             <div style={{ position:'absolute', bottom:-180, left:-140, width:680, height:680, borderRadius:'50%',
-                pointerEvents:'none', animation:'blobA 9s ease-in-out infinite',
-                background:'radial-gradient(circle,rgba(255,153,0,0.08) 0%,rgba(255,153,0,0.02) 45%,transparent 70%)',
-                filter:'blur(2px)' }} />
+                pointerEvents:'none', willChange:'transform', animation:'blobA 9s ease-in-out infinite',
+                background:'radial-gradient(circle,rgba(255,153,0,0.07) 0%,rgba(255,153,0,0.02) 45%,transparent 70%)' }} />
             {/* Gold blob — top-right */}
             <div style={{ position:'absolute', top:-140, right:-120, width:560, height:560, borderRadius:'50%',
-                pointerEvents:'none', animation:'blobB 12s ease-in-out infinite',
-                background:'radial-gradient(circle,rgba(255,180,40,0.06) 0%,rgba(255,153,0,0.02) 50%,transparent 70%)',
-                filter:'blur(3px)' }} />
+                pointerEvents:'none', willChange:'transform', animation:'blobB 12s ease-in-out infinite',
+                background:'radial-gradient(circle,rgba(255,180,40,0.05) 0%,rgba(255,153,0,0.02) 50%,transparent 70%)' }} />
 
             {/* ── UFL-style mouse glow — direct DOM refs, zero lag ── */}
             {/* Outer ring — large soft amber halo */}
             <div ref={glowOuterRef} style={{
-                position:'absolute', left:-250, top:-250,
+                position:'absolute', left:0, top:0,
                 width:500, height:500, borderRadius:'50%',
-                background:'radial-gradient(circle, rgba(255,180,0,0.22) 0%, rgba(255,160,0,0.12) 30%, rgba(255,140,0,0.04) 60%, transparent 80%)',
+                background:'radial-gradient(circle, rgba(255,180,0,0.20) 0%, rgba(255,160,0,0.10) 30%, rgba(255,140,0,0.03) 60%, transparent 80%)',
                 pointerEvents:'none', zIndex:0,
-                filter:'blur(4px)',
+                willChange:'transform',
             }} />
             {/* Inner bright core — tight hot spot */}
             <div ref={glowInnerRef} style={{
-                position:'absolute', left:-70, top:-70,
+                position:'absolute', left:0, top:0,
                 width:140, height:140, borderRadius:'50%',
-                background:'radial-gradient(circle, rgba(255,210,50,0.42) 0%, rgba(255,185,0,0.22) 40%, transparent 70%)',
+                background:'radial-gradient(circle, rgba(255,210,50,0.38) 0%, rgba(255,185,0,0.18) 40%, transparent 70%)',
                 pointerEvents:'none', zIndex:0,
-                filter:'blur(2px)',
+                willChange:'transform',
             }} />
 
             {/* ── 3-column layout ── */}
@@ -356,12 +362,20 @@ export default function WelcomePage() {
                     </div>
 
                     {/* Footer */}
-                    <div style={{ display:'flex', gap:6, justifyContent:'center', marginTop:4 }}>
+                    <div style={{ display:'flex', gap:6, justifyContent:'center', marginTop:4, flexWrap:'wrap', alignItems:'center' }}>
                         {['FastAPI', 'SQLite', 'OAS 3.1'].map(b => (
                             <span key={b} style={{ fontSize:10, fontFamily:'monospace', color:'#687078',
                                 background:'rgba(35,47,62,0.05)', border:'1px solid rgba(35,47,62,0.12)',
                                 borderRadius:3, padding:'2px 7px' }}>{b}</span>
                         ))}
+                        {appVersion && (
+                            <span style={{ fontSize:10, fontFamily:'monospace', fontWeight:800,
+                                color:'#FF9900', background:'rgba(255,153,0,0.1)',
+                                border:'1px solid rgba(255,153,0,0.3)',
+                                borderRadius:3, padding:'2px 8px', letterSpacing:0.3 }}>
+                                v{appVersion}
+                            </span>
+                        )}
                     </div>
                 </div>
 

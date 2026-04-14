@@ -95,14 +95,14 @@ function ConfirmModal({ execution, onConfirm, onCancel }) {
             <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(9,114,211,0.08)', border: '2px solid rgba(9,114,211,0.2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 14 }}>
               ↩️
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f1111', marginBottom: 6 }}>Confirm Rollback</div>
-            <div style={{ fontSize: 12.5, color: '#565959' }}>You are about to undo the AWS change for:</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>Confirm Rollback</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text3)' }}>You are about to undo the AWS change for:</div>
           </div>
 
           {/* Resource info */}
           <div style={{ margin: '16px 28px', padding: '14px 16px', background: 'rgba(9,114,211,0.04)', border: '1.5px solid rgba(9,114,211,0.18)', borderRadius: 10 }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: '#1a6296', marginBottom: 5 }}>{fmtAction(execution.action)}</div>
-            <div style={{ fontSize: 11.5, color: '#565959', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {execution.resource_name || execution.finding_id || '—'}
             </div>
           </div>
@@ -120,7 +120,7 @@ function ConfirmModal({ execution, onConfirm, onCancel }) {
             <button
               onClick={onCancel}
               disabled={confirming}
-              style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: '1.5px solid #e5e8ed', background: 'transparent', color: '#565959', fontSize: 13, fontWeight: 600, cursor: confirming ? 'not-allowed' : 'pointer', opacity: confirming ? 0.5 : 1 }}>
+              style={{ flex: 1, padding: '11px 0', borderRadius: 9, border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: confirming ? 'not-allowed' : 'pointer', opacity: confirming ? 0.5 : 1 }}>
               Cancel
             </button>
             <button
@@ -147,11 +147,11 @@ function EmptyState() {
     { time:'T-4', label:'KMS key rotation enabled',  resource:'kms::key-0f9e3',   color:'#0972d3' },
   ]
   return (
-    <div style={{ background:'#f4f8ff', border:'1px solid rgba(9,114,211,0.2)', borderLeft:'4px solid #0972d3', borderRadius:14, padding:'44px 48px', boxShadow:'0 4px 20px rgba(9,114,211,0.09)', display:'flex', gap:52, minHeight:'calc(100vh - 190px)' }}>
+    <div style={{ background:'var(--bg2)', border:'1px solid rgba(9,114,211,0.2)', borderLeft:'4px solid #0972d3', borderRadius:14, padding:'44px 48px', boxShadow:'0 4px 20px rgba(9,114,211,0.09)', display:'flex', gap:52, minHeight:'calc(100vh - 190px)' }}>
       <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20, minWidth:140 }}>
         <div style={{ position:'relative', width:134, height:134 }}>
           <div style={{ position:'absolute', inset:-8, borderRadius:'50%', border:'1.5px solid rgba(9,114,211,0.18)', animation:'rbPulse 2.2s ease-out infinite' }} />
-          <div style={{ width:134, height:134, borderRadius:'50%', background:'linear-gradient(135deg,#e4eeff,#d4e4ff)', border:'2.5px solid rgba(9,114,211,0.35)', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', boxShadow:'0 4px 20px rgba(9,114,211,0.18)' }}>
+          <div style={{ width:134, height:134, borderRadius:'50%', background:'var(--bg3)', border:'2.5px solid rgba(9,114,211,0.35)', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', boxShadow:'0 4px 20px rgba(9,114,211,0.18)' }}>
             {[0,30,60,90,120,150,180,210,240,270,300,330].map(deg => (
               <div key={deg} style={{ position:'absolute', top:'50%', left:'50%', width:deg%90===0?3:2, height:deg%90===0?12:8, background:`rgba(9,114,211,${deg%90===0?0.5:0.2})`, transformOrigin:'50% calc(-48px)', transform:`translate(-50%,-100%) rotate(${deg}deg)`, borderRadius:2 }} />
             ))}
@@ -172,12 +172,12 @@ function EmptyState() {
           <div style={{ position:'absolute', left:7, top:8, bottom:8, width:2, background:'linear-gradient(180deg,#0972d3,rgba(9,114,211,0.08))', borderRadius:2 }} />
           {POINTS.map((p, i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:18, opacity:0.5+i*0.1, animation:`rbSlide 0.4s ease ${i*0.1}s both` }}>
-              <div style={{ position:'absolute', left:3, width:11, height:11, borderRadius:'50%', background:p.color, border:'2px solid #f4f8ff', animation:`rbDot 2s ease ${i*0.5}s infinite` }} />
+              <div style={{ position:'absolute', left:3, width:11, height:11, borderRadius:'50%', background:p.color, border:'2px solid var(--bg2)', animation:`rbDot 2s ease ${i*0.5}s infinite` }} />
               <div style={{ fontSize:9.5, color:'#8d9191', fontFamily:'monospace', flexShrink:0, width:32, textAlign:'right', fontWeight:600 }}>{p.time}</div>
               <div style={{ flex:1, padding:'10px 14px', borderRadius:8, background:`${p.color}09`, border:`1px dashed ${p.color}40`, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div>
-                  <div style={{ fontSize:12, fontWeight:700, color:'#3d4f60', marginBottom:2 }}>{p.label}</div>
-                  <div style={{ fontSize:10, color:'#8d9191', fontFamily:'monospace' }}>{p.resource}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:'var(--text)', marginBottom:2 }}>{p.label}</div>
+                  <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'monospace' }}>{p.resource}</div>
                 </div>
                 <div style={{ fontSize:10, fontWeight:700, color:p.color, background:`${p.color}12`, borderRadius:5, padding:'4px 10px' }}>↩ Recover</div>
               </div>
@@ -227,7 +227,7 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback, selec
           style={{ position:'absolute', top:10, right:10, zIndex:10,
             width:20, height:20, borderRadius:5, cursor:'pointer',
             border:`2px solid ${selected ? '#0972d3' : '#d5dbdb'}`,
-            background: selected ? '#0972d3' : '#fff',
+            background: selected ? '#0972d3' : 'var(--bg)',
             display:'flex', alignItems:'center', justifyContent:'center',
             transition:'all 0.12s', boxShadow:'0 1px 4px rgba(0,0,0,0.1)'
           }}
@@ -248,15 +248,20 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback, selec
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:5 }}>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:'#0f1111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
                 {fmtAction(execution.action)}
               </div>
-              {execution.finding_type && <div style={{ fontSize:11, color:'#565959' }}>{fmtType(execution.finding_type)}</div>}
+              {execution.finding_type && <div style={{ fontSize:11, color:'var(--text3)' }}>{fmtType(execution.finding_type)}</div>}
             </div>
             <div style={{ display:'flex', gap:5, flexShrink:0 }}>
               {execution.finding_severity && (
                 <span style={{ fontSize:9, fontWeight:800, color:s.badge, background:s.badgeBg, borderRadius:4, padding:'3px 7px', textTransform:'uppercase', letterSpacing:0.7, border:`1px solid ${s.badge}30` }}>
                   {execution.finding_severity}
+                </span>
+              )}
+              {execution.meta?.source === 'attack_surface' && (
+                <span style={{ fontSize:9, fontWeight:700, color:'#d13212', background:'rgba(209,50,18,0.1)', borderRadius:4, padding:'3px 7px', letterSpacing:0.4, border:'1px solid rgba(209,50,18,0.2)' }}>
+                  🌐 Attack Surface
                 </span>
               )}
               <span style={{ fontSize:9, fontWeight:700, color:st.color, background:st.bg, borderRadius:4, padding:'3px 7px' }}>{st.label}</span>
@@ -303,7 +308,7 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback, selec
             </button>
           )}
           {!isRolling && !isPermanent && execution.status !== 'EXECUTED' && (
-            <div style={{ fontSize:10.5, color:'#8d9191', fontStyle:'italic', padding:'5px 12px', borderRadius:7, background:'rgba(0,0,0,0.04)', border:'1px solid #e5e8ed', display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ fontSize:10.5, color:'var(--text3)', fontStyle:'italic', padding:'5px 12px', borderRadius:7, background:'rgba(0,0,0,0.04)', border:'1px solid var(--border)', display:'flex', alignItems:'center', gap:6 }}>
               ⛔ Cannot rollback
             </div>
           )}
@@ -403,7 +408,11 @@ export default function RollbackSection({ onNav }) {
         setTimeout(() => {
           setRemovedIds(prev => new Set([...prev, execId]))
           setExitingIds(prev => { const n=new Set(prev); n.delete(execId); return n })
-          onNav?.('execute')   // go back to Remediation
+          if (confirmTarget?.meta?.source === 'attack_surface') {
+            onNav?.('attack-surface')
+          } else {
+            onNav?.('execute')   // go back to Remediation
+          }
         }, 500)
       } else if (status === 'NOT_RECOVERABLE') {
         setExecutions(prev => prev.map(e =>
@@ -422,15 +431,17 @@ export default function RollbackSection({ onNav }) {
   }
 
   const visible = executions.filter(e => !removedIds.has(e.execution_id) && !hiddenIds.has(e.execution_id))
+  const remediationVisible = visible.filter(e => e.meta?.source !== 'attack_surface')
+  const asVisible           = visible.filter(e => e.meta?.source === 'attack_surface')
 
-  const rollbackableList = visible.filter(e =>
+  const rollbackableList = remediationVisible.filter(e =>
     e.status === 'EXECUTED' && !NON_ROLLBACKABLE_ACTIONS.has(e.action)
   )
-  const permanentList = visible.filter(e =>
+  const permanentList = remediationVisible.filter(e =>
     (e.status === 'EXECUTED' && NON_ROLLBACKABLE_ACTIONS.has(e.action)) ||
     e.status === 'NOT_RECOVERABLE'
   )
-  const otherList = visible.filter(e =>
+  const otherList = remediationVisible.filter(e =>
     !['EXECUTED', 'NOT_RECOVERABLE'].includes(e.status)
   )
 
@@ -438,7 +449,7 @@ export default function RollbackSection({ onNav }) {
     filter === 'executed'  ? rollbackableList :
     filter === 'permanent' ? permanentList    :
     filter === 'other'     ? otherList        :
-    visible
+    remediationVisible
 
   const text   = 'var(--text)'
   const text2  = 'var(--text3)'
@@ -525,6 +536,45 @@ export default function RollbackSection({ onNav }) {
       )}
 
       {!loading && visible.length === 0 && <EmptyState />}
+
+      {/* ── ATTACK SURFACE FIXES — separate section above Remediation ── */}
+      {!loading && asVisible.length > 0 && (
+        <div style={{ marginBottom:28 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, paddingBottom:10, borderBottom:'2.5px solid rgba(209,50,18,0.3)' }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:'rgba(209,50,18,0.1)', border:'1.5px solid rgba(209,50,18,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🌐</div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:'#d13212' }}>Attack Surface Fixes</div>
+              <div style={{ fontSize:10.5, color:'var(--text3)' }}>Executed from Attack Surface section · Rollback here to restore original AWS state</div>
+            </div>
+            <div style={{ marginLeft:'auto', fontSize:10, fontWeight:700, color:'#d13212', background:'rgba(209,50,18,0.08)', border:'1px solid rgba(209,50,18,0.2)', borderRadius:5, padding:'4px 10px' }}>
+              {asVisible.filter(e=>e.status==='EXECUTED').length} / {asVisible.length} executed
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            {asVisible.map(e => (
+              <ExecutionCard
+                key={e.execution_id}
+                execution={e}
+                exiting={exitingIds.has(e.execution_id)}
+                rollingId={rollingId}
+                onRequestRollback={handleRequestRollback}
+                selectMode={false}
+                selected={false}
+                onToggleSelect={() => {}}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Divider when both sections have content */}
+      {!loading && asVisible.length > 0 && remediationVisible.length > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+          <div style={{ flex:1, height:1, background:'var(--border)' }} />
+          <div style={{ fontSize:10, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>🔧 Remediation Fixes</div>
+          <div style={{ flex:1, height:1, background:'var(--border)' }} />
+        </div>
+      )}
 
       {!loading && visible.length > 0 && (
         <>

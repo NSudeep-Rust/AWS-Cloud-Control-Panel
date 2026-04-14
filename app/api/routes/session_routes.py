@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.database.models import (
-    Account, Scan, Finding, Execution, Rollback,
-    Alert, FindingChange, LiveMonitorFinding
+    Account, Scan, Finding, Execution, Rollback, FindingChange
 )
 
 router = APIRouter(prefix="/api/session", tags=["Session"])
@@ -31,23 +30,6 @@ def wipe_session(
         if scan_ids:
             n = db.query(FindingChange).filter(FindingChange.scan_id.in_(scan_ids)).delete(synchronize_session=False)
             deleted["finding_changes"] = n
-
-        n = db.query(LiveMonitorFinding).filter(LiveMonitorFinding.account_db_id == db_id).delete(synchronize_session=False)
-        deleted["live_monitor_findings"] = n
-
-        if scan_ids:
-            finding_ids = [
-                f.id for f in db.query(Finding.id)
-                .filter(Finding.scan_id.in_(scan_ids))
-                .all()
-            ]
-            if finding_ids:
-                n = db.query(Alert).filter(Alert.finding_id.in_(finding_ids)).delete(synchronize_session=False)
-                deleted["alerts"] = n
-            else:
-                deleted["alerts"] = 0
-        else:
-            deleted["alerts"] = 0
 
         if scan_ids:
             exec_ids = [

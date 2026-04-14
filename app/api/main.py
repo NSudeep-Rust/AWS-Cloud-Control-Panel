@@ -10,12 +10,12 @@ from app.api.routes import analytics_routes
 from app.api.routes import execute_routes
 from app.api.routes import rollback_routes
 from app.api.routes import account_routes
-from app.api.routes import alert_routes
 from app.api.routes import session_routes
-from app.api.routes import live_finding_routes
 from app.api.routes import drift_routes
 from app.api.routes import schedule_routes
 from app.api.routes import email_routes
+from app.api.routes import attack_surface_routes
+from app.api.routes import iam_view_routes
 from app.core.scheduler_service import scheduler_service
 from app.api.websocket_manager import ws_manager
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,14 +68,34 @@ app.add_middleware(
 )
 
 
+
 @app.websocket("/ws/alerts")
 async def ws_alerts(websocket: WebSocket):
+    """Shared WS channel — used by ScanContext for scan_complete events."""
     await ws_manager.connect(websocket)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
+
+
+@app.get("/api/version")
+async def get_version():
+    """Return the installed app version from the VERSION file."""
+    import sys, os
+    # In PyInstaller: look next to the EXE; in dev: project root
+    if getattr(sys, "_MEIPASS", None):
+        base = Path(os.path.dirname(sys.executable))
+    else:
+        base = Path(__file__).parent.parent.parent
+    ver_file = base / "VERSION"
+    try:
+        version = ver_file.read_text(encoding="utf-8").strip()
+    except Exception:
+        version = "1.0.0.0"
+    return {"version": version}
+
 
 
 app.include_router(scan_routes.router)
@@ -85,12 +105,12 @@ app.include_router(rollback_routes.router)
 app.include_router(history_routes.router)
 app.include_router(analytics_routes.router)
 app.include_router(account_routes.router)
-app.include_router(alert_routes.router)
 app.include_router(session_routes.router)
-app.include_router(live_finding_routes.router)
 app.include_router(schedule_routes.router)
 app.include_router(drift_routes.router)
 app.include_router(email_routes.router)
+app.include_router(attack_surface_routes.router)
+app.include_router(iam_view_routes.router)
 
 
 _dist = _get_dist_path()

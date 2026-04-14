@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { ShieldAlert, AlertTriangle, Info, X, ChevronRight, Shield } from 'lucide-react'
 
 const API = 'http://127.0.0.1:8000'
-const POLL_MS = 15_000          // poll every 15 seconds
+const POLL_MS = 4_000            // poll every 4 seconds (WS fallback only)
 const AUTO_DISMISS_MS = 12_000   // toast stays for 12 seconds
 const MAX_TOASTS = 3            // max visible at once (capped to prevent stacking)
 
@@ -300,70 +300,6 @@ export default function ToastSystem({ onNav }) {
             return [newToast, ...prev].slice(0, MAX_TOASTS)
         })
     }, [fireNativeNotif])
-
-    const wsRef = useRef(null)
-
-    const connectWS = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) return
-
-        try {
-            const ws = new WebSocket('ws://127.0.0.1:8000/ws/alerts')
-            wsRef.current = ws
-
-            ws.onopen = () => {
-                console.log('⚡ Alert WebSocket connected')
-                const pingInterval = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) ws.send('ping')
-                    else clearInterval(pingInterval)
-                }, 25000)
-            }
-
-            ws.onmessage = (evt) => {
-                try {
-                    const payload = JSON.parse(evt.data)
-                    if (payload.event === 'new_alert') {
-                        console.log('⚡ Instant alert received:', payload.severity, payload.type)
-                        showAlert(payload)
-                    }
-                } catch { /* ignore non-JSON */ }
-            }
-
-            ws.onclose = () => {
-                console.log('⚡ Alert WebSocket closed — reconnecting in 5s')
-                setTimeout(connectWS, 5000)   // auto-reconnect
-            }
-
-            ws.onerror = () => {
-                ws.close()   // triggers onclose → reconnect
-            }
-        } catch (e) {
-            console.log('⚡ WebSocket unavailable — falling back to polling')
-        }
-    }, [showAlert])
-
-    useEffect(() => {
-        const t = setTimeout(connectWS, 500)
-        return () => {
-            clearTimeout(t)
-            wsRef.current?.close()
-        }
-    }, [connectWS])
-
-    const poll = useCallback(async () => {
-        if (!seenRef.current) return
-        try {
-            const params = dbId ? { account_id: dbId } : {}
-            const r = await axios.get(`${API}/api/alerts/`, { params })
-            const alerts = r.data?.data?.alerts || r.data?.alerts || []
-            alerts.forEach(a => showAlert(a))
-        } catch { /* silent */ }
-    }, [showAlert, dbId])
-
-    useEffect(() => {
-        const init = setTimeout(poll, 2000)
-        const iv = setInterval(poll, POLL_MS)
-        return () => { clearTimeout(init); clearInterval(iv) }
-    }, [poll])
 
     if (toasts.length === 0) return null
 

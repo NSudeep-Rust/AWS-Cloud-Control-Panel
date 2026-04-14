@@ -54,7 +54,9 @@ def process_execution(request: ExecuteRequest, db: Session):
             print("❌ No findings found in DB")
             return
 
-        selected_findings = [f for f in findings if f.get("id") in request.finding_ids]
+        # Normalise to str on both sides so int IDs from DB match str IDs from JSON
+        finding_id_set = {str(fid) for fid in request.finding_ids}
+        selected_findings = [f for f in findings if str(f.get("id")) in finding_id_set]
         unique = {}
         for f in selected_findings:
             unique[f["id"]] = f
@@ -137,6 +139,10 @@ def process_execution(request: ExecuteRequest, db: Session):
             if result.get("status") in ["BLOCKED_BY_POLICY", "REQUIRE_APPROVAL"] and not force_execute:
                 approval_token_value = str(uuid.uuid4())
 
+            exec_meta = result.get("metadata") or {}
+            if request.source:
+                exec_meta["source"] = request.source
+
             execution = Execution(
                 execution_id=result.get("execution_id", execution_id),
                 scan_id=request.scan_id,
@@ -146,7 +152,7 @@ def process_execution(request: ExecuteRequest, db: Session):
                 reason=result.get("reason"),
                 approval_token=approval_token_value,
                 resource_name=resource_name,
-                meta=result.get("metadata") or {}
+                meta=exec_meta
             )
             db.add(execution)
             db.commit()

@@ -15,19 +15,24 @@ import urllib.error
 
 # ── SSL-tolerant request helper ───────────────────────────────────────────────
 def _open_url(url: str, headers: dict | None = None, timeout: int = 20):
-    """Open a URL with proper SSL; falls back to unverified SSL for
-    environments without a system cert store (e.g., Windows Sandbox)."""
+    """Open a URL with proper SSL; falls back to fully unverified SSL for
+    environments without a system cert store (e.g. Windows Sandbox, PyInstaller bundles)."""
     req = urllib.request.Request(url, headers=headers or {})
-    try:
-        ctx = ssl.create_default_context()
-        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
-    except ssl.SSLError:
-        pass
-    except Exception:
-        pass
-    # Fallback — safe for public read-only GitHub API / release downloads
-    ctx = ssl._create_unverified_context()
-    return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    last_exc = None
+    for verify in (True, False):
+        try:
+            if verify:
+                ctx = ssl.create_default_context()
+            else:
+                ctx = ssl._create_unverified_context()
+                ctx.check_hostname = False          # fix SSL error 1001 in Sandbox
+                ctx.verify_mode   = ssl.CERT_NONE  # skip cert verification entirely
+            return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+        except Exception as e:
+            last_exc = e
+            if verify:
+                continue   # retry without SSL verification
+    raise last_exc         # surface the real error if both fail
 
 # ── Constants ────────────────────────────────────────────────────────────────
 GITHUB_API  = "https://api.github.com/repos/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest"
@@ -59,7 +64,7 @@ def current_version() -> str:
                 return v
         except Exception:
             pass
-    return "1.0.0"
+    return "1.0.1"
 
 # ── GitHub API ────────────────────────────────────────────────────────────────
 def fetch_latest() -> tuple[str, str, str | None]:
@@ -96,7 +101,7 @@ def _kill_main_app():
             )
         except Exception:
             pass
-    time.sleep(1.5)  # give Windows time to release file handles
+    time.sleep(3.0)  # give Windows time to fully release file handles
 
 def download_and_apply(url: str, progress_cb, status_cb):
     tmp = Path(os.environ.get("TEMP", ".")) / "cloudshield_update.zip"
@@ -148,12 +153,19 @@ def download_and_apply(url: str, progress_cb, status_cb):
             dest.mkdir(parents=True, exist_ok=True)
         else:
             dest.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                shutil.copy2(item, dest)
-            except PermissionError as e:
-                errors.append(f"Skipped (locked): {rel}")
-            except Exception as e:
-                errors.append(f"Error {rel}: {e}")
+            # Retry up to 3 times for locked files (Windows needs extra time to clear handles)
+            for attempt in range(3):
+                try:
+                    shutil.copy2(item, dest)
+                    break
+                except PermissionError:
+                    if attempt < 2:
+                        time.sleep(1.0)   # wait 1s and retry
+                    else:
+                        errors.append(f"Skipped (locked): {rel}")
+                except Exception as e:
+                    errors.append(f"Error {rel}: {e}")
+                    break
 
     # ── 5. Cleanup ───────────────────────────────────────────────────────────
     shutil.rmtree(extract_dir, ignore_errors=True)

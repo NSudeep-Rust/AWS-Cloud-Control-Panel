@@ -2,10 +2,10 @@ import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Search, ShieldAlert, Wrench, RotateCcw,
-    History, BarChart2, Bell, LogOut, Sun, Moon, ChevronRight,
-    Shield, RefreshCcw
+    History, BarChart2, LogOut, Sun, Moon, ChevronRight,
+    Shield, RefreshCcw, Globe, Users
 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 
 const NAV_GROUPS = [
     {
@@ -17,54 +17,30 @@ const NAV_GROUPS = [
     {
         label: 'Security',
         items: [
-            { id: 'scanner',   label: 'Scanner',        icon: Search,      color: '#e07b00' },
-            { id: 'threats',   label: 'Threat Monitor', icon: ShieldAlert, color: '#d13212' },
-            { id: 'execute',   label: 'Remediation',    icon: Wrench,      color: '#1d8102' },
-            { id: 'rollback',  label: 'Rollback',       icon: RotateCcw,   color: '#7953d2' },
+            { id: 'scanner',       label: 'Scanner',        icon: Search,      color: '#e07b00' },
+            { id: 'threats',       label: 'Threat Monitor', icon: ShieldAlert, color: '#d13212' },
+            { id: 'iam-view',      label: 'IAM View',       icon: Users,       color: '#0972d3' },
+            { id: 'execute',       label: 'Remediation',    icon: Wrench,      color: '#1d8102' },
+            { id: 'rollback',      label: 'Rollback',       icon: RotateCcw,   color: '#7953d2' },
+            { id: 'attack-surface', label: 'Attack Surface', icon: Globe,     color: '#d13212' },
         ]
     },
     {
         label: 'Reports',
         items: [
-            { id: 'history',   label: 'History',        icon: History,     color: '#0a8a6a' },
-            { id: 'analytics', label: 'Analytics',      icon: BarChart2,   color: '#0972d3' },
-            { id: 'alerts',    label: 'Alerts',         icon: Bell,        color: '#d13212' },
+            { id: 'history',        label: 'History',        icon: History,   color: '#0a8a6a' },
+            { id: 'analytics',      label: 'Analytics',      icon: BarChart2, color: '#0972d3' },
         ]
     },
 ]
 
 export default function Sidebar({ active, onNav, dark, onToggleDark }) {
-    const { account, disconnect, sessionStart } = useAuth()
+    const { account, disconnect } = useAuth()
     const navigate = useNavigate()
     const [hoverId,    setHoverId]   = useState(null)
     const [showModal,  setShowModal] = useState(false)
     const [clearData,  setClearData] = useState(false)
     const [clearing,   setClearing]  = useState(false)
-    const [alertCounts, setAlertCounts] = useState({ critical: 0, high: 0 })
-    const pollRef = useRef(null)
-
-    useEffect(() => {
-        const accountDbId = account?.id
-        setAlertCounts({ critical: 0, high: 0 })
-
-        async function fetchCounts() {
-            try {
-                const params = accountDbId ? `?account_db_id=${accountDbId}` : ''
-                const r    = await fetch(`http://127.0.0.1:8000/api/live-findings/${params}`)
-                const json = await r.json()
-                const findings = json?.data?.findings || []
-
-                // Show all live findings for count — same UTC-parsing fix as AlertsSection
-                setAlertCounts({
-                    critical: findings.filter(f => f.severity === 'CRITICAL').length,
-                    high:     findings.filter(f => f.severity === 'HIGH').length,
-                })
-            } catch { /* ignore */ }
-        }
-        fetchCounts()
-        pollRef.current = setInterval(fetchCounts, 30000)
-        return () => clearInterval(pollRef.current)
-    }, [account?.id, sessionStart])
 
     function openDisconnect() { setShowModal(true); setClearData(false) }
     function cancelDisconnect() { setShowModal(false) }
@@ -258,8 +234,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                             const Icon = item.icon
                             const isActive = active === item.id
                             const isHov = hoverId === item.id && !isActive
-                            const isAlerts = item.id === 'alerts'
-                            const ic = item.color || '#0972d3'   // section accent colour
+                            const ic = item.color || '#0972d3'
                             return (
                                 <button
                                     key={item.id}
@@ -280,7 +255,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                                         outline: isActive ? `1.5px solid ${ic}35` : '1.5px solid transparent',
                                     }}
                                 >
-                                    {/* ── Coloured icon tile ── */}
+                                    {/* Coloured icon tile */}
                                     <div style={{
                                         width: 34, height: 34, borderRadius: 9, flexShrink: 0,
                                         background: isActive
@@ -301,7 +276,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                                         />
                                     </div>
 
-                                    {/* ── Label ── */}
+                                    {/* Label */}
                                     <span style={{
                                         flex: 1,
                                         fontSize: 13,
@@ -310,22 +285,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                                         transition: 'color 0.12s',
                                     }}>{item.label}</span>
 
-                                    {/* ── Alert count bubbles ── */}
-                                    {isAlerts && (alertCounts.critical > 0 || alertCounts.high > 0) && (
-                                        <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
-                                            {alertCounts.critical > 0 && (
-                                                <div style={{ minWidth:18, height:18, borderRadius:'50%', background:'#d13212', color:'#fff', fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', boxShadow:'0 2px 8px rgba(209,50,18,0.55)' }}>
-                                                    {alertCounts.critical > 99 ? '99+' : alertCounts.critical}
-                                                </div>
-                                            )}
-                                            {alertCounts.high > 0 && (
-                                                <div style={{ minWidth:18, height:18, borderRadius:'50%', background:'#e07b00', color:'#fff', fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', boxShadow:'0 2px 8px rgba(224,123,0,0.45)' }}>
-                                                    {alertCounts.high > 99 ? '99+' : alertCounts.high}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    {isActive && !(isAlerts && (alertCounts.critical > 0 || alertCounts.high > 0)) && (
+                                    {isActive && (
                                         <ChevronRight size={11} style={{ opacity:0.4, color: ic, flexShrink:0 }} />
                                     )}
                                 </button>

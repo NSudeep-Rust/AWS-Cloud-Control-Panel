@@ -64,6 +64,7 @@ export default function AccountSetupPage() {
     const [error,        setError]        = useState('')
     const [connecting,   setConnecting]   = useState(false)
     const [bannerIndex,  setBannerIndex]  = useState(0)
+    const [appVersion,   setAppVersion]   = useState(null)
 
     const [rootForm,     setRootForm]     = useState({ aws_account_id: '', profile_name: '', region: 'us-east-1', access_key: '', secret_key: '' })
     const [rootError,    setRootError]    = useState('')
@@ -79,23 +80,31 @@ export default function AccountSetupPage() {
     const glowInnerRef = useRef(null)
 
     useEffect(() => {
+        let rafId = null
         const handle = e => {
-            if (glowOuterRef.current) {
-                glowOuterRef.current.style.left = (e.clientX - 250) + 'px'
-                glowOuterRef.current.style.top  = (e.clientY - 250) + 'px'
-            }
-            if (glowInnerRef.current) {
-                glowInnerRef.current.style.left = (e.clientX - 70) + 'px'
-                glowInnerRef.current.style.top  = (e.clientY - 70) + 'px'
-            }
+            if (rafId) return
+            rafId = requestAnimationFrame(() => {
+                if (glowOuterRef.current)
+                    glowOuterRef.current.style.transform = `translate(${e.clientX - 250}px,${e.clientY - 250}px)`
+                if (glowInnerRef.current)
+                    glowInnerRef.current.style.transform = `translate(${e.clientX - 70}px,${e.clientY - 70}px)`
+                rafId = null
+            })
         }
-        window.addEventListener('mousemove', handle)
-        return () => window.removeEventListener('mousemove', handle)
+        window.addEventListener('mousemove', handle, { passive: true })
+        return () => {
+            window.removeEventListener('mousemove', handle)
+            if (rafId) cancelAnimationFrame(rafId)
+        }
     }, [])
 
     useEffect(() => {
         const iv = setInterval(() => setBannerIndex(i => (i + 1) % PANELS.length), 4200)
         return () => clearInterval(iv)
+    }, [])
+
+    useEffect(() => {
+        fetch('http://127.0.0.1:8000/api/version').then(r => r.json()).then(d => setAppVersion(d.version)).catch(() => {})
     }, [])
 
     useEffect(() => {
@@ -209,27 +218,39 @@ export default function AccountSetupPage() {
                 input:focus,select:focus{outline:none;border-color:#FF9900!important;box-shadow:0 0 0 2px rgba(255,153,0,0.18)!important}
             `}</style>
 
+            {/* Version badge — fixed bottom right */}
+            {appVersion && (
+                <span style={{
+                    position: 'fixed', bottom: 14, right: 14, zIndex: 9999,
+                    fontSize: 10, fontFamily: 'monospace', fontWeight: 800,
+                    color: '#FF9900', background: 'rgba(255,153,0,0.1)',
+                    border: '1px solid rgba(255,153,0,0.3)',
+                    borderRadius: 4, padding: '3px 9px', letterSpacing: 0.3,
+                    pointerEvents: 'none',
+                }}>
+                    CloudShield v{appVersion}
+                </span>
+            )}
+
             <div style={{ position:'absolute', inset:0, pointerEvents:'none',
                 backgroundImage:'radial-gradient(circle, rgba(180,110,0,0.16) 1.5px, transparent 1.5px)',
                 backgroundSize:'22px 22px' }} />
             <div style={{ position:'absolute', bottom:-180, left:-140, width:680, height:680,
-                borderRadius:'50%', pointerEvents:'none', animation:'blobA 9s ease-in-out infinite',
-                background:'radial-gradient(circle,rgba(255,153,0,0.09) 0%,transparent 70%)',
-                filter:'blur(2px)' }} />
+                borderRadius:'50%', pointerEvents:'none', willChange:'transform', animation:'blobA 9s ease-in-out infinite',
+                background:'radial-gradient(circle,rgba(255,153,0,0.07) 0%,transparent 70%)' }} />
             <div style={{ position:'absolute', top:-140, right:-120, width:560, height:560,
-                borderRadius:'50%', pointerEvents:'none', animation:'blobB 12s ease-in-out infinite',
-                background:'radial-gradient(circle,rgba(255,180,40,0.06) 0%,transparent 70%)',
-                filter:'blur(3px)' }} />
+                borderRadius:'50%', pointerEvents:'none', willChange:'transform', animation:'blobB 12s ease-in-out infinite',
+                background:'radial-gradient(circle,rgba(255,180,40,0.05) 0%,transparent 70%)' }} />
 
             <div ref={glowOuterRef} style={{
-                position:'absolute', left:-250, top:-250, width:500, height:500, borderRadius:'50%',
-                background:'radial-gradient(circle,rgba(255,180,0,0.20) 0%,rgba(255,160,0,0.10) 30%,rgba(255,140,0,0.03) 60%,transparent 80%)',
-                pointerEvents:'none', zIndex:0, filter:'blur(4px)',
+                position:'absolute', left:0, top:0, width:500, height:500, borderRadius:'50%',
+                background:'radial-gradient(circle,rgba(255,180,0,0.18) 0%,rgba(255,160,0,0.08) 30%,rgba(255,140,0,0.02) 60%,transparent 80%)',
+                pointerEvents:'none', zIndex:0, willChange:'transform',
             }} />
             <div ref={glowInnerRef} style={{
-                position:'absolute', left:-70, top:-70, width:140, height:140, borderRadius:'50%',
-                background:'radial-gradient(circle,rgba(255,210,50,0.38) 0%,rgba(255,185,0,0.18) 40%,transparent 70%)',
-                pointerEvents:'none', zIndex:0, filter:'blur(2px)',
+                position:'absolute', left:0, top:0, width:140, height:140, borderRadius:'50%',
+                background:'radial-gradient(circle,rgba(255,210,50,0.35) 0%,rgba(255,185,0,0.16) 40%,transparent 70%)',
+                pointerEvents:'none', zIndex:0, willChange:'transform',
             }} />
 
             <button onClick={() => navigate(account ? '/panel' : '/')} style={s.backBtn}
@@ -642,13 +663,13 @@ const s = {
         padding:'0 16px',
     },
     card: {
-        background:'rgba(255,255,255,0.85)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
+        background:'rgba(255,255,255,0.92)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)',
         border:'1.5px solid rgba(255,153,0,0.20)', borderRadius:12, padding:'24px 26px',
         boxShadow:'0 8px 40px rgba(180,100,0,0.12), 0 1px 0 rgba(255,255,255,0.9) inset',
         overflowY:'auto', maxHeight:'calc(100vh - 50px)',
     },
     infoCard: {
-        background:'rgba(255,255,255,0.75)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)',
+        background:'rgba(255,255,255,0.88)', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)',
         border:'1.5px solid rgba(255,153,0,0.16)', borderRadius:12, padding:'22px 20px',
         boxShadow:'0 4px 20px rgba(180,100,0,0.09)',
         overflowY:'auto', maxHeight:'calc(100vh - 50px)',

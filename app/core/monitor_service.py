@@ -1,9 +1,8 @@
 import threading
 import time
-import uuid
 from app.modules.diff_engine.diff_engine import DiffEngine
 from app.database.db import get_db, SessionLocal
-from app.database.models import FindingChange, Alert, LiveMonitorFinding, Account
+from app.database.models import FindingChange, Account
 from app.config.security_config import ALERT_SEVERITIES
 from app.core.email_service import EmailService
 from datetime import datetime
@@ -25,8 +24,8 @@ except ImportError:
 
 def _fire_windows_toast(severity: str, finding_id: str, message: str):
     """Fire a branded Windows OS toast showing 'AWS CloudShield' (not 'Python')."""
-    sev_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}
-    title = f"{sev_icon.get(severity, '⚠️')} AWS Security Alert \u2014 {severity}"
+    sev_icon = {"CRITICAL": "[CRIT]", "HIGH": "[HIGH]", "MEDIUM": "[MED]", "LOW": "[LOW]"}
+    title = f"[AWS CloudShield] {severity} Security Alert"
     short_id = finding_id[:48] if finding_id else "Unknown"
     body = f"{message}\n{short_id}"
     if _NOTIF_BACKEND == "winotify":
@@ -39,15 +38,15 @@ def _fire_windows_toast(severity: str, finding_id: str, message: str):
                 duration="short",
             )
             toast.show()
-            print(f"🔔 Windows toast fired (winotify): [{severity}] {short_id}")
+            print(f"[Toast] Fired (winotify): [{severity}] {short_id}")
         except Exception as e:
-            print(f"⚠️  winotify toast error: {e}")
+            print(f"[Toast] winotify error: {e}")
     elif _NOTIF_BACKEND == "plyer":
         try:
             desktop_notif.notify(title=title, message=body[:200], app_name="AWS CloudShield", timeout=10)
-            print(f"🔔 Windows toast fired (plyer): [{severity}] {short_id}")
+            print(f"[Toast] Fired (plyer): [{severity}] {short_id}")
         except Exception as e:
-            print(f"⚠️  plyer toast error: {e}")
+            print(f"[Toast] plyer error: {e}")
 
 
 class MonitorService:
@@ -59,23 +58,23 @@ class MonitorService:
         self.thread = None
         self.previous_findings = None
         self.broadcast_fn = broadcast_fn
-        self.account_db_id = account_db_id   # DB integer id — used to store live findings
+        self.account_db_id = account_db_id   # DB integer id --- used to store live findings
 
     def _loop(self):
-        print(f"🟢 Monitoring Started at {datetime.utcnow().isoformat()}")
+        print(f"[Monitor] Started at {datetime.utcnow().isoformat()}")
         while self.running:
             try:
                 current_findings = self.monitor.run_once()
 
                 if self.previous_findings is None:
-                    print("ℹ️ First run — skipping diff")
+                    print("[Monitor] First run - establishing baseline (no alerts)")
                 else:
                     diff = DiffEngine.compare(self.previous_findings, current_findings)
 
-                    print("🔍 DIFF RESULT")
-                    print(f"🆕 NEW: {len(diff['new'])}")
-                    print(f"✅ RESOLVED: {len(diff['resolved'])}")
-                    print(f"➖ UNCHANGED: {len(diff['unchanged'])}")
+                    print("[Monitor] DIFF RESULT")
+                    print(f"[Monitor] NEW: {len(diff['new'])}")
+                    print(f"[Monitor] RESOLVED: {len(diff['resolved'])}")
+                    print(f"[Monitor] UNCHANGED: {len(diff['unchanged'])}")
 
                     try:
                         db = next(get_db())
@@ -95,132 +94,29 @@ class MonitorService:
                         db.commit()
                         db.close()
 
-                        try:
-                            db = next(get_db())
-
-                            current_map = {f["id"]: f for f in current_findings}
-
-                            severities_triggered = set()
-
-                            for fid in diff["new"]:
-                                finding = current_map.get(fid)
-
-                                if not finding:
-                                    continue
-
-                                severity = finding.get("severity")
-
-                                if severity in ALERT_SEVERITIES:
-                                    severities_triggered.add(severity)
-                                    alert_id = str(uuid.uuid4())
-
-                                    alert = Alert(
-                                        id=alert_id,
-                                        finding_id=fid,
-                                        message=f"New {severity} issue detected",
-                                        severity=severity
-                                    )
-                                    db.add(alert)
-
-                                    if self.broadcast_fn:
-                                        try:
-                                            self.broadcast_fn({
-                                                "event":       "new_alert",
-                                                "id":          alert_id,
-                                                "finding_id":  fid,
-                                                "type":        finding.get("type", ""),
-                                                "resource_id": finding.get("resource_id", fid),
-                                                "message":     f"New {severity} issue detected",
-                                                "severity":    severity,
-                                                "timestamp":   datetime.utcnow().isoformat(),
-                                            })
-                                        except Exception as ws_err:
-                                            print(f"⚡ WS push error: {ws_err}")
-
-                            db.commit()
-                            db.close()
-
-                            if severities_triggered:
-                                print(f"🚨 Alerts generated for: {', '.join(severities_triggered)}")
-                                for fid in diff["new"]:
-                                    finding = current_map.get(fid)
-                                    if not finding:
-                                        continue
-                                    sev = finding.get("severity")
-                                    if sev in ALERT_SEVERITIES:
-                                        _fire_windows_toast(
-                                            severity=sev,
-                                            finding_id=fid,
-                                            message=f"New {sev} issue detected"
-                                        )
-                            else:
-                                print("ℹ️ No alert-worthy findings")
-
-                        except Exception as alert_error:
-                            print(f"❌ ALERT ERROR: {alert_error}")
+                        # Fire Windows toast for new CRITICAL/HIGH findings
+                        current_map = {f["id"]: f for f in current_findings}
+                        for fid in diff["new"]:
+                            finding = current_map.get(fid)
+                            if not finding:
+                                continue
+                            sev = finding.get("severity")
+                            if sev in ALERT_SEVERITIES:
+                                _fire_windows_toast(
+                                    severity=sev,
+                                    finding_id=fid,
+                                    message=f"New {sev} issue detected"
+                                )
 
                     except Exception as db_error:
-                        print(f"❌ DB ERROR (diff store): {db_error}")
-
-                if self.account_db_id:
-                    try:
-                        db = next(get_db())
-                        db.query(LiveMonitorFinding).filter(
-                            LiveMonitorFinding.account_db_id == self.account_db_id,
-                            LiveMonitorFinding.dismissed == 0
-                        ).delete(synchronize_session=False)
-
-                        for f in current_findings:
-                            if f.get("severity") in ("CRITICAL", "HIGH"):
-                                remediation = f.get("remediation") or {}
-                                db.add(LiveMonitorFinding(
-                                    finding_id         = f.get("id", ""),
-                                    finding_type       = f.get("type", ""),
-                                    severity           = f.get("severity", ""),
-                                    resource_id        = f.get("resource_id", ""),
-                                    region             = f.get("region", "global"),
-                                    account_db_id      = self.account_db_id,
-                                    remediation_action = remediation.get("action", ""),
-                                    remediation_reason = remediation.get("reason", ""),
-                                    dismissed          = 0,
-                                ))
-                        db.commit()
-                        db.close()
-                        crit = sum(1 for f in current_findings if f.get("severity") == "CRITICAL")
-                        high = sum(1 for f in current_findings if f.get("severity") == "HIGH")
-                        print(f"📊 LiveMonitorFindings updated → CRITICAL:{crit} HIGH:{high}")
-
-                        crit_high = [
-                            {"type": f.get("type",""), "severity": f.get("severity",""),
-                             "resource_id": f.get("resource_id",""), "region": f.get("region","global")}
-                            for f in current_findings if f.get("severity") in ("CRITICAL", "HIGH")
-                        ]
-                        if crit_high and self.account_db_id:
-                            def _email_alert(acct_id, findings_list):
-                                try:
-                                    em_db = SessionLocal()
-                                    cfg   = EmailService.get_config(acct_id, em_db)
-                                    if cfg and cfg.enabled and cfg.notify_on_critical:
-                                        acct  = em_db.query(Account).filter(Account.id == acct_id).first()
-                                        name  = acct.aws_account_id if acct else "Your AWS Account"
-                                        EmailService.send_critical_alert(findings_list, name, cfg)
-                                    em_db.close()
-                                except Exception as em_err:
-                                    print(f"[Email] Monitor alert error: {em_err}")
-                            threading.Thread(
-                                target=_email_alert,
-                                args=(self.account_db_id, crit_high),
-                                daemon=True
-                            ).start()
-
-                    except Exception as live_err:
-                        print(f"❌ LiveMonitorFinding save error: {live_err}")
+                        print(f"[Monitor] DB ERROR: {db_error}")
 
                 self.previous_findings = current_findings
             except Exception as e:
-                print(f"❌ Monitor error: {e}")
+                print(f"[Monitor] ERROR: {e}")
 
-            time.sleep(self.interval)
+            time.sleep(5)
+
 
     def start(self):
         if self.running:
@@ -241,3 +137,5 @@ class MonitorService:
             "running": self.running,
             "interval": self.interval
         }
+
+

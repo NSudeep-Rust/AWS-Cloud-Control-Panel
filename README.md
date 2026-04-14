@@ -64,9 +64,6 @@
 ![Security Analytics](docs/screenshots/analytics_page.png)
 > Risk score over time, severity distribution, remediation rate, regional heatmap, top finding types, and compliance scorecards across **CIS AWS Benchmark**, **PCI DSS**, and **NIST CSF** — all live-updated after every scan
 
-### Live Alerts Monitor
-![Alerts Section](docs/screenshots/alerts_page.png)
-> Real-time alert feed for current session findings. Filters by severity, sortable by time — automatically surfaces new CRITICAL and HIGH findings the moment a scan completes. Desktop toast notifications on Windows
 
 ---
 
@@ -75,7 +72,7 @@
 ### 🔍 Security Scanner
 - **52+ security checks** across IAM, S3, EC2, VPC, RDS, KMS, CloudTrail, CloudWatch, and more
 - **9 AWS regions** scanned concurrently with parallel per-region sub-scanners
-- Fully parallelised S3 (per-bucket) and IAM (per-user) checks for **~20–30s full scan time**
+- Fully parallelised S3 (per-bucket, per-region clients) and IAM (bulk fetch) checks for **~40s full scan time**
 - Real-time progress log with elapsed time and module-specific status messages
 - Findings ranked by severity: `CRITICAL` → `HIGH` → `MEDIUM` → `LOW`
 
@@ -124,10 +121,6 @@
 - Finding snapshot preserved per scan (rollback-safe even if AWS state changes)
 - Full-text search across findings and resource IDs
 
-### 🔔 Live Alerts
-- Real-time CRITICAL/HIGH finding notifications on scan completion
-- Per-severity filters and sortable timeline
-- Windows toast notifications via Electron IPC
 
 ---
 
@@ -216,7 +209,7 @@ CloudSecurityPanel/
 │   └── ui/src/
 │       ├── pages/sections/      # Overview, Scanner, Threats, IAMView,
 │       │                        # Remediation, Rollback, AttackSurface,
-│       │                        # History, Analytics, Alerts
+│       │                        # History, Analytics
 │       ├── context/             # AuthContext, ScanContext
 │       └── components/          # Sidebar, ToastSystem
 ├── electron/                    # Electron desktop shell
@@ -242,13 +235,13 @@ CloudSecurityPanel/
 │  WelcomePage · PanelPage                                   │
 │  Sections: Overview · Scanner · Threat Monitor ·           │
 │            IAM View · Remediation · Rollback ·             │
-│            Attack Surface · History · Analytics · Alerts   │
+│            Attack Surface · History · Analytics            │
 │  ScanContext · AuthContext · ToastSystem · Sidebar         │
 └────────────────────────┬───────────────────────────────────┘
                          │  REST API + WebSocket
 ┌────────────────────────▼───────────────────────────────────┐
 │              FastAPI Backend (port 8000)                   │
-│  /api/scan   /api/execute   /api/rollback   /api/alerts    │
+│  /api/scan   /api/execute   /api/rollback   /api/schedule  │
 │  /api/history   /api/accounts   /api/analytics             │
 │  /api/attack-surface   /api/iam-view                      │
 └────────┬──────────────┬──────────────────┬─────────────────┘

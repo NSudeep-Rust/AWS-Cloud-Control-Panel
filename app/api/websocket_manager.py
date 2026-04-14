@@ -17,11 +17,11 @@ class AlertWebSocketManager:
     async def connect(self, ws: WebSocket):
         await ws.accept()
         self._clients.add(ws)
-        print(f"🔌 WS client connected ({len(self._clients)} total)")
+        print(f"[WS] Client connected ({len(self._clients)} total)")
 
     def disconnect(self, ws: WebSocket):
         self._clients.discard(ws)
-        print(f"🔌 WS client disconnected ({len(self._clients)} remaining)")
+        print(f"[WS] Client disconnected ({len(self._clients)} remaining)")
 
     async def broadcast(self, payload: dict):
         """Push a JSON payload to every connected client."""

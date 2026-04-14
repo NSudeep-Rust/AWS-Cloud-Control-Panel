@@ -43,11 +43,11 @@ class SchedulerService:
         self.running = True
         self.thread  = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
-        print("⏰ SchedulerService started")
+        print("[SCHEDULER] SchedulerService started")
 
     def stop(self):
         self.running = False
-        print("⏰ SchedulerService stopped")
+        print("[SCHEDULER] SchedulerService stopped")
 
     def get_status(self):
         return {"running": self.running}
@@ -57,7 +57,7 @@ class SchedulerService:
             try:
                 self._check_and_run()
             except Exception as e:
-                print(f"❌ SchedulerService loop error: {e}")
+                print(f"[SCHEDULER][ERROR] SchedulerService loop error: {e}")
             time.sleep(60)      # re-check every minute
 
     def _check_and_run(self):
@@ -82,10 +82,10 @@ class SchedulerService:
         """Execute a full scan for one account and persist results + update schedule."""
         account = db.query(Account).filter(Account.id == account_db_id).first()
         if not account:
-            print(f"⏰ Scheduled scan skipped — account {account_db_id} not found")
+            print(f"[SCHEDULER] Scheduled scan skipped -- account {account_db_id} not found")
             return
 
-        print(f"⏰ Scheduled scan STARTING for account {account.aws_account_id}")
+        print(f"[SCHEDULER] Scheduled scan STARTING for account {account.aws_account_id}")
         try:
             aws = AWSSession(
                 profile_name=account.profile_name,
@@ -128,8 +128,8 @@ class SchedulerService:
                 cfg.updated_at  = datetime.utcnow()
                 db.commit()
 
-            print(f"⏰ Scheduled scan COMPLETE for account {account.aws_account_id} "
-                  f"— {len(findings)} findings — scan_id={scan_id}")
+            print(f"[SCHEDULER] Scheduled scan COMPLETE for account {account.aws_account_id} "
+                  f"-- {len(findings)} findings -- scan_id={scan_id}")
 
             ws_manager.broadcast_sync({
                 "event":          "scan_complete",
@@ -140,7 +140,7 @@ class SchedulerService:
             })
 
         except Exception as e:
-            print(f"❌ Scheduled scan FAILED for account {account_db_id}: {e}")
+            print(f"[SCHEDULER][ERROR] Scheduled scan FAILED for account {account_db_id}: {e}")
             try:
                 cfg = db.query(ScheduleConfig).filter(ScheduleConfig.id == config_id).first()
                 if cfg:

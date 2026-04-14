@@ -47,19 +47,19 @@ export function ScanProvider({ children }) {
                         const msg = JSON.parse(e.data)
 
                         if (msg.event === 'scan_complete') {
-                            const currentMeta = scanMetaRef.current
-                            if (currentMeta && msg.account_id === currentMeta.dbId) {
-                                axios.get(`${API}/api/scan/history`)
-                                    .then(r => {
-                                        const latest = r.data?.data?.scans?.[0]
-                                        if (latest && latest.scan_id === msg.scan_id) {
-                                            setFindings(latest.findings || [])
-                                            setScanId(latest.scan_id)
-                                            setStatus('done')
-                                        }
-                                    })
-                                    .catch(() => {})
-                            }
+                            // Update findings for BOTH manual and scheduled scans.
+                            // Previously only updated when currentMeta was set (manual scan only).
+                            // scan_id equality check guards against cross-account contamination.
+                            axios.get(`${API}/api/scan/history`)
+                                .then(r => {
+                                    const latest = r.data?.data?.scans?.[0]
+                                    if (latest && latest.scan_id === msg.scan_id) {
+                                        setFindings(latest.findings || [])
+                                        setScanId(latest.scan_id)
+                                        setStatus('done')
+                                    }
+                                })
+                                .catch(() => {})
                             setLatestScheduledScan({
                                 scan_id:        msg.scan_id,
                                 account_id:     msg.account_id,

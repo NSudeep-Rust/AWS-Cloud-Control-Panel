@@ -83,15 +83,6 @@ class Rollback(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class Alert(Base):
-    __tablename__ = "alerts"
-
-    id = Column(String, primary_key=True, index=True)
-    finding_id = Column(String)
-    message = Column(String)
-    severity = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
 
 class FindingChange(Base):
     __tablename__ = "finding_changes"
@@ -117,26 +108,6 @@ class IamUser(Base):
 
     account = relationship("Account", back_populates="iam_users")
 
-
-class LiveMonitorFinding(Base):
-    """
-    Stores the CURRENT set of CRITICAL/HIGH findings seen by the live threat monitor.
-    Refreshed on every scan cycle. Completely separate from the Alert table
-    which is used for WebSocket toast / Windows-Defender-style popup notifications.
-    """
-    __tablename__ = "live_monitor_findings"
-
-    id                 = Column(Integer, primary_key=True, autoincrement=True)
-    finding_id         = Column(String,  nullable=False, index=True)   # scanner finding ID
-    finding_type       = Column(String,  nullable=False)
-    severity           = Column(String,  nullable=False)               # CRITICAL | HIGH
-    resource_id        = Column(String,  nullable=True)
-    region             = Column(String,  nullable=True, default="global")
-    account_db_id      = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
-    remediation_action = Column(String,  nullable=True)
-    remediation_reason = Column(Text,    nullable=True)
-    dismissed          = Column(Integer, nullable=False, default=0)    # 0=active  1=dismissed
-    detected_at        = Column(DateTime, default=datetime.utcnow)
 
 
 class ScheduleConfig(Base):
