@@ -1,11 +1,17 @@
 """
-CloudShield Updater — checks GitHub Releases for a newer version,
-downloads the installer zip, extracts into the install folder, restarts the app.
+CloudShield Updater v2 — checks GitHub Releases for a newer version,
+downloads the installer and applies it silently, then restarts the app.
+
+Strategy (in priority order):
+  1. If a Setup installer (.exe) is in the release assets → download & run /VERYSILENT
+  2. If an update zip (.zip with "update" in name) → extract, write a helper .bat,
+     exit the updater, let the bat copy files and restart CloudShield
+  3. Nothing found → show error
 
 Compiled separately:
     pyinstaller updater.spec
 """
-import sys, os, json, subprocess, zipfile, shutil, time, threading
+import sys, os, json, subprocess, zipfile, shutil, time, threading, ctypes
 from pathlib import Path
 from tkinter import Tk, ttk, messagebox, Label, Frame, Button, StringVar
 
@@ -13,48 +19,55 @@ import ssl
 import urllib.request
 import urllib.error
 
+# ── Elevation ─────────────────────────────────────────────────────────────────
+def _is_admin() -> bool:
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+def _relaunch_as_admin():
+    """Re-launch this executable with UAC elevation and exit current process."""
+    ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable,
+        " ".join(f'"{a}"' for a in sys.argv), None, 1
+    )
+    sys.exit(0)
+
 # ── SSL-tolerant request helper ───────────────────────────────────────────────
-def _open_url(url: str, headers: dict | None = None, timeout: int = 20):
-    """Open a URL with proper SSL; falls back to fully unverified SSL for
-    environments without a system cert store (e.g. Windows Sandbox, PyInstaller bundles)."""
+def _open_url(url: str, headers: dict | None = None, timeout: int = 30):
     req = urllib.request.Request(url, headers=headers or {})
-    last_exc = None
     for verify in (True, False):
         try:
-            if verify:
-                ctx = ssl.create_default_context()
-            else:
-                ctx = ssl._create_unverified_context()
-                ctx.check_hostname = False          # fix SSL error 1001 in Sandbox
-                ctx.verify_mode   = ssl.CERT_NONE  # skip cert verification entirely
+            ctx = ssl.create_default_context() if verify else ssl._create_unverified_context()
+            if not verify:
+                ctx.check_hostname = False
+                ctx.verify_mode   = ssl.CERT_NONE
             return urllib.request.urlopen(req, timeout=timeout, context=ctx)
         except Exception as e:
             last_exc = e
             if verify:
-                continue   # retry without SSL verification
-    raise last_exc         # surface the real error if both fail
+                continue
+    raise last_exc
 
-# ── Constants ────────────────────────────────────────────────────────────────
+# ── Constants ─────────────────────────────────────────────────────────────────
 GITHUB_API  = "https://api.github.com/repos/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest"
 APP_EXE     = "CloudShield.exe"
 
-# When packaged with PyInstaller --onefile, sys.executable IS CloudShield-Updater.exe.
-# Its parent directory is the installation folder (e.g. C:\Program Files\CloudShield\).
+# PyInstaller --onefile: sys.executable IS CloudShield-Updater.exe in install dir.
 INSTALL_DIR = Path(os.path.dirname(sys.executable))
 
 # ── Version helpers ───────────────────────────────────────────────────────────
 def _parse_version(v: str):
-    """Convert '1.10.3' → (1, 10, 3) for correct numeric comparison."""
     try:
         return tuple(int(x) for x in v.strip().lstrip("v").split("."))
     except Exception:
         return (0, 0, 0)
 
 def current_version() -> str:
-    """Read version from install dir.  Checks both possible locations."""
     candidates = [
-        INSTALL_DIR / "VERSION",                              # installed by setup.iss
-        INSTALL_DIR / "cloudshield-backend" / "VERSION",     # fallback (legacy path)
+        INSTALL_DIR / "VERSION",
+        INSTALL_DIR / "cloudshield-backend" / "VERSION",
         INSTALL_DIR / "cloudshield-backend" / "_internal" / "VERSION",
     ]
     for f in candidates:
@@ -67,150 +80,176 @@ def current_version() -> str:
     return "1.0.1"
 
 # ── GitHub API ────────────────────────────────────────────────────────────────
-def fetch_latest() -> tuple[str, str, str | None]:
-    """Returns (tag_str, release_body, zip_download_url_or_None)."""
-    with _open_url(GITHUB_API, headers={"User-Agent": "CloudShield-Updater/1.0"}) as r:
+def fetch_latest() -> tuple:
+    """Returns (tag, body, url, asset_type).
+    asset_type: 'installer' | 'zip' | None
+    """
+    with _open_url(GITHUB_API, headers={"User-Agent": "CloudShield-Updater/2.0"}) as r:
         data = json.loads(r.read())
 
     tag    = data.get("tag_name", "0.0.0").lstrip("v")
     body   = data.get("body", "").strip() or "No release notes provided."
     assets = data.get("assets", [])
 
-    # Prefer an asset whose name contains 'update' and ends with .zip,
-    # fall back to any .zip asset.
-    dl_url = next(
+    # Priority 1 — Setup installer exe (most reliable update method)
+    installer_url = next(
+        (a["browser_download_url"] for a in assets
+         if "setup" in a["name"].lower() and a["name"].lower().endswith(".exe")),
+        None
+    )
+    if installer_url:
+        return tag, body, installer_url, "installer"
+
+    # Priority 2 — Update zip (contains raw files)
+    zip_url = next(
         (a["browser_download_url"] for a in assets
          if "update" in a["name"].lower() and a["name"].endswith(".zip")),
         None
+    ) or next(
+        (a["browser_download_url"] for a in assets if a["name"].endswith(".zip")),
+        None
     )
-    if dl_url is None:
-        dl_url = next(
-            (a["browser_download_url"] for a in assets if a["name"].endswith(".zip")),
-            None
-        )
-    return tag, body, dl_url
+    if zip_url:
+        return tag, body, zip_url, "zip"
 
-# ── Download + apply ──────────────────────────────────────────────────────────
-def _kill_main_app():
-    """Terminate CloudShield.exe (and its backend) so files can be overwritten."""
-    for exe in ("CloudShield.exe", "cloudshield-backend.exe"):
-        try:
-            subprocess.run(
-                ["taskkill", "/F", "/IM", exe, "/T"],
-                capture_output=True, timeout=10
-            )
-        except Exception:
-            pass
-    time.sleep(3.0)  # give Windows time to fully release file handles
+    return tag, body, None, None
 
-def download_and_apply(url: str, progress_cb, status_cb):
-    tmp = Path(os.environ.get("TEMP", ".")) / "cloudshield_update.zip"
-    extract_dir = Path(os.environ.get("TEMP", ".")) / "cloudshield_update_tmp"
-
-    # ── 1. Download ──────────────────────────────────────────────────────────
+# ── File download helper ──────────────────────────────────────────────────────
+def _download(url: str, dest: Path, progress_cb, status_cb):
     status_cb("Downloading update…")
-    total_bytes = 0
-    downloaded  = 0
-    CHUNK = 65536  # 64 KB
-    with _open_url(url, headers={"User-Agent": "CloudShield-Updater/1.0"}, timeout=120) as resp:
-        total_bytes = int(resp.headers.get('Content-Length', 0))
-        with open(tmp, 'wb') as f:
+    CHUNK = 65536
+    with _open_url(url, headers={"User-Agent": "CloudShield-Updater/2.0"}, timeout=180) as resp:
+        total = int(resp.headers.get("Content-Length", 0))
+        done  = 0
+        with open(dest, "wb") as f:
             while True:
                 chunk = resp.read(CHUNK)
                 if not chunk:
                     break
                 f.write(chunk)
-                downloaded += len(chunk)
-                if total_bytes > 0:
-                    progress_cb(min(int(downloaded * 99 / total_bytes), 99))
+                done += len(chunk)
+                if total > 0:
+                    progress_cb(min(int(done * 95 / total), 95))
     progress_cb(100)
 
-    # ── 2. Extract ───────────────────────────────────────────────────────────
+# ── Kill running app ──────────────────────────────────────────────────────────
+def _kill_main_app():
+    for exe in ("CloudShield.exe", "cloudshield-backend.exe"):
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", exe, "/T"],
+                           capture_output=True, timeout=10)
+        except Exception:
+            pass
+    time.sleep(3.0)
+
+# ── Apply: installer (Setup.exe) ──────────────────────────────────────────────
+def apply_installer(url: str, progress_cb, status_cb) -> None:
+    """Download Setup.exe and run it silently. Blocks until the installer finishes."""
+    tmp = Path(os.environ.get("TEMP", ".")) / "CloudShield-Setup-update.exe"
+
+    _download(url, tmp, progress_cb, status_cb)
+
+    status_cb("Closing CloudShield to apply update…")
+    _kill_main_app()
+
+    status_cb("Running installer silently…")
+    try:
+        result = subprocess.run(
+            [str(tmp), "/VERYSILENT", "/NORESTART",
+             "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"],
+            timeout=300
+        )
+    finally:
+        try:
+            tmp.unlink()
+        except Exception:
+            pass
+
+    if result.returncode not in (0, 1):   # Inno Setup: 0=ok, 1=ok+restart needed
+        raise RuntimeError(f"Installer exited with code {result.returncode}")
+
+    status_cb("Update applied successfully!")
+
+# ── Apply: zip (helper-bat method) ───────────────────────────────────────────
+def apply_zip(url: str, progress_cb, status_cb) -> Path:
+    """
+    Download + extract the update zip, write a helper .bat that:
+     1. Waits for the updater to exit (timeout 5 s)
+     2. xcopy's all files into the install dir
+     3. Restarts CloudShield.exe
+    Returns the bat path so the caller can launch it before exiting.
+    """
+    tmp        = Path(os.environ.get("TEMP", ".")) / "cloudshield_update.zip"
+    extract_dir = Path(os.environ.get("TEMP", ".")) / "cloudshield_update_tmp"
+
+    _download(url, tmp, progress_cb, status_cb)
+
     status_cb("Extracting archive…")
     if extract_dir.exists():
-        shutil.rmtree(extract_dir)
+        shutil.rmtree(extract_dir, ignore_errors=True)
     with zipfile.ZipFile(tmp, "r") as z:
         z.extractall(extract_dir)
 
-    # GitHub releases often wrap everything in a single root folder inside the zip.
-    # Detect and unwrap that folder so we copy files directly.
+    # Unwrap single top-level folder if zip uses one
     children = list(extract_dir.iterdir())
     source_root = extract_dir
     if len(children) == 1 and children[0].is_dir():
         source_root = children[0]
 
-    # ── 3. Kill the running app BEFORE overwriting files ────────────────────
     status_cb("Closing CloudShield to apply update…")
     _kill_main_app()
 
-    # ── 4. Copy files into install dir ──────────────────────────────────────
-    status_cb("Applying update…")
-    errors = []
-    for item in source_root.rglob("*"):
-        rel  = item.relative_to(source_root)
-        dest = INSTALL_DIR / rel
-        if item.is_dir():
-            dest.mkdir(parents=True, exist_ok=True)
-        else:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            # Retry up to 3 times for locked files (Windows needs extra time to clear handles)
-            for attempt in range(3):
-                try:
-                    shutil.copy2(item, dest)
-                    break
-                except PermissionError:
-                    if attempt < 2:
-                        time.sleep(1.0)   # wait 1s and retry
-                    else:
-                        errors.append(f"Skipped (locked): {rel}")
-                except Exception as e:
-                    errors.append(f"Error {rel}: {e}")
-                    break
+    # Write helper bat — runs AFTER updater exits (no file-lock conflicts)
+    bat = Path(os.environ.get("TEMP", ".")) / "cloudshield_apply.bat"
+    install_str  = str(INSTALL_DIR).rstrip("\\")
+    source_str   = str(source_root).rstrip("\\")
+    app_exe_path = str(INSTALL_DIR / APP_EXE)
+    bat_content = (
+        "@echo off\r\n"
+        "timeout /t 4 /nobreak > nul\r\n"
+        f'xcopy /S /Y /Q /I "{source_str}\\*" "{install_str}\\"\r\n'
+        f'del /F /Q "{tmp}"\r\n'
+        f'rmdir /S /Q "{extract_dir}"\r\n'
+        f'start "" "{app_exe_path}"\r\n'
+        'del "%~f0"\r\n'
+    )
+    bat.write_text(bat_content, encoding="ascii")
 
-    # ── 5. Cleanup ───────────────────────────────────────────────────────────
-    shutil.rmtree(extract_dir, ignore_errors=True)
-    try:
-        tmp.unlink()
-    except Exception:
-        pass
-
-    if errors:
-        status_cb(f"Done (with {len(errors)} warning(s))")
-    else:
-        status_cb("Update applied successfully!")
+    status_cb("Update ready — CloudShield will restart automatically.")
+    return bat
 
 # ── GUI ───────────────────────────────────────────────────────────────────────
-BG      = "#0a1628"
-BG2     = "#0d1f38"
-ORANGE  = "#FF9900"
-GRAY    = "#8d9191"
-WHITE   = "#e6edf3"
-GREEN   = "#1d8102"
+BG     = "#0a1628"
+BG2    = "#0d1f38"
+ORANGE = "#FF9900"
+GRAY   = "#8d9191"
+WHITE  = "#e6edf3"
 
 class UpdaterUI:
     def __init__(self):
+        self._tag       = None
+        self._dl_url    = None
+        self._asset_type = None
+
         self.root = Tk()
         self.root.title("CloudShield Updater")
-        self.root.geometry("480x340")
+        self.root.geometry("520x360")
         self.root.resizable(False, False)
         self.root.configure(bg=BG)
         try:
-            # Use the same icon.ico that's in the installation folder next to this EXE
             icon_path = INSTALL_DIR / "resources" / "app" / "icon.ico"
             if icon_path.exists():
                 self.root.iconbitmap(str(icon_path))
         except Exception:
             pass
-        self._dl_url = None
         self._build_ui()
         self.root.after(300, self._check)
 
     def _build_ui(self):
-        # ── Header ──────────────────────────────────────────────────────────
         hdr = Frame(self.root, bg=BG, pady=10)
         hdr.pack(fill="x", padx=24, pady=(20, 0))
 
-        Label(hdr, text="🛡️  CloudShield Updater",
+        Label(hdr, text="CloudShield Updater",
               bg=BG, fg=ORANGE,
               font=("Segoe UI", 15, "bold")).pack(anchor="w")
 
@@ -219,16 +258,14 @@ class UpdaterUI:
               bg=BG, fg=GRAY,
               font=("Segoe UI", 9)).pack(anchor="w", pady=(2, 0))
 
-        # ── Status line ──────────────────────────────────────────────────────
         self.status_var = StringVar(value="Checking for updates…")
         Label(self.root, textvariable=self.status_var,
               bg=BG, fg=WHITE,
               font=("Segoe UI", 10)).pack(pady=(14, 4))
 
-        # ── Release notes ────────────────────────────────────────────────────
         import tkinter as tk
         self.notes = tk.Text(
-            self.root, height=6, width=56,
+            self.root, height=6, width=60,
             bg=BG2, fg="#ccc", relief="flat",
             font=("Segoe UI", 9), wrap="word",
             state="disabled", borderwidth=0,
@@ -236,18 +273,16 @@ class UpdaterUI:
         )
         self.notes.pack(padx=24)
 
-        # ── Progress bar ─────────────────────────────────────────────────────
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("orange.Horizontal.TProgressbar",
                          troughcolor=BG2, background=ORANGE, bordercolor=BG2)
         self.bar = ttk.Progressbar(
-            self.root, length=432, mode="determinate",
+            self.root, length=472, mode="determinate",
             style="orange.Horizontal.TProgressbar"
         )
         self.bar.pack(pady=14, padx=24)
 
-        # ── Button ───────────────────────────────────────────────────────────
         self.btn = Button(
             self.root, text="Update Now", state="disabled",
             bg=ORANGE, fg="#0a1628", activebackground="#e07b00",
@@ -258,7 +293,7 @@ class UpdaterUI:
         self.btn.pack()
 
         Label(self.root,
-              text="CloudShield will close briefly during update and relaunch automatically.",
+              text="CloudShield will close briefly and relaunch automatically after updating.",
               bg=BG, fg=GRAY, font=("Segoe UI", 8)).pack(pady=(8, 0))
 
     def _set_notes(self, text: str):
@@ -270,37 +305,35 @@ class UpdaterUI:
     def _check(self):
         def run():
             try:
-                tag, notes, url = fetch_latest()
+                tag, notes, url, asset_type = fetch_latest()
                 cur = current_version()
                 if _parse_version(tag) > _parse_version(cur):
+                    self._tag       = tag
+                    self._dl_url    = url
+                    self._asset_type = asset_type
                     self.root.after(0, lambda: self.status_var.set(
-                        f"✅  New version available: v{tag}  (you have v{cur})"
+                        f"New version available: v{tag}  (you have v{cur})"
                     ))
                     self.root.after(0, lambda: self._set_notes(notes))
-                    self._dl_url = url
                     can_update = url is not None
                     self.root.after(0, lambda: self.btn.configure(
                         state="normal" if can_update else "disabled",
-                        text="Update Now" if can_update else "No download available"
+                        text="Update Now" if can_update else "No download asset found"
                     ))
                     if not can_update:
                         self.root.after(0, lambda: self.status_var.set(
-                            f"v{tag} is available but has no .zip download asset on GitHub."
+                            f"v{tag} is available but has no download asset on GitHub."
                         ))
                 else:
                     self.root.after(0, lambda: self.status_var.set(
-                        f"✅  You are up to date  (v{cur})"
+                        f"You are up to date  (v{cur})"
                     ))
                     self.root.after(0, lambda: self._set_notes(
                         f"Version {cur} is the latest release.\n\nNo updates available."
                     ))
             except urllib.error.HTTPError as e:
-                msg = "No releases published yet on GitHub." if e.code == 404 else f"GitHub API error {e.code}: {e.reason}"
+                msg = "No releases on GitHub yet." if e.code == 404 else f"GitHub API error {e.code}: {e.reason}"
                 self.root.after(0, lambda: self.status_var.set(msg))
-                self.root.after(0, lambda: self._set_notes(msg))
-            except ssl.SSLError as e:
-                msg = f"SSL error contacting GitHub:\n{e}\n\nTry running as Administrator or check your internet connection."
-                self.root.after(0, lambda: self.status_var.set("SSL error — see details below"))
                 self.root.after(0, lambda: self._set_notes(msg))
             except Exception as e:
                 msg = f"Could not check for updates:\n{e}"
@@ -310,43 +343,70 @@ class UpdaterUI:
 
     def _do_update(self):
         if not self._dl_url:
-            messagebox.showerror("No Download", "No .zip download asset found in the latest GitHub release.")
+            messagebox.showerror("No Download", "No download asset found in the latest GitHub release.")
             return
         self.btn.configure(state="disabled", text="Updating…")
 
         def run():
             try:
-                download_and_apply(
-                    self._dl_url,
-                    progress_cb=lambda p: self.root.after(0, lambda: self.bar.configure(value=p)),
-                    status_cb=lambda s: self.root.after(0, lambda: self.status_var.set(s)),
-                )
-                self.root.after(0, self._on_success)
+                p = lambda v: self.root.after(0, lambda: self.bar.configure(value=v))
+                s = lambda t: self.root.after(0, lambda: self.status_var.set(t))
+
+                if self._asset_type == "installer":
+                    # Installer approach: runs Setup.exe silently, blocks until done
+                    apply_installer(self._dl_url, p, s)
+                    self.root.after(0, self._on_success_installer)
+                else:
+                    # Zip approach: writes helper bat, exits updater, bat does the rest
+                    bat_path = apply_zip(self._dl_url, p, s)
+                    self.root.after(0, lambda: self._on_success_zip(bat_path))
+
             except Exception as e:
                 self.root.after(0, lambda: messagebox.showerror("Update Failed", str(e)))
                 self.root.after(0, lambda: self.btn.configure(state="normal", text="Retry"))
+
         threading.Thread(target=run, daemon=True).start()
 
-    def _on_success(self):
+    def _on_success_installer(self):
+        """Installer already applied everything — just restart the app."""
         messagebox.showinfo(
             "CloudShield Updated",
-            "Update applied successfully!\n\nCloudShield will now restart."
+            f"Successfully updated to v{self._tag}!\n\nCloudShield will now restart."
         )
         app_exe = INSTALL_DIR / APP_EXE
         if app_exe.exists():
             try:
-                # DETACHED_PROCESS (0x00000008) + CREATE_NO_WINDOW (0x08000000)
                 subprocess.Popen(
                     [str(app_exe)],
-                    creationflags=0x00000008 | 0x08000000
+                    creationflags=0x00000008 | 0x08000000  # DETACHED | NO_WINDOW
                 )
             except Exception:
                 pass
         self.root.after(800, self.root.destroy)
+
+    def _on_success_zip(self, bat_path: Path):
+        """Helper bat will copy files + restart after we exit."""
+        messagebox.showinfo(
+            "CloudShield Updated",
+            f"Update to v{self._tag} is being applied.\n\nCloudShield will restart automatically."
+        )
+        # Launch the helper bat DETACHED — it waits for us to exit then does the copy
+        try:
+            subprocess.Popen(
+                ["cmd.exe", "/C", str(bat_path)],
+                creationflags=0x00000008 | 0x08000000
+            )
+        except Exception:
+            pass
+        # Exit immediately so the bat can overwrite all files (including this exe)
+        self.root.after(300, self.root.destroy)
 
     def run(self):
         self.root.mainloop()
 
 
 if __name__ == "__main__":
+    # Always require admin — writing to Program Files needs elevation
+    if not _is_admin():
+        _relaunch_as_admin()
     UpdaterUI().run()

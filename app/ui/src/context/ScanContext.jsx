@@ -47,17 +47,14 @@ export function ScanProvider({ children }) {
                         const msg = JSON.parse(e.data)
 
                         if (msg.event === 'scan_complete') {
-                            // Update findings for BOTH manual and scheduled scans.
-                            // Previously only updated when currentMeta was set (manual scan only).
-                            // scan_id equality check guards against cross-account contamination.
-                            axios.get(`${API}/api/scan/history`)
+                            // History API returns only counts (no findings array).
+                            // Use msg.scan_id directly + execute/findings for actual objects.
+                            axios.get(`${API}/api/execute/findings?scan_id=${msg.scan_id}`)
                                 .then(r => {
-                                    const latest = r.data?.data?.scans?.[0]
-                                    if (latest && latest.scan_id === msg.scan_id) {
-                                        setFindings(latest.findings || [])
-                                        setScanId(latest.scan_id)
-                                        setStatus('done')
-                                    }
+                                    const found = r.data?.data?.findings || []
+                                    setFindings(found)
+                                    setScanId(msg.scan_id)
+                                    setStatus('done')
                                 })
                                 .catch(() => {})
                             setLatestScheduledScan({
@@ -189,6 +186,27 @@ export function ScanProvider({ children }) {
         if (meta) { setScanMeta(meta); scanMetaRef.current = meta }
     }, [])
 
+    // Hydrate ScanContext from the DB on startup (solves empty box for scheduled-only users).
+    // restoreFromCache handles localStorage; hydrateFromHistory handles fresh start / no cache.
+    const hydrateFromHistory = useCallback(async (dbId) => {
+        if (!dbId) return
+        if (status === 'scanning') return  // never override an active scan
+        try {
+            // Step 1: get latest scan_id (history only returns counts, not finding objects)
+            const hr = await axios.get(`${API}/api/scan/history?account_id=${dbId}&limit=1`)
+            const latestScanId = hr.data?.data?.scans?.[0]?.scan_id
+            if (!latestScanId) return
+            // Step 2: fetch actual finding objects using that scan_id
+            const fr = await axios.get(`${API}/api/execute/findings?scan_id=${latestScanId}`)
+            const found = fr.data?.data?.findings || []
+            if (found.length > 0) {
+                setFindings(found)
+                setScanId(latestScanId)
+                setStatus('done')
+            }
+        } catch { /* network error — stay idle */ }
+    }, [status])
+
     const value = {
         status, findings, scanId, elapsed,
         // scanLineIdx derived from elapsed — always in sync, no drift
@@ -197,7 +215,7 @@ export function ScanProvider({ children }) {
         scanMeta, SCAN_REGIONS,
         highlightFindingId, setHighlightFindingId,
         refreshToken, latestScheduledScan,
-        startScan, stopScan, resetScan, restoreFromCache, injectScan,
+        startScan, stopScan, resetScan, restoreFromCache, injectScan, hydrateFromHistory,
     }
 
     return <ScanCtx.Provider value={value}>{children}</ScanCtx.Provider>

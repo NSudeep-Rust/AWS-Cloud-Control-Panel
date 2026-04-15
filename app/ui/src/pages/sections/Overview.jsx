@@ -285,7 +285,7 @@ export default function Overview({ onNav, dark }) {
     const cacheKey = `scan_v3_${account?.account_type}_${awsId}_${dbId}`
 
     const { status: scanStatus, findings: scanFindings, elapsed, startScan, stopScan,
-            restoreFromCache, highlightFindingId, setHighlightFindingId,
+            restoreFromCache, hydrateFromHistory, highlightFindingId, setHighlightFindingId,
             refreshToken } = useScan()
     const scanning = scanStatus === 'scanning'
 
@@ -323,7 +323,8 @@ export default function Overview({ onNav, dark }) {
         setRiskData(null); setRiskTrend([]); setHistory(null);
         setMonitorStatus(null)
         setLoadingRisk(true)
-        restoreFromCache(cacheKey)
+        restoreFromCache(cacheKey)           // fast: restore from localStorage if available
+        if (dbId) hydrateFromHistory(dbId)   // fresh: load latest scan from DB (fills empty box on startup)
         fetchAll()
     }, [cacheKey])
 

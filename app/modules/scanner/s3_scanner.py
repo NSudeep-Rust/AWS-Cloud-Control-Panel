@@ -1,29 +1,34 @@
 """
-S3 Security Scanner — optimised with per-region clients.
+S3 Security Scanner — per-region clients, pre-phase resolution.
 
-ROOT CAUSE of slowness: using a single us-east-1 S3 client for all buckets.
-Every cross-region call gets a 301 redirect → 2× TLS handshakes → ~4-5s per call.
+Architecture:
+  1. __init__: create one global S3 client (_s3) for list_buckets/get_bucket_location.
+  2. get_bucket_tasks() [pre-phase, single thread]:
+       a. list_buckets
+       b. get_bucket_location for each bucket (parallel, using _s3)
+       c. create one boto3 S3 client per unique region SERIALLY (thread-safe,
+          no lock needed — single thread, no contention).
+       Returns [(bucket_name, region), ...]
+  3. scan_bucket(bucket_name, region) [outer pool task]:
+       Uses the pre-created regional client → no 307 redirects → fast API calls.
+       5 checks run in a tiny 5-worker pool with a 16s hard deadline.
 
-FIX:
-  1. get_bucket_location for all buckets (1 call each, all parallel → ~500ms)
-  2. Create per-region S3 clients (cached, no duplicates)
-  3. Run ALL checks using the CORRECT regional client → no redirects → ~200ms per call
-  4. Flat pool of 50 workers for all tasks simultaneously
-Expected: 10 buckets × 5 checks × ~300ms = ~300ms total (all parallel)
+Why serial client creation beats parallel:
+  - session.client() is just Python object creation (~100ms each, no network call).
+  - 5 regions × 100ms = ~500ms serial — negligible.
+  - Parallel creation from multiple threads violates boto3.Session thread-safety.
 """
 from app.config.security_config import SEVERITY_MAP
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from botocore.config import Config
-import threading
+import concurrent.futures
 
-# Apply fast timeouts — S3 scanners use session.client() directly which
-# does NOT inherit the _FAST_CONFIG from aws_session.py.
-# Default boto3 read_timeout=60s → that's why S3 was blocking for 60s!
+
 _S3_CONFIG = Config(
     connect_timeout=5,
-    read_timeout=10,         # S3 metadata calls never take >3s in practice
+    read_timeout=15,         # generous — allows cross-region API calls to finish
     retries={'max_attempts': 1},
-    max_pool_connections=50, # allow 50 concurrent S3 API calls
+    max_pool_connections=50,
 )
 
 
@@ -31,28 +36,21 @@ class S3Scanner:
 
     def __init__(self, aws_session):
         self.aws_session = aws_session
-        self._client_cache: dict = {}   # region → boto3 s3 client
-        self._client_lock = threading.Lock()
+        # Global client for list_buckets + get_bucket_location (pre-phase only).
+        self._s3 = aws_session.session.client("s3", config=_S3_CONFIG)
+        # Per-region clients are populated in get_bucket_tasks() pre-phase.
+        # Keyed by region string. Read-only after pre-phase — no locking needed.
+        self._regional = {}
 
-    def _get_client(self, region: str):
-        """Return a cached per-region S3 client with fast config (thread-safe)."""
-        with self._client_lock:
-            if region not in self._client_cache:
-                self._client_cache[region] = (
-                    self.aws_session.session.client(
-                        "s3", region_name=region, config=_S3_CONFIG
-                    )
-                )
-            return self._client_cache[region]
+    # ── Bucket region resolution ──────────────────────────────────────────────
 
-    # ── Bucket location (needed once per bucket to pick correct client) ───────
-    def _get_bucket_region(self, s3_global, bucket_name: str) -> str:
-        """Return the AWS region of a bucket. us-east-1 returns None from API → normalise."""
+    def _get_bucket_region(self, bucket_name: str) -> str:
+        """Resolve a bucket's region via get_bucket_location."""
         try:
-            loc = s3_global.get_bucket_location(Bucket=bucket_name)
+            loc = self._s3.get_bucket_location(Bucket=bucket_name)
             return loc.get("LocationConstraint") or "us-east-1"
         except Exception:
-            return "us-east-1"   # fallback — us-east-1 is the S3 default
+            return "us-east-1"
 
     # ── Per-bucket check functions ────────────────────────────────────────────
 
@@ -138,13 +136,24 @@ class S3Scanner:
             pass
         return []
 
-    # ── Main scan ─────────────────────────────────────────────────────────────
-    def scan(self, region=None):
-        session   = self.aws_session.session
-        s3_global = session.client("s3", config=_S3_CONFIG)  # fast config — NOT default 60s timeout
+    # ── Pre-phase ─────────────────────────────────────────────────────────────
 
+    def get_bucket_tasks(self) -> list:
+        """
+        Called ONCE before the main outer pool (single thread — no lock needed).
+
+        Steps:
+          1. list_buckets via global _s3 client
+          2. get_bucket_location for each bucket in parallel (using _s3)
+          3. Create one per-region boto3 S3 client SERIALLY for each unique region
+             → session.client() is Python object creation only (~100ms each)
+             → serial = thread-safe, no boto3.Session race conditions
+          4. Populate self._regional dict
+
+        Returns [(bucket_name, region), ...]
+        """
         try:
-            buckets = s3_global.list_buckets().get("Buckets", [])
+            buckets = self._s3.list_buckets().get("Buckets", [])
         except Exception as e:
             print(f"[S3Scanner] list_buckets failed: {e}")
             return []
@@ -155,12 +164,12 @@ class S3Scanner:
         bucket_names = [b["Name"] for b in buckets]
         print(f"[S3Scanner] {len(bucket_names)} buckets — resolving regions in parallel")
 
-        # ── Step 1: resolve region for every bucket (all parallel) ────────────
+        # Step 2: resolve all bucket regions in parallel
         bucket_region: dict = {}
         w = min(len(bucket_names), 20)
         with ThreadPoolExecutor(max_workers=w) as pool:
             futs = {
-                pool.submit(self._get_bucket_region, s3_global, name): name
+                pool.submit(self._get_bucket_region, name): name
                 for name in bucket_names
             }
             for fut in as_completed(futs):
@@ -170,7 +179,33 @@ class S3Scanner:
                 except Exception:
                     bucket_region[name] = "us-east-1"
 
-        # ── Step 2: build flat task list using per-region clients ─────────────
+        # Step 3: create one S3 client per unique region SERIALLY (thread-safe)
+        # session.client() = object instantiation only, no network call (~100ms each)
+        unique_regions = set(bucket_region.values())
+        for region in unique_regions:
+            if region not in self._regional:
+                self._regional[region] = self.aws_session.session.client(
+                    "s3", region_name=region, config=_S3_CONFIG
+                )
+
+        return list(bucket_region.items())
+
+    # ── Per-bucket scan (outer pool task) ─────────────────────────────────────
+
+    def scan_bucket(self, bucket_name: str, region: str) -> list:
+        """
+        Run all 5 security checks for a single bucket SEQUENTIALLY.
+
+        WHY sequential (not parallel):
+          Parallel checks open 5 simultaneous SSL connections per bucket.
+          With 10 bucket tasks in the outer pool, that's 50 concurrent SSL
+          handshakes on Windows Schannel, which serialises them → 15s+.
+
+          Sequential: check 1 pays the SSL handshake (~5s), checks 2-5 reuse
+          the warm keep-alive connection (~200ms each). Total per bucket ~6s.
+          10 buckets run in parallel across the outer pool → ~6s total for S3.
+        """
+        s3 = self._regional.get(region, self._s3)   # instant dict read
         check_fns = [
             self._check_acl,
             self._check_encryption,
@@ -178,36 +213,32 @@ class S3Scanner:
             self._check_logging,
             self._check_public_access,
         ]
-        # Each task: (check_fn, per-region-s3-client, bucket_name)
-        tasks = [
-            (fn, self._get_client(bucket_region[name]), name)
-            for name in bucket_names
-            for fn in check_fns
-        ]
+        findings = []
+        seen     = set()
 
-        print(f"[S3Scanner] {len(tasks)} check tasks across {len(set(bucket_region.values()))} regions")
+        for fn in check_fns:
+            try:
+                for finding in fn(s3, bucket_name):
+                    if finding["id"] not in seen:
+                        seen.add(finding["id"])
+                        findings.append(finding)
+            except Exception:
+                pass
 
-        # ── Step 3: run ALL tasks in ONE flat pool, no nesting ────────────────
-        max_w   = min(len(tasks), 50)
-        seen    = set()
-        results = []
-        lock    = threading.Lock()
+        return findings
 
-        def run_task(item):
-            fn, s3_client, bname = item
-            return fn(s3_client, bname)
+    # ── Legacy entry point ────────────────────────────────────────────────────
 
-        with ThreadPoolExecutor(max_workers=max_w) as pool:
-            futures = {pool.submit(run_task, t): t for t in tasks}
-            for fut in as_completed(futures):
-                try:
-                    for f in fut.result():
-                        with lock:
-                            if f["id"] not in seen:
-                                seen.add(f["id"])
-                                results.append(f)
-                except Exception as e:
-                    _, _, bname = futures[fut]
-                    print(f"[S3Scanner] check error ({bname}): {e}")
-
-        return results
+    def scan(self, region=None):
+        """Legacy entry point — resolves buckets then scans each one."""
+        tasks = self.get_bucket_tasks()
+        if not tasks:
+            return []
+        findings = []
+        seen     = set()
+        for bname, bregion in tasks:
+            for f in self.scan_bucket(bname, bregion):
+                if f["id"] not in seen:
+                    seen.add(f["id"])
+                    findings.append(f)
+        return findings

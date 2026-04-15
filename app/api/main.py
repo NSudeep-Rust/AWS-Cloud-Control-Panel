@@ -40,8 +40,14 @@ app = FastAPI(
 @app.on_event("startup")
 async def on_startup():
     """Auto-create SQLite tables on first run, start background scheduler."""
+    import asyncio
     import logging
     _log = logging.getLogger("cloudshield.startup")
+
+    # Capture event loop NOW (async context) so ws_manager.broadcast_sync()
+    # works from the scheduler thread (asyncio.get_event_loop() is broken in threads on Py3.10+)
+    ws_manager._loop = asyncio.get_running_loop()
+
     try:
         from app.database.base import Base
         from app.database.db import engine

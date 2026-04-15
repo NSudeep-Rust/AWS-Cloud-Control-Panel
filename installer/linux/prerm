@@ -1,0 +1,13 @@
+#!/bin/bash
+# CloudShield Debian pre-remove script
+set -e
+
+# Kill any running CloudShield processes before uninstall
+pkill -f cloudshield-backend 2>/dev/null || true
+pkill -f cloudshield        2>/dev/null || true
+sleep 1
+
+# Remove /usr/local/bin symlink
+rm -f /usr/local/bin/cloudshield 2>/dev/null || true
+
+echo "CloudShield removed."

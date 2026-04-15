@@ -1,0 +1,31 @@
+#!/bin/bash
+# CloudShield Debian post-install script
+set -e
+
+# Make backend binary executable
+BACKEND_BIN="/usr/lib/cloudshield/resources/cloudshield-backend/cloudshield-backend"
+if [ -f "$BACKEND_BIN" ]; then
+    chmod +x "$BACKEND_BIN"
+fi
+
+# Make main Electron binary executable
+ELECTRON_BIN="/usr/lib/cloudshield/cloudshield"
+if [ -f "$ELECTRON_BIN" ]; then
+    chmod +x "$ELECTRON_BIN"
+fi
+
+# Create /usr/bin symlink for terminal launch
+ln -sf /usr/lib/cloudshield/cloudshield /usr/local/bin/cloudshield 2>/dev/null || true
+
+# Update desktop database
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications 2>/dev/null || true
+fi
+
+# Update icon cache
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache /usr/share/icons/hicolor 2>/dev/null || true
+fi
+
+echo "CloudShield installed successfully."
+echo "Launch from your application menu or run: cloudshield"

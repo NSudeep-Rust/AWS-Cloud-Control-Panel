@@ -1,6 +1,6 @@
-﻿block_cipher = None
+block_cipher = None
 a = Analysis(["updater_entry.py"], pathex=["."], binaries=[], datas=[],
-    hiddenimports=["tkinter","tkinter.ttk","urllib.request","zipfile","shutil","threading"],
+    hiddenimports=["tkinter","tkinter.ttk","urllib.request","zipfile","shutil","threading","ctypes","ssl","json"],
     excludes=[], cipher=block_cipher, noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [],

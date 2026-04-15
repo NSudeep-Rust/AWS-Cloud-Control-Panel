@@ -1,0 +1,144 @@
+name: Build Linux .deb (Debian/Ubuntu)
+
+# Trigger manually from GitHub Actions UI
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (must match VERSION file, e.g. 1.0.1)'
+        required: true
+        default: '1.0.1'
+      upload_release:
+        description: 'Upload to existing GitHub Release?'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  build-linux-deb:
+    name: Build Debian Package (AMD64)
+    runs-on: ubuntu-22.04
+
+    steps:
+
+      # ── 1. Checkout ───────────────────────────────────────────────────────────
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # ── 2. Python 3.11 ───────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      # ── 3. Node.js 18 ────────────────────────────────────────────────────────
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/ui/package-lock.json
+
+      # ── 4. React frontend ────────────────────────────────────────────────────
+      - name: Install frontend dependencies
+        run: cd app/ui && npm ci
+
+      - name: Build React (Vite production)
+        run: cd app/ui && npm run build
+
+      # ── 5. Python backend (Linux ELF binary via PyInstaller) ─────────────────
+      - name: Build Python backend with PyInstaller (Linux)
+        run: pyinstaller cloudshield-linux.spec --noconfirm
+
+      - name: Verify backend binary
+        run: |
+          ls -lh dist/cloudshield-backend/cloudshield-backend
+          file dist/cloudshield-backend/cloudshield-backend
+          echo "Backend binary OK"
+
+      # ── 6. Electron .deb ─────────────────────────────────────────────────────
+      - name: Install Linux build tools
+        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg
+
+      - name: Install Electron dependencies
+        run: cd electron && npm ci
+
+      - name: Patch electron package.json to use Linux entry point
+        run: |
+          cd electron
+          node -e "
+            const fs = require('fs');
+            const p  = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.main   = 'main-linux.js';
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
+          "
+
+      - name: Build Electron Linux .deb
+        run: cd electron && npm run build-linux
+
+      - name: List Electron build output
+        run: ls -lh electron/dist/
+
+      # ── 7. Package update zip (backend + VERSION only) ────────────────────────
+      - name: Create update zip (for updater compatibility)
+        run: |
+          cd dist
+          zip -r ../cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip \
+            cloudshield-backend/ \
+            ../VERSION
+          cd ..
+          ls -lh cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+
+      # ── 8. Rename .deb to release name ────────────────────────────────────────
+      - name: Rename .deb to release filename
+        run: |
+          DEB=$(find electron/dist -name "*.deb" | head -1)
+          echo "Found deb: $DEB"
+          cp "$DEB" "CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb"
+          ls -lh "CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb"
+
+      # ── 9. Upload artifacts ───────────────────────────────────────────────────
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloudShield-Linux-${{ github.event.inputs.version }}
+          path: |
+            CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
+            cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+          retention-days: 30
+
+      # ── 10. Upload to GitHub Release ─────────────────────────────────────────
+      - name: Upload to GitHub Release
+        if: ${{ github.event.inputs.upload_release == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: CloudShield v${{ github.event.inputs.version }}
+          body: |
+            ## CloudShield v${{ github.event.inputs.version }}
+
+            ### Linux (Debian / Ubuntu)
+            **Install:**
+            ```bash
+            sudo dpkg -i CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
+            sudo apt-get install -f   # resolve any missing dependencies
+            cloudshield               # launch
+            ```
+            **Uninstall:**
+            ```bash
+            sudo apt-get remove cloudshield
+            ```
+          files: |
+            CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
+            cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

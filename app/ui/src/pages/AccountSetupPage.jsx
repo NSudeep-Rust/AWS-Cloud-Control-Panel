@@ -418,7 +418,7 @@ export default function AccountSetupPage() {
                                 onMouseEnter={e => { if(!rootCreating) e.currentTarget.style.background='#ec8a00' }}
                                 onMouseLeave={e => { e.currentTarget.style.background='#FF9900' }}>
                                 {rootCreating ? <div style={s.spinBtn}/> : <ChevronRight size={15}/>}
-                                {rootCreating ? 'Adding account...' : 'Add account'}
+                            {rootCreating ? 'Adding account...' : 'Add account'}
                             </button>
                         </form>
                     )}
@@ -570,6 +570,45 @@ export default function AccountSetupPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Access key guide — fills empty space below bars when on Add/IAM tabs */}
+                    {(tab === 'new' || tab === 'iam') && (
+                        <div style={{ marginTop:14, padding:'12px 14px', borderRadius:8,
+                            background: tab === 'iam' ? 'rgba(9,114,211,0.04)' : 'rgba(35,47,62,0.03)',
+                            border: `1px solid ${tab === 'iam' ? 'rgba(9,114,211,0.15)' : 'rgba(35,47,62,0.10)'}` }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                    stroke={tab === 'iam' ? '#0972d3' : '#687078'}
+                                    strokeWidth="2" strokeLinecap="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <span style={{ fontSize:10, fontWeight:800,
+                                    color: tab === 'iam' ? '#0972d3' : '#414d5c',
+                                    textTransform:'uppercase', letterSpacing:.6 }}>
+                                    {tab === 'iam' ? 'How to get IAM User Access Key' : 'How to get your Access Key'}
+                                </span>
+                            </div>
+                            <ol style={{ margin:0, paddingLeft:16, display:'flex', flexDirection:'column', gap:4 }}>
+                                {(tab === 'iam' ? [
+                                    'Sign in to AWS Console',
+                                    'Go to IAM → Users → select the user',
+                                    'Click the Security credentials tab',
+                                    'Under Access keys → Create access key',
+                                    'Copy Access key ID and Secret access key',
+                                ] : [
+                                    'Sign in to AWS Console',
+                                    'Click your account name (top-right)',
+                                    'Go to Security credentials',
+                                    'Scroll to Access keys → Create access key',
+                                    'Copy Access key ID and Secret access key',
+                                ]).map((step, i) => (
+                                    <li key={i} style={{ fontSize:11, color:'#5a6a7a', lineHeight:1.55 }}>{step}</li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
                 </div>
 
             </div>

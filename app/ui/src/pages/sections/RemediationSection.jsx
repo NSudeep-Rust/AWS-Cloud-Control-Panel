@@ -380,6 +380,9 @@ export default function RemediationSection({ dark, onNav }) {
   const { account } = useAuth()
   const { scanId: ctxScanId, refreshToken } = useScan()
 
+  const isIam = account?.account_type === 'iam'
+  const dbId  = isIam ? (account?.account_id ?? null) : (account?.id ?? null)
+
   const [scanId, setScanId]           = useState(null)
   const [findings, setFindings]       = useState([])
   const [loading, setLoading]         = useState(true)
@@ -393,7 +396,11 @@ export default function RemediationSection({ dark, onNav }) {
     setLoading(true)
     let sid = null
     try {
-      const hr = await axios.get(`${API}/api/scan/history`)
+      // Fix: include account_id — /api/scan/history requires it (was causing 422)
+      const url = dbId != null
+        ? `${API}/api/scan/history?account_id=${dbId}&limit=1`
+        : `${API}/api/scan/history?limit=1`
+      const hr = await axios.get(url)
       const dbLatest = hr.data?.data?.scans?.[0]?.scan_id
       sid = dbLatest || ctxScanId
     } catch {
@@ -417,7 +424,7 @@ export default function RemediationSection({ dark, onNav }) {
       setFindings(findingsList)
     } catch { setFindings([]) }
     setLoading(false)
-  }, [ctxScanId])
+  }, [ctxScanId, dbId])
 
   useEffect(() => { load() }, [load])
 

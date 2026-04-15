@@ -13,8 +13,13 @@ class AlertWebSocketManager:
 
     def __init__(self):
         self._clients: Set[WebSocket] = set()
+        self._loop = None   # captured from the async context; used by background threads
 
     async def connect(self, ws: WebSocket):
+        # Capture the running asyncio event loop the first time a client connects.
+        # This is the ONLY reliable way to get the correct loop from a background thread.
+        if self._loop is None:
+            self._loop = asyncio.get_running_loop()
         await ws.accept()
         self._clients.add(ws)
         print(f"[WS] Client connected ({len(self._clients)} total)")
@@ -25,6 +30,12 @@ class AlertWebSocketManager:
 
     async def broadcast(self, payload: dict):
         """Push a JSON payload to every connected client."""
+        # Also capture loop here so broadcast_sync works even before first connect
+        if self._loop is None:
+            try:
+                self._loop = asyncio.get_running_loop()
+            except RuntimeError:
+                pass
         if not self._clients:
             return
         msg = json.dumps(payload)
@@ -39,15 +50,19 @@ class AlertWebSocketManager:
 
     def broadcast_sync(self, payload: dict):
         """
-        Thread-safe broadcast for use from non-async code (MonitorService thread).
-        Schedules the async broadcast on the event loop.
+        Thread-safe broadcast for use from non-async code (scheduler / monitor threads).
+
+        IMPORTANT: asyncio.get_event_loop() called from a background thread on
+        Python 3.10+ does NOT return the running FastAPI loop — it creates a new
+        non-running loop, making is_running() False and dropping the message silently.
+        We avoid this by storing the loop reference in the async context (connect /
+        broadcast) and using it here.
         """
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.run_coroutine_threadsafe(self.broadcast(payload), loop)
-        except RuntimeError:
-            pass  # No event loop — silent fallback
+        loop = self._loop
+        if loop is None or not loop.is_running():
+            print("[WS][WARN] broadcast_sync: no running event loop — message dropped")
+            return
+        asyncio.run_coroutine_threadsafe(self.broadcast(payload), loop)
 
 
 ws_manager = AlertWebSocketManager()

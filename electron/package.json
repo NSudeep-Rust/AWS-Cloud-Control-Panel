@@ -7,6 +7,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64",
+    "build-linux": "electron-builder --linux deb --x64",
     "pack": "electron-builder --dir"
   },
   "build": {
@@ -17,8 +18,26 @@
       "target": [{"target": "dir"}],
       "icon": "../installer/images/icon.ico"
     },
+    "linux": {
+      "target": [{"target": "deb", "arch": ["x64"]}],
+      "icon": "../installer/images/icon.png",
+      "category": "Utility",
+      "description": "AWS Cloud Security Scanner & Auto-Remediation Panel",
+      "executableName": "cloudshield",
+      "extraResources": [
+        { "from": "../dist/cloudshield-backend", "to": "cloudshield-backend" },
+        { "from": "../installer/images/icon.png", "to": "app/icon.png" }
+      ]
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0", "libnotify4", "libnss3", "libxss1",
+        "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1"
+      ]
+    },
     "files": [
       "main.js",
+      "main-linux.js",
       "tray.js",
       "preload.js",
       "splash.html",

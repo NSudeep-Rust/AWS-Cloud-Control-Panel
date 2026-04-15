@@ -1,5 +1,11 @@
 block_cipher = None
 
+# ──────────────────────────────────────────────────────────────────────────────
+# CloudShield — Linux PyInstaller Spec
+# Separate from cloudshield.spec (Windows). Nothing Windows-specific here.
+# Output: dist/cloudshield-backend/cloudshield-backend  (ELF binary)
+# ──────────────────────────────────────────────────────────────────────────────
+
 from PyInstaller.utils.hooks import collect_data_files
 import certifi as _c
 
@@ -21,21 +27,21 @@ hidden = [
     'fastapi','starlette','starlette.routing','starlette.middleware','starlette.middleware.cors',
     'email.mime.multipart','email.mime.text','smtplib','ssl','certifi',
     'sqlalchemy.dialects.sqlite','sqlalchemy.dialects.sqlite.pysqlite','sqlalchemy.orm',
-    # boto3 / botocore and ALL critical dependencies
+    # boto3 / botocore
     'boto3','botocore','botocore.loaders','botocore.regions','botocore.serialize',
     'botocore.parsers','botocore.hooks','botocore.handlers','botocore.endpoint',
     'botocore.session','botocore.config','botocore.credentials','botocore.auth',
     'botocore.awsrequest','botocore.compat','botocore.exceptions','botocore.model',
     'botocore.response','botocore.signers','botocore.utils','botocore.validate',
-    # jmespath is REQUIRED by botocore for response parsing
+    # jmespath required by botocore
     'jmespath','jmespath.functions','jmespath.parser','jmespath.lexer',
-    # urllib3 is REQUIRED for all HTTPS connections
+    # urllib3
     'urllib3','urllib3.util','urllib3.util.ssl_','urllib3.util.retry',
     'urllib3.util.timeout','urllib3.util.url','urllib3.contrib',
-    'urllib3.packages','urllib3.packages.six','urllib3.connectionpool',
-    'urllib3.connection','urllib3.response','urllib3.poolmanager',
-    # s3transfer required by boto3 S3 operations
+    'urllib3.connectionpool','urllib3.connection','urllib3.response','urllib3.poolmanager',
+    # s3transfer
     's3transfer','s3transfer.utils','s3transfer.tasks','s3transfer.futures',
+    # App routes
     'app.api.main','app.api.routes.scan_routes','app.api.routes.threat_routes',
     'app.api.routes.execute_routes','app.api.routes.rollback_routes',
     'app.api.routes.history_routes','app.api.routes.analytics_routes',
@@ -43,6 +49,7 @@ hidden = [
     'app.api.routes.session_routes',
     'app.api.routes.schedule_routes','app.api.routes.drift_routes','app.api.routes.email_routes',
     'app.api.routes.attack_surface_routes','app.api.routes.iam_view_routes',
+    # Scanner modules
     'app.modules.scanner.scanner','app.modules.scanner.s3_scanner',
     'app.modules.scanner.ec2_scanner','app.modules.scanner.rds_scanner',
     'app.modules.scanner.cloudwatch_scanner','app.modules.scanner.encryption_scanner',
@@ -57,7 +64,6 @@ hidden = [
     'app.core.aws_session','app.core.email_service','app.core.monitor_service',
     'app.core.scheduler_service','app.core.policy_engine','app.core.fast_watcher',
     'app.database.models','app.database.db','app.database.base','app.database.init_db',
-    'winotify','plyer','plyer.platforms.win.notification',
     'multiprocessing','concurrent.futures','threading','json','zipfile','pathlib',
 ]
 
@@ -69,7 +75,13 @@ a = Analysis(
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
-    excludes=['tkinter','matplotlib','numpy','pandas','test','psycopg2','psycopg2_binary','PIL'],
+    # Exclude Windows-only libs and heavy unneeded packages
+    excludes=[
+        'tkinter','matplotlib','numpy','pandas','test',
+        'psycopg2','psycopg2_binary','PIL',
+        'winotify',                   # Windows toast notifications
+        'plyer','plyer.platforms',    # Windows plyer platform backend
+    ],
     cipher=block_cipher,
     noarchive=False,
 )
@@ -77,10 +89,10 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
-    name='cloudshield-backend',
+    name='cloudshield-backend',   # No .exe on Linux
     debug=False, strip=False, upx=True,
     console=True,
-    icon='installer/images/icon.ico',
+    # No icon= or windowsHide= on Linux
 )
 coll = COLLECT(
     exe, a.binaries, a.zipfiles, a.datas,

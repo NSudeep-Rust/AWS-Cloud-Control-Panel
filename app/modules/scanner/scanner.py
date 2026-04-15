@@ -115,33 +115,56 @@ class Scanner:
     def scan(self, region=None):
         """
         Run FULL AWS security scan (all modules) concurrently.
-        Global scanners (IAM, S3) run at the same time as all regional workers.
+        Architecture:
+          PRE-PHASE : list S3 buckets + resolve regions (~1-2s, sequential)
+          MAIN POOL : IAM + IAMExtra + per-bucket tasks + all regional tasks
+
+        Key improvement: S3 runs as N flat per-bucket tasks, NOT one monolithic
+        task that spawns 70 nested threads (which caused Windows thread
+        scheduling overhead and pushed S3 time from ~40s to ~88s).
         """
         import time
         scan_start = time.time()
         all_findings = []
 
+        # ── PRE-PHASE: resolve S3 bucket regions ──────────────────────────────
+        # Fast: list_buckets (~300ms) + parallel get_bucket_location (~500ms).
+        # We do this BEFORE the main pool so we can submit one task per bucket.
+        s3_bucket_map = self.s3_scanner.get_bucket_tasks()  # [(name, region), ...]
+        pre_elapsed   = round(time.time() - scan_start, 1)
+        print(f"[S3Scanner] {len(s3_bucket_map)} buckets resolved in {pre_elapsed}s — submitting {len(s3_bucket_map)} per-bucket tasks")
+
+        # ── BUILD FLAT TASK MAP ───────────────────────────────────────────────
         tasks = {}
 
         tasks["IAM"]      = lambda: self.iam_manager.audit()
         tasks["IAMExtra"] = lambda: self.iam_extra_scanner.scan()
-        tasks["S3"]       = lambda: [
-            {**f, "region": "global"} for f in self.s3_scanner.scan()
-        ]
+
+        # One outer task per bucket — 5 checks run inside scan_bucket() only
+        for bname, bregion in s3_bucket_map:
+            tasks[f"s3:{bname}"] = (
+                lambda n=bname, r=bregion: [
+                    {**f, "region": r or "global"}
+                    for f in self.s3_scanner.scan_bucket(n, r)
+                ]
+            )
 
         for r in self.regions:
             tasks[f"region:{r}"] = (lambda _r=r: self._scan_region(_r))
 
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as outer:
+        # Scale worker count: 24 base + 1 per bucket (S3 tasks are tiny)
+        max_w = min(len(tasks), MAX_WORKERS + len(s3_bucket_map))
+
+        with ThreadPoolExecutor(max_workers=max_w) as outer:
             futures = {outer.submit(fn): name for name, fn in tasks.items()}
             try:
-                for fut in as_completed(futures, timeout=90):  # hard cap 90s total
+                for fut in as_completed(futures, timeout=90):
                     name = futures[fut]
                     try:
                         result = fut.result()
                         all_findings.extend(result)
                         elapsed = round(time.time() - scan_start, 1)
-                        print(f"   ✅ [{elapsed}s] {name}: {len(result)} findings")
+                        print(f"   [OK] [{elapsed}s] {name}: {len(result)} findings")
                     except Exception as e:
                         elapsed = round(time.time() - scan_start, 1)
                         print(f"[ERROR][{elapsed}s] Task '{name}' failed: {e}")
