@@ -1,0 +1,33 @@
+# CloudShield Linux requirements
+# Same as requirements.txt but with Windows-only packages removed:
+#   winotify  — Windows toast notifications (comtypes dependency, Windows-only)
+#   psycopg2-binary — not needed (project uses SQLite on Linux)
+
+annotated-types==0.7.0
+anyio==4.12.1
+boto3==1.42.24
+botocore==1.42.24
+click==8.3.1
+colorama==0.4.6
+fastapi==0.134.0
+greenlet==3.3.2
+h11==0.16.0
+httptools==0.7.1
+idna==3.11
+jmespath==1.0.1
+pillow==12.2.0
+plyer==2.1.0
+pydantic==2.12.5
+pydantic_core==2.41.5
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.2
+PyYAML==6.0.3
+s3transfer==0.16.0
+six==1.17.0
+SQLAlchemy==2.0.48
+starlette==0.52.1
+typing_extensions==4.15.0
+urllib3==2.6.3
+uvicorn==0.41.0
+watchfiles==1.1.1
+websockets==16.0
