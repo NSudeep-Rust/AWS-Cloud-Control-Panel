@@ -3,7 +3,11 @@
   "version": "1.0.1",
   "description": "AWS Cloud Control Panel — Security Scanner & Remediation",
   "main": "main.js",
-  "author": "NSudeep",
+  "author": {
+    "name": "NSudeep",
+    "email": "sudeepn1011@gmail.com"
+  },
+  "homepage": "https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64",
@@ -24,6 +28,7 @@
       "category": "Utility",
       "description": "AWS Cloud Security Scanner & Auto-Remediation Panel",
       "executableName": "cloudshield",
+      "maintainer": "NSudeep <sudeepn1011@gmail.com>",
       "extraResources": [
         { "from": "../dist/cloudshield-backend", "to": "cloudshield-backend" },
         { "from": "../installer/images/icon.png", "to": "app/icon.png" }
