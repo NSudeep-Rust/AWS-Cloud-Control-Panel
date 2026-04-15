@@ -16,7 +16,7 @@
 
 *Scan · Detect · Remediate · Monitor · Analyse — all from one beautiful desktop panel*
 
-[⬇️ Download Installer](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest) &nbsp;·&nbsp; [📖 Docs](#-getting-started) &nbsp;·&nbsp; [🐛 Issues](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/issues)
+[⬇️ Download (Windows)](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest) &nbsp;·&nbsp; [🐧 Download (Linux .deb)](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest) &nbsp;·&nbsp; [📖 Docs](#-getting-started) &nbsp;·&nbsp; [🐛 Issues](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/issues)
 
 </div>
 
@@ -146,10 +146,23 @@
 
 ### Option A — Windows Installer (Recommended)
 
-1. [Download `CloudShield-Setup-v1.0.0.exe`](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest)
+1. [Download `CloudShield-Setup-v1.0.1.exe`](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest)
 2. Run the installer
 3. Launch **AWS CloudShield** from your desktop
 4. Add your AWS credentials → Run Scan
+
+### Option A2 — Linux Installer (Debian / Ubuntu)
+
+1. [Download `CloudShield-Setup-v1.0.1-linux-amd64.deb`](https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest)
+2. Install:
+```bash
+sudo dpkg -i CloudShield-Setup-v1.0.1-linux-amd64.deb
+sudo apt-get install -f   # fix any missing dependencies
+```
+3. Launch from your application menu or run `cloudshield` in a terminal
+4. Add your AWS credentials → Run Scan
+
+> **Uninstall:** `sudo apt-get remove cloudshield`
 
 ### Option B — Run from Source
 

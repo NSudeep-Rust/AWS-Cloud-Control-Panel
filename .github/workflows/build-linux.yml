@@ -54,42 +54,8 @@ jobs:
         run: cd app/ui && npm run build
 
       # ── 5. Python backend (Linux ELF binary via PyInstaller) ─────────────────
-      - name: Debug - verify PyInstaller environment
-        run: |
-          echo "=== Python & PyInstaller ==="
-          python --version
-          python -m PyInstaller --version
-          echo "=== Working directory ==="
-          pwd && ls -la
-          echo "=== Spec file ==="
-          ls -la cloudshield-linux.spec
-          echo "=== Test spec imports ==="
-          python -c "
-          from PyInstaller.utils.hooks import collect_data_files
-          import certifi as _c
-          boto3_datas    = collect_data_files('boto3')
-          botocore_datas = collect_data_files('botocore')
-          certifi_datas  = [(_c.where(), 'certifi')]
-          print('boto3 datas:', len(boto3_datas))
-          print('botocore datas:', len(botocore_datas))
-          print('certifi:', _c.where())
-          print('Spec imports OK')
-          "
-          echo "=== Test app imports ==="
-          python -c "
-          import sys, os
-          sys.path.insert(0, '.')
-          try:
-              import app.api.main as m
-              print('app.api.main import: OK')
-          except Exception as e:
-              print('app.api.main import ERROR:', e)
-          "
-
       - name: Build Python backend with PyInstaller (Linux)
-        run: |
-          set -o pipefail
-          python -m PyInstaller cloudshield-linux.spec --noconfirm --log-level WARN 2>&1
+        run: python -m PyInstaller cloudshield-linux.spec --noconfirm
 
       - name: Verify backend binary
         run: |
