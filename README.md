@@ -12,7 +12,7 @@
 [![Electron](https://img.shields.io/badge/Electron-Desktop-47848F?style=flat&logo=electron&logoColor=white)](https://electronjs.org)
 [![AWS](https://img.shields.io/badge/AWS-boto3-FF9900?style=flat&logo=amazonaws&logoColor=white)](https://aws.amazon.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red?style=flat)](LICENSE)
 
 *Scan · Detect · Remediate · Monitor · Analyse — all from one beautiful desktop panel*
 
@@ -286,7 +286,7 @@ This project is currently in active development. Issues and feature requests wel
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+Proprietary — Copyright (c) 2025 Sudeep. All rights reserved. See [LICENSE](LICENSE) for details.
 
 ---
 
