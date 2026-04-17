@@ -136,6 +136,31 @@ class S3Scanner:
             pass
         return []
 
+    def _check_empty(self, s3, bucket_name):
+        """Detect S3 buckets with zero objects — candidates for deletion.
+
+        Uses list_objects_v2(MaxKeys=1) — a single fast API call that returns
+        immediately once it finds any object. MaxKeys=1 avoids paginating large
+        buckets. Reuses the warm SSL keep-alive from prior checks → ~50ms.
+        """
+        try:
+            resp = s3.list_objects_v2(Bucket=bucket_name, MaxKeys=1)
+            if resp.get("KeyCount", 1) == 0:
+                return [{
+                    "id":          f"s3-empty-bucket-{bucket_name}",
+                    "type":        "S3_EMPTY_BUCKET",
+                    "severity":    "LOW",
+                    "resource_id": bucket_name,
+                    "region":      "global",
+                    "description": (
+                        f"S3 bucket '{bucket_name}' contains no objects "
+                        "and can be safely deleted to reduce clutter and cost."
+                    ),
+                }]
+        except Exception:
+            pass
+        return []
+
     # ── Pre-phase ─────────────────────────────────────────────────────────────
 
     def get_bucket_tasks(self) -> list:
@@ -212,6 +237,7 @@ class S3Scanner:
             self._check_versioning,
             self._check_logging,
             self._check_public_access,
+            self._check_empty,          # new: detect empty (deletable) buckets
         ]
         findings = []
         seen     = set()

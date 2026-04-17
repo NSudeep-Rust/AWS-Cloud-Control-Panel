@@ -1242,6 +1242,26 @@ class RollbackEngine:
                 except Exception as e:
                     return self._fail(db, execution_id, f"VPC rollback failed: {e}")
 
+            # ── DELETE_EMPTY_S3_BUCKET (NOT recoverable) ──────────────────────
+            # S3 bucket names are globally unique. Once deleted the name is
+            # released into the AWS global namespace — another account could
+            # claim it before you recreate it. There is no AWS API to recreate
+            # a bucket with the same name if it's already taken.
+            if action == "DELETE_EMPTY_S3_BUCKET":
+                bucket_name = (
+                    metadata.get("bucket_name") or
+                    row.resource_name
+                )
+                return self._not_recoverable(
+                    db,
+                    execution_id,
+                    (
+                        f"S3 bucket '{bucket_name}' was permanently deleted. "
+                        "Bucket deletion is NOT recoverable — S3 bucket names are globally "
+                        "unique and the name may already have been claimed by another account."
+                    )
+                )
+
             return self._fail(db, execution_id, f"Rollback not supported for action: {action}")
 
 

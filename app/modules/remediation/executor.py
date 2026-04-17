@@ -70,6 +70,7 @@ class RemediationExecutor:
             "DISABLE_STALE_ACCESS_KEY":self._handle_disable_stale_access_key,
             "SET_LOG_GROUP_RETENTION":self._handle_set_log_group_retention,
             "DELETE_DEFAULT_VPC":     self._handle_delete_default_vpc,
+            "DELETE_EMPTY_S3_BUCKET": self._handle_delete_empty_s3_bucket,  # new
         }
 
 
@@ -617,6 +618,93 @@ class RemediationExecutor:
 
 
 
+
+    def _handle_delete_empty_s3_bucket(self, finding, remediation):
+        """Delete an S3 bucket that has no objects.
+
+        Safety: always re-checks object count immediately before deletion
+        so the bucket is never deleted if objects appeared after the scan.
+        Rollback: NOT RECOVERABLE — bucket names are globally unique and
+        may be claimed by another AWS account once released.
+        """
+        bucket_name = finding.get("bucket_name") or finding.get("resource_id")
+        s3 = self.aws_session.session.client("s3")
+
+        # Capture bucket metadata for audit trail before any action
+        try:
+            loc  = s3.get_bucket_location(Bucket=bucket_name)
+            region = loc.get("LocationConstraint") or "us-east-1"
+        except Exception:
+            region = "unknown"
+
+        if self.execution_mode == "DRY_RUN":
+            return {
+                "status": "DRY_RUN",
+                "action": "DELETE_EMPTY_S3_BUCKET",
+                "bucket_name": bucket_name,
+                "recommended_fix": remediation.get("recommended_fix"),
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "region": region,
+                    "warning": "Deletion is permanent and NOT recoverable."
+                }
+            }
+
+        # ――― Safety re-check: confirm bucket is STILL empty before deleting ―――
+        try:
+            resp = s3.list_objects_v2(Bucket=bucket_name, MaxKeys=1)
+            if resp.get("KeyCount", 1) != 0:
+                return {
+                    "status": "SKIPPED",
+                    "action": "DELETE_EMPTY_S3_BUCKET",
+                    "bucket_name": bucket_name,
+                    "reason": "Bucket is no longer empty — objects found. Deletion aborted for safety."
+                }
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "DELETE_EMPTY_S3_BUCKET",
+                "bucket_name": bucket_name,
+                "reason": f"Could not verify bucket contents before deletion: {e}"
+            }
+
+        try:
+            s3.delete_bucket(Bucket=bucket_name)
+        except Exception as e:
+            return {
+                "status": "FAILED",
+                "action": "DELETE_EMPTY_S3_BUCKET",
+                "bucket_name": bucket_name,
+                "reason": str(e)
+            }
+
+        execution_id = str(uuid.uuid4())
+
+        if self.history:
+            self.history.record_execution({
+                "execution_id": execution_id,
+                "action": "DELETE_EMPTY_S3_BUCKET",
+                "resource_id": bucket_name,
+                "metadata": {
+                    "bucket_name": bucket_name,
+                    "region": region,
+                    "warning": "NOT_RECOVERABLE: S3 bucket names are globally unique."
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
+        return {
+            "status": "EXECUTED",
+            "execution_id": execution_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "action": "DELETE_EMPTY_S3_BUCKET",
+            "bucket_name": bucket_name,
+            "metadata": {
+                "bucket_name": bucket_name,
+                "region": region,
+                "warning": "NOT_RECOVERABLE: S3 bucket names are globally unique."
+            }
+        }
 
     def _handle_enable_mfa(self, finding, remediation):
 

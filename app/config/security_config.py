@@ -49,6 +49,7 @@ ALLOWED_LIVE_ACTIONS = {
     "ENABLE_RDS_DELETION_PROTECTION",
     "RESTRICT_ROLE_EXTERNAL_TRUST",
     "ENCRYPT_RDS_INSTANCE",
+    "DELETE_EMPTY_S3_BUCKET",       # new: delete empty S3 buckets
 }
 
 
@@ -70,6 +71,7 @@ SEVERITY_MAP = {
     "S3_NO_ENCRYPTION": "HIGH",
     "S3_VERSIONING_DISABLED": "MEDIUM",
     "S3_ACCESS_LOGGING_DISABLED": "MEDIUM",
+    "S3_EMPTY_BUCKET": "LOW",          # new: empty bucket — cleanup opportunity
 
     "PUBLIC_EC2_INSTANCE": "HIGH",
     "EC2_WITHOUT_IAM_ROLE": "MEDIUM",

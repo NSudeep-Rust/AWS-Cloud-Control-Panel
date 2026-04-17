@@ -154,6 +154,17 @@ class RemediationPlanner:
                 "severity": finding.get("severity")
             }
 
+        if finding_type == "S3_EMPTY_BUCKET":
+            return {
+                "action": "DELETE_EMPTY_S3_BUCKET",
+                "reason": "S3 bucket has no objects and is consuming namespace / incurring potential costs",
+                "recommended_fix": (
+                    "Delete the empty bucket. This action is permanent — "
+                    "S3 bucket names are globally unique and cannot be reclaimed once deleted."
+                ),
+                "severity": finding.get("severity")
+            }
+
         if finding_type == "IAM_USER_WITHOUT_MFA":
             return {
                 "action": "ENABLE_MFA",
