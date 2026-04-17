@@ -12,6 +12,7 @@ const NON_ROLLBACKABLE_ACTIONS = new Set([
   'DELETE_DEFAULT_VPC',
   'DELETE_UNUSED_IAM_USER',
   'DELETE_ACCESS_KEY',
+  'DELETE_EMPTY_S3_BUCKET',     // permanent — S3 bucket names are globally unique
 ])
 
 const SEV = {
