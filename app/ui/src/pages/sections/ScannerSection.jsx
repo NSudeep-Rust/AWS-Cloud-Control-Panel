@@ -319,7 +319,7 @@ export function ScannerSection({ onNav, dark }) {
                     <div style={{ display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden' }}>
 
                         {/* Service Coverage */}
-                        <div style={{ flex:1, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 20px', overflow:'hidden', boxShadow:'var(--card-shadow)' }}>
+                        <div style={{ flexShrink:0, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 20px', overflow:'hidden', boxShadow:'var(--card-shadow)' }}>
                             <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:14 }}>
                                 <div style={{ width:18, height:18, borderRadius:5, background:'rgba(255,153,0,0.12)', border:'1px solid rgba(255,153,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                                     <Search size={10} color="#FF9900" />
@@ -349,6 +349,38 @@ export function ScannerSection({ onNav, dark }) {
                                             <span style={{ fontSize:11, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{svc.name}</span>
                                         </div>
                                         <div style={{ fontSize:9, color:svc.color, fontWeight:700, fontFamily:'monospace' }}>{svc.checks}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Compliance Frameworks */}
+                        <div style={{ flex:1, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 20px', boxShadow:'var(--card-shadow)', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+                                <div style={{ width:18, height:18, borderRadius:5, background:'rgba(255,153,0,0.1)', border:'1px solid rgba(255,153,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    <CheckCircle size={10} color="#FF9900" />
+                                </div>
+                                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Compliance Alignment</span>
+                                <span style={{ marginLeft:'auto', fontSize:9, fontWeight:700, color:'#1d8102', background:'rgba(29,129,2,0.08)', border:'1px solid rgba(29,129,2,0.2)', borderRadius:10, padding:'1px 8px' }}>4 Frameworks</span>
+                            </div>
+                            <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, justifyContent:'center' }}>
+                                {[
+                                    { name:'CIS AWS Foundations Benchmark',         controls:'28 controls', color:'#FF9900', pct:78, desc:'Identity, logging, network & monitoring' },
+                                    { name:'AWS Well-Architected Security Pillar',  controls:'17 checks',   color:'#0972d3', pct:85, desc:'IAM, detection, infrastructure protection' },
+                                    { name:'NIST CSF — Detect & Protect',           controls:'34 controls', color:'#8B5CF6', pct:65, desc:'Asset mgmt, access control, data security' },
+                                    { name:'PCI-DSS Cloud Controls',                controls:'12 checks',   color:'#1d8102', pct:55, desc:'Encryption, access restriction, monitoring' },
+                                ].map((f,i) => (
+                                    <div key={f.name} style={{ animation:`svcPop 0.3s ease ${i*0.06+0.02}s both` }}>
+                                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
+                                            <div>
+                                                <span style={{ fontSize:10.5, fontWeight:700, color:'var(--text)' }}>{f.name}</span>
+                                                <span style={{ fontSize:8.5, color:'var(--text3)', marginLeft:8 }}>{f.desc}</span>
+                                            </div>
+                                            <span style={{ fontSize:9, fontWeight:700, color:f.color, fontFamily:'monospace', flexShrink:0, marginLeft:8 }}>{f.controls}</span>
+                                        </div>
+                                        <div style={{ height:4, borderRadius:3, background:'var(--border)', overflow:'hidden' }}>
+                                            <div style={{ height:'100%', borderRadius:3, background:`linear-gradient(90deg,${f.color},${f.color}88)`, width:`${f.pct}%`, transition:'width 0.6s ease' }} />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
