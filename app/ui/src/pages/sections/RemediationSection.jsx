@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
-import { Wrench, CheckCircle, AlertTriangle, Clock, Play, Zap, RotateCcw, Shield } from 'lucide-react'
+import { Wrench, CheckCircle, AlertTriangle, Clock, Play, Zap, RotateCcw, Shield, RefreshCw, Search, ChevronRight } from 'lucide-react'
 import { getServiceTag } from '@/utils/getModuleGroup'
 
 const API = 'http://127.0.0.1:8000'
@@ -36,52 +36,154 @@ function svcIcon(type) {
 function fmtType(t)   { return (t||'Unknown').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) }
 function fmtAction(a) { return (a||'Unknown').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) }
 
+// ─── Empty Pipeline (Premium Redesign) ────────────────────────────────────────
 function EmptyPipeline() {
+  const [activeStage, setActiveStage] = useState(0)
+  const [dotPos, setDotPos] = useState(0)
+
+  useEffect(() => {
+    const iv = setInterval(() => setActiveStage(s => (s + 1) % 4), 1800)
+    return () => clearInterval(iv)
+  }, [])
+
+  useEffect(() => {
+    const iv = setInterval(() => setDotPos(p => (p + 1) % 100), 28)
+    return () => clearInterval(iv)
+  }, [])
+
   const STEPS = [
-    { icon:'🔍', label:'DETECT',  sub:'Scan findings',    color:'#e07b00' },
-    { icon:'📋', label:'PLAN',    sub:'Generate fix plan', color:'#FF9900' },
-    { icon:'⚡', label:'EXECUTE', sub:'Apply to AWS',      color:'#1d8102' },
-    { icon:'✅', label:'FIXED',   sub:'Mark resolved',     color:'#0972d3' },
+    { icon: '🔍', label: 'DETECT',  sub: 'Scan findings',     color: '#e07b00', desc: 'Identifies 52+ vulnerability types across IAM, S3, EC2, VPC, KMS & more' },
+    { icon: '📋', label: 'PLAN',    sub: 'Generate fix plan',  color: '#FF9900', desc: 'Builds a dry-run preview with exact AWS action and safety reason' },
+    { icon: '⚡', label: 'EXECUTE', sub: 'Apply to AWS',       color: '#1d8102', desc: 'Makes live API changes with danger guard for irreversible operations' },
+    { icon: '✅', label: 'FIXED',   sub: 'Mark resolved',      color: '#0972d3', desc: 'Removes from queue and records to Rollback section for undo' },
   ]
+
+  const FEATURES = [
+    { icon: '🔄', title: 'Dry Run First',      desc: 'Preview every fix before any AWS change is made' },
+    { icon: '🛡️', title: 'Danger Guard',        desc: 'Irreversible actions require explicit confirmation' },
+    { icon: '↩️',  title: 'Rollback Support',   desc: 'Undo any reversible fix from the Rollback section' },
+    { icon: '⚡', title: 'Parallel Engines',    desc: '8 service engines process findings simultaneously' },
+    { icon: '🎯', title: 'Auto Prioritise',     desc: 'CRITICAL & HIGH findings surfaced first' },
+    { icon: '📊', title: 'Full Audit Trail',    desc: 'Every action logged with timestamp & outcome' },
+  ]
+
   return (
-    <div style={{ background:'var(--bg2)', border:'1px solid rgba(255,153,0,0.2)', borderTop:'4px solid #FF9900', borderRadius:14, padding:'48px', boxShadow:'0 4px 24px rgba(255,153,0,0.10)', display:'flex', flexDirection:'column', gap:40, minHeight:'calc(100vh - 190px)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <style>{`
-        @keyframes stageActive { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04);box-shadow:0 0 18px rgba(255,153,0,0.3)} }
-        @keyframes dotFlow { 0%{left:-12px;opacity:0} 15%{opacity:1} 85%{opacity:1} 100%{left:calc(100% + 12px);opacity:0} }
-        @keyframes remBlink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+        @keyframes remBlink   { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        @keyframes remFadeIn  { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:none} }
+        @keyframes remShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes dotFlow    { 0%{left:-10%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{left:110%;opacity:0} }
+        @keyframes stageGlow  { 0%,100%{box-shadow:0 0 0 0 transparent} 50%{box-shadow:0 0 0 6px rgba(255,153,0,0.18)} }
+        @keyframes remNodePop { 0%{opacity:0;transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
       `}</style>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ fontSize:12, fontWeight:800, color:'#FF9900', letterSpacing:1.6, textTransform:'uppercase' }}>⚡ Auto-Remediation Pipeline</div>
-        <div style={{ flex:1, height:1.5, background:'rgba(255,153,0,0.18)' }} />
-        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:10, color:'#8d9191' }}>
-          <span style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', display:'inline-block', animation:'remBlink 1.2s ease infinite' }} />
-          8 service engines online
+
+      {/* ── Pipeline Card ── */}
+      <div style={{ background: 'var(--bg2)', border: '1.5px solid rgba(255,153,0,0.25)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 28px rgba(255,153,0,0.08), var(--card-shadow)' }}>
+        {/* Animated top bar */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg,#FF9900,#ec8a00,#FF9900)', backgroundSize: '200%', animation: 'remShimmer 2.5s linear infinite' }} />
+
+        <div style={{ padding: '20px 24px 22px' }}>
+          {/* Title row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#FF9900', letterSpacing: 1.6, textTransform: 'uppercase' }}>⚡ Auto-Remediation Pipeline</div>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,153,0,0.18)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text3)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1d8102', display: 'inline-block', animation: 'remBlink 1.2s ease infinite' }} />
+              8 service engines online
+            </div>
+          </div>
+
+          {/* Stage cards row */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
+            {STEPS.map((step, i) => {
+              const isActive = activeStage === i
+              return (
+                <div key={step.label} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                  {/* Stage card */}
+                  <div style={{
+                    flex: 1, padding: '20px 14px 18px', borderRadius: 12, textAlign: 'center',
+                    background: isActive ? `${step.color}0e` : `${step.color}05`,
+                    border: `1.5px solid ${isActive ? step.color + '60' : step.color + '22'}`,
+                    boxShadow: isActive ? `0 0 24px ${step.color}22` : 'none',
+                    transition: 'all 0.35s ease',
+                    animation: `remNodePop 0.3s ease ${i * 0.1}s both`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  }}>
+                    {/* Icon with ring when active */}
+                    <div style={{ position: 'relative', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isActive && (
+                        <>
+                          <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `2px solid ${step.color}40`, animation: 'stageGlow 1.5s ease infinite' }} />
+                          <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `1px solid ${step.color}20`, animation: 'stageGlow 1.5s ease 0.4s infinite' }} />
+                        </>
+                      )}
+                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: isActive ? `${step.color}16` : `${step.color}09`, border: `2px solid ${isActive ? step.color + '60' : step.color + '25'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, transition: 'all 0.3s' }}>
+                        {step.icon}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: step.color, letterSpacing: 1.2, textTransform: 'uppercase' }}>{step.label}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{step.sub}</div>
+                    {isActive && (
+                      <div style={{ fontSize: 8.5, color: step.color, background: `${step.color}0d`, border: `1px solid ${step.color}25`, borderRadius: 4, padding: '3px 8px', lineHeight: 1.4, marginTop: 2, animation: 'remFadeIn 0.25s ease', maxWidth: 140 }}>
+                        {step.desc}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Animated connector */}
+                  {i < STEPS.length - 1 && (
+                    <div style={{ width: 36, flexShrink: 0, position: 'relative', height: 3, background: `linear-gradient(90deg, ${step.color}30, ${STEPS[i+1].color}30)`, borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{
+                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                        width: 10, height: 10, borderRadius: '50%',
+                        background: `radial-gradient(circle, ${STEPS[i+1].color}, ${STEPS[i+1].color}88)`,
+                        boxShadow: `0 0 8px ${STEPS[i+1].color}88`,
+                        animation: `dotFlow 2.2s ease ${i * 0.55}s infinite`,
+                      }} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
-      <div style={{ display:'flex', alignItems:'center', flex:1, gap:0 }}>
-        {STEPS.map((step, i) => (
-          <div key={step.label} style={{ display:'flex', alignItems:'center', flex:1 }}>
-            <div style={{ flex:1, textAlign:'center', padding:'44px 16px', background:`${step.color}07`, border:`1px solid ${step.color}35`, borderRadius:14, animation:`stageActive 3s ease ${i*0.75}s infinite`, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ fontSize:44, marginBottom:12 }}>{step.icon}</div>
-              <div style={{ fontSize:11, fontWeight:800, color:step.color, letterSpacing:1.2, marginBottom:5, textTransform:'uppercase' }}>{step.label}</div>
-              <div style={{ fontSize:11, color:'#8d9191' }}>{step.sub}</div>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div style={{ width:40, flexShrink:0, position:'relative', height:2.5, background:'rgba(255,153,0,0.15)' }}>
-                <div style={{ position:'absolute', top:'50%', transform:'translateY(-50%)', width:10, height:10, borderRadius:'50%', background:STEPS[i+1].color, boxShadow:`0 0 8px ${STEPS[i+1].color}`, animation:`dotFlow 2.8s ease ${i*0.7}s infinite` }} />
-              </div>
-            )}
+
+      {/* ── Features Card ── */}
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 22px', boxShadow: 'var(--card-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
+          <div style={{ width: 18, height: 18, borderRadius: 5, background: 'rgba(255,153,0,0.1)', border: '1px solid rgba(255,153,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Wrench size={10} color="#FF9900" />
           </div>
-        ))}
+          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1 }}>Engine Capabilities</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 9 }}>
+          {FEATURES.map((f, i) => (
+            <div key={f.title} style={{ background: 'rgba(255,153,0,0.04)', border: '1px solid rgba(255,153,0,0.12)', borderRadius: 9, padding: '10px 12px', animation: `remNodePop 0.3s ease ${i * 0.06}s both`, transition: 'background 0.15s, border-color 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,153,0,0.09)'; e.currentTarget.style.borderColor = 'rgba(255,153,0,0.3)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,153,0,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,153,0,0.12)' }}>
+              <div style={{ fontSize: 16, marginBottom: 5 }}>{f.icon}</div>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>{f.title}</div>
+              <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.45 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div style={{ borderTop:'1px solid rgba(35,47,62,0.07)', paddingTop:24, fontSize:12, color:'#8d9191', display:'flex', alignItems:'center', gap:8 }}>
-        <div style={{ width:32, height:32, borderRadius:8, background:'#FF990015', border:'1px solid #FF990030', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>🔍</div>
-        Run a security scan from the <strong style={{ color:'#e07b00' }}>Scanner</strong> to auto-load fixable findings into this pipeline.
+
+      {/* ── CTA footer ── */}
+      <div style={{ padding: '14px 18px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--card-shadow)' }}>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,153,0,0.1)', border: '1px solid rgba(255,153,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🔍</div>
+        <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.6 }}>
+          Run a security scan from the <strong style={{ color: '#e07b00' }}>Scanner</strong> to auto-load fixable findings into this pipeline.
+          CRITICAL and HIGH severity findings will surface first.
+        </div>
       </div>
     </div>
   )
 }
 
+// ─── Finding Card (UNCHANGED) ──────────────────────────────────────────────────
 function FindingCard({ finding, scanId, onExecuted }) {
   const ac = accent(finding.severity)
   const icon = svcIcon(finding.type)
@@ -153,7 +255,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
           }
           if (mine.status === 'REQUIRE_APPROVAL' && mine.approval_token && !confirmed.has(mine.approval_token)) {
             confirmed.add(mine.approval_token)
-            attempts = 0 // reset clock after confirmation
+            attempts = 0
             await axios.post(`${API}/api/execute/`, {
               scan_id: scanId, finding_ids: [finding.id], mode: 'LIVE',
               approval_token: mine.approval_token, confirm: true
@@ -336,6 +438,7 @@ function FindingCard({ finding, scanId, onExecuted }) {
   )
 }
 
+// ─── Manual Card (UNCHANGED) ───────────────────────────────────────────────────
 function ManualCard({ finding }) {
   const ac = accent(finding.severity)
   const icon = svcIcon(finding.type)
@@ -376,6 +479,7 @@ function ManualCard({ finding }) {
   )
 }
 
+// ─── Main Section ──────────────────────────────────────────────────────────────
 export default function RemediationSection({ dark, onNav }) {
   const { account } = useAuth()
   const { scanId: ctxScanId, refreshToken } = useScan()
@@ -396,7 +500,6 @@ export default function RemediationSection({ dark, onNav }) {
     setLoading(true)
     let sid = null
     try {
-      // Fix: include account_id — /api/scan/history requires it (was causing 422)
       const url = dbId != null
         ? `${API}/api/scan/history?account_id=${dbId}&limit=1`
         : `${API}/api/scan/history?limit=1`
@@ -457,73 +560,127 @@ export default function RemediationSection({ dark, onNav }) {
 
   const filteredAuto   = applyFilters(autoFindings)
   const filteredManual = applyFilters(manualFindings)
-  const border = 'var(--border)'
-  const text   = 'var(--text)'
-  const text2  = 'var(--text3)'
+
+  const totalFixed = executedIds.size
+  const totalAll   = findings.length
+  const fixedPct   = totalAll > 0 ? Math.round((totalFixed / totalAll) * 100) : 0
 
   return (
-    <div style={{ fontFamily:"'Inter', -apple-system, sans-serif" }}>
-      <style>{`@keyframes spin { to{transform:rotate(360deg)} }`}</style>
+    <div style={{ fontFamily:"'Inter', -apple-system, sans-serif", display:'flex', flexDirection:'column', gap:14 }}>
+      <style>{`@keyframes spin { to{transform:rotate(360deg)} } @keyframes remShimLoad { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
 
-      {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#1d6a4a,#3ea97c)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Wrench size={16} color="#fff" />
+      {/* ── HEADER ── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+        <div>
+          <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:3 }}>
+            <h1 style={{ fontSize:18, fontWeight:800, color:'var(--text)', margin:0 }}>Remediation</h1>
+            {scanId && (
+              <>
+                <span style={{ fontSize:9, fontWeight:700, color:'#1d8102', background:'rgba(29,128,2,0.09)', border:'1px solid rgba(29,128,2,0.22)', borderRadius:4, padding:'2px 8px', display:'inline-flex', alignItems:'center', gap:4 }}>
+                  <span style={{ width:5, height:5, borderRadius:'50%', background:'#1d8102', display:'inline-block' }} />
+                  {autoFindings.length} auto-fixable
+                </span>
+                <span style={{ fontSize:9, fontWeight:700, color:'#5b9bd5', background:'rgba(91,155,213,0.09)', border:'1px solid rgba(91,155,213,0.22)', borderRadius:4, padding:'2px 8px' }}>
+                  📋 {manualFindings.length} manual
+                </span>
+                {totalFixed > 0 && (
+                  <span style={{ fontSize:9, fontWeight:700, color:'#8B5CF6', background:'rgba(139,92,246,0.09)', border:'1px solid rgba(139,92,246,0.22)', borderRadius:4, padding:'2px 8px' }}>
+                    ✓ {totalFixed} fixed
+                  </span>
+                )}
+              </>
+            )}
           </div>
-          <div>
-            <h1 style={{ fontSize:20, fontWeight:800, color:text, margin:0 }}>Remediation</h1>
-            <div style={{ fontSize:11, color:text2 }}>Auto-fix & manual advisory for security findings</div>
-          </div>
+          <div style={{ fontSize:11, color:'var(--text3)' }}>Auto-fix & manual advisory for security findings</div>
         </div>
         {scanId && (
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:10, color:'#1d8102', background:'rgba(29,128,2,0.1)', border:'1px solid rgba(29,128,2,0.2)', borderRadius:4, padding:'3px 8px', fontWeight:600 }}>● {autoFindings.length} auto-fixable</span>
-            <span style={{ fontSize:10, color:'#5b9bd5', background:'rgba(91,155,213,0.1)', border:'1px solid rgba(91,155,213,0.2)', borderRadius:4, padding:'3px 8px', fontWeight:600 }}>{manualFindings.length} manual</span>
-          </div>
+          <button onClick={load} disabled={loading} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:7, background:'var(--bg2)', color:'var(--text2)', border:'1px solid var(--border)', cursor:loading?'not-allowed':'pointer', fontSize:11, fontWeight:600, transition:'all 0.15s' }}>
+            <RefreshCw size={11} style={{ animation: loading ? 'spin 0.7s linear infinite' : 'none' }} />
+            Refresh
+          </button>
         )}
       </div>
 
+      {/* Loading */}
       {loading && (
-        <div style={{ display:'flex', justifyContent:'center', padding:80, color:text2, gap:10, alignItems:'center' }}>
+        <div style={{ display:'flex', justifyContent:'center', padding:80, color:'var(--text3)', gap:10, alignItems:'center' }}>
           <span style={{ width:18, height:18, border:'2.5px solid #FF9900', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
           Loading findings…
         </div>
       )}
 
+      {/* Empty state */}
       {!loading && !scanId && <EmptyPipeline />}
 
+      {/* Findings loaded */}
       {!loading && scanId && (
         <>
-          {/* Tabs */}
-          <div style={{ display:'flex', gap:4, marginBottom:18, borderBottom:`1px solid ${border}` }}>
-            {[{ key:'auto', label:`⚡ Auto-Fix (${autoFindings.length})` }, { key:'manual', label:`📋 Manual (${manualFindings.length})` }].map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)} style={{ padding:'8px 14px', border:'none', background:'transparent', cursor:'pointer', fontSize:12.5, fontWeight:tab===t.key?700:400, color:tab===t.key?'#FF9900':text2, borderBottom:tab===t.key?'2.5px solid #FF9900':'2.5px solid transparent', marginBottom:-1, transition:'all 0.12s' }}>{t.label}</button>
+          {/* Mini pipeline progress bar */}
+          {totalAll > 0 && (
+            <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 16px', display:'flex', alignItems:'center', gap:16, boxShadow:'var(--card-shadow)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                <Wrench size={12} color="#FF9900" />
+                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:0.8 }}>Pipeline Progress</span>
+              </div>
+              <div style={{ flex:1, height:6, borderRadius:4, background:'var(--border)', overflow:'hidden' }}>
+                <div style={{ height:'100%', borderRadius:4, background:'linear-gradient(90deg,#1d8102,#3fb950)', width:`${fixedPct}%`, transition:'width 0.6s ease' }} />
+              </div>
+              <span style={{ fontSize:10, fontWeight:700, color:'var(--text3)', flexShrink:0, fontFamily:'monospace' }}>{totalFixed}/{totalAll} fixed ({fixedPct}%)</span>
+              <div style={{ display:'flex', gap:8 }}>
+                {[
+                  { n: findings.filter(f=>(f.severity||'').toUpperCase()==='CRITICAL' && !executedIds.has(f.id)).length, color:'#d13212', label:'C' },
+                  { n: findings.filter(f=>(f.severity||'').toUpperCase()==='HIGH' && !executedIds.has(f.id)).length,     color:'#e07b00', label:'H' },
+                ].filter(s => s.n > 0).map(s => (
+                  <span key={s.label} style={{ fontSize:9, fontWeight:800, color:s.color, background:`${s.color}10`, border:`1px solid ${s.color}28`, borderRadius:4, padding:'2px 7px', fontFamily:'monospace' }}>
+                    {s.n} {s.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── TABS ── */}
+          <div style={{ display:'flex', gap:6, borderBottom:'1px solid var(--border)', paddingBottom:0 }}>
+            {[
+              { key:'auto',   label:'⚡ Auto-Fix', count: autoFindings.length,   activeColor:'#FF9900',  activeBg:'rgba(255,153,0,0.1)' },
+              { key:'manual', label:'📋 Manual',   count: manualFindings.length, activeColor:'#5b9bd5', activeBg:'rgba(91,155,213,0.1)' },
+            ].map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)} style={{
+                display:'flex', alignItems:'center', gap:6, padding:'8px 16px',
+                border:'none', background:tab===t.key ? t.activeBg : 'transparent',
+                cursor:'pointer', fontSize:12.5, fontWeight:tab===t.key?800:500,
+                color:tab===t.key ? t.activeColor : 'var(--text3)',
+                borderBottom:tab===t.key?`2.5px solid ${t.activeColor}`:'2.5px solid transparent',
+                marginBottom:-1, transition:'all 0.14s', borderRadius:'6px 6px 0 0',
+              }}>
+                {t.label}
+                <span style={{ fontSize:10, fontWeight:800, background:tab===t.key?t.activeColor:'var(--border)', color:tab===t.key?'#fff':'var(--text3)', borderRadius:8, padding:'1px 6px', minWidth:18, textAlign:'center' }}>{t.count}</span>
+              </button>
             ))}
           </div>
 
-          {/* Filter bar */}
+          {/* ── FILTER BAR ── */}
           {(autoFindings.length > 0 || manualFindings.length > 0) && (
-            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, padding:'12px 16px', marginBottom:16, background:'var(--bg2)', border:`1px solid ${border}`, borderRadius:10 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, padding:'12px 16px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10, boxShadow:'var(--card-shadow)' }}>
               <div style={{ position:'relative', flex:'1 1 160px', minWidth:140 }}>
-                <span style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', fontSize:11, color:text2, pointerEvents:'none' }}>🔍</span>
-                <input type="text" placeholder="Search name or resource…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ paddingLeft:28, paddingRight:10, paddingTop:6, paddingBottom:6, border:`1px solid ${border}`, borderRadius:7, background:'var(--bg)', color:text, fontSize:11.5, width:'100%', outline:'none' }} />
+                <span style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', fontSize:11, color:'var(--text3)', pointerEvents:'none' }}>🔍</span>
+                <input type="text" placeholder="Search name or resource…" value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ paddingLeft:28, paddingRight:10, paddingTop:6, paddingBottom:6, border:'1px solid var(--border)', borderRadius:7, background:'var(--bg)', color:'var(--text)', fontSize:11.5, width:'100%', outline:'none' }} />
               </div>
               <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
                 {['ALL','CRITICAL','HIGH','MEDIUM','LOW'].map(s => {
                   const c = {CRITICAL:'#d13212',HIGH:'#e07b00',MEDIUM:'#c8960c',LOW:'#3ea97c'}[s]||'#8d9191'
                   const active = filterSev === s
-                  return <button key={s} onClick={() => setFilterSev(s)} style={{ padding:'4px 10px', borderRadius:20, border:`1px solid ${active?c:border}`, background:active?(s==='ALL'?'#FF990020':`${c}18`):'transparent', color:active?(s==='ALL'?'#e07b00':c):text2, fontSize:10.5, fontWeight:active?700:500, cursor:'pointer', transition:'all 0.12s' }}>{s==='ALL'?'All Severity':s.charAt(0)+s.slice(1).toLowerCase()}</button>
+                  return <button key={s} onClick={() => setFilterSev(s)} style={{ padding:'4px 10px', borderRadius:20, border:`1px solid ${active?c:'var(--border)'}`, background:active?(s==='ALL'?'#FF990020':`${c}18`):'transparent', color:active?(s==='ALL'?'#e07b00':c):'var(--text3)', fontSize:10.5, fontWeight:active?700:500, cursor:'pointer', transition:'all 0.12s' }}>{s==='ALL'?'All Severity':s.charAt(0)+s.slice(1).toLowerCase()}</button>
                 })}
               </div>
-              <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} style={{ padding:'5px 10px', borderRadius:7, border:`1px solid ${filterSvc!=='ALL'?'#FF9900':border}`, background:'var(--bg)', color:filterSvc!=='ALL'?'#e07b00':text, fontSize:11.5, cursor:'pointer', outline:'none' }}>
+              <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} style={{ padding:'5px 10px', borderRadius:7, border:`1px solid ${filterSvc!=='ALL'?'#FF9900':'var(--border)'}`, background:'var(--bg)', color:filterSvc!=='ALL'?'#e07b00':'var(--text)', fontSize:11.5, cursor:'pointer', outline:'none' }}>
                 <option value="ALL">All Services</option>
                 {uniqueSvcs.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               {(filterSev!=='ALL'||filterSvc!=='ALL'||searchQ) && (
                 <button onClick={() => { setFilterSev('ALL'); setFilterSvc('ALL'); setSearchQ('') }} style={{ padding:'4px 10px', borderRadius:7, border:'1px solid rgba(209,50,18,0.3)', background:'rgba(209,50,18,0.07)', color:'#d13212', fontSize:10.5, fontWeight:700, cursor:'pointer' }}>✕ Clear</button>
               )}
-              <div style={{ fontSize:10, color:text2, marginLeft:'auto' }}>
+              <div style={{ fontSize:10, color:'var(--text3)', marginLeft:'auto' }}>
                 {tab==='auto'?filteredAuto.length:filteredManual.length} of {tab==='auto'?autoFindings.length:manualFindings.length} shown
               </div>
             </div>
@@ -532,10 +689,10 @@ export default function RemediationSection({ dark, onNav }) {
           {/* Auto tab */}
           {tab === 'auto' && (
             filteredAuto.length === 0
-              ? <div style={{ textAlign:'center', padding:'60px 20px', color:text2 }}>
+              ? <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text3)' }}>
                   {autoFindings.length === 0
-                    ? <><CheckCircle size={36} color="#1d8102" style={{ marginBottom:12 }} /><div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>All auto-fixes applied!</div><div style={{ fontSize:12 }}>Go to Rollback to review or undo executed fixes.</div></>
-                    : <><div style={{ fontSize:32, marginBottom:8 }}>🔍</div><div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4 }}>No matches</div><div style={{ fontSize:12 }}>Try adjusting your filters</div><button onClick={() => { setFilterSev('ALL'); setFilterSvc('ALL'); setSearchQ('') }} style={{ marginTop:12, padding:'6px 14px', borderRadius:7, border:`1px solid ${border}`, background:'transparent', color:'#FF9900', fontSize:11.5, fontWeight:700, cursor:'pointer' }}>Clear Filters</button></>
+                    ? <><CheckCircle size={36} color="#1d8102" style={{ marginBottom:12 }} /><div style={{ fontSize:15, fontWeight:700, color:'var(--text)', marginBottom:6 }}>All auto-fixes applied!</div><div style={{ fontSize:12 }}>Go to Rollback to review or undo executed fixes.</div></>
+                    : <><div style={{ fontSize:32, marginBottom:8 }}>🔍</div><div style={{ fontSize:14, fontWeight:700, color:'var(--text)', marginBottom:4 }}>No matches</div><div style={{ fontSize:12 }}>Try adjusting your filters</div><button onClick={() => { setFilterSev('ALL'); setFilterSvc('ALL'); setSearchQ('') }} style={{ marginTop:12, padding:'6px 14px', borderRadius:7, border:'1px solid var(--border)', background:'transparent', color:'#FF9900', fontSize:11.5, fontWeight:700, cursor:'pointer' }}>Clear Filters</button></>
                   }
                 </div>
               : <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -546,9 +703,9 @@ export default function RemediationSection({ dark, onNav }) {
           {/* Manual tab */}
           {tab === 'manual' && (
             filteredManual.length === 0
-              ? <div style={{ textAlign:'center', padding:'60px 20px', color:text2 }}>
+              ? <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text3)' }}>
                   <CheckCircle size={36} color="#5b9bd5" style={{ marginBottom:12 }} />
-                  <div style={{ fontSize:15, fontWeight:700, color:text, marginBottom:6 }}>No manual findings</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:'var(--text)', marginBottom:6 }}>No manual findings</div>
                   <div style={{ fontSize:12 }}>All findings are handled automatically.</div>
                 </div>
               : <div style={{ display:'flex', flexDirection:'column', gap:10 }}>

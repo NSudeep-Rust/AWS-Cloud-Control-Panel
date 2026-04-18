@@ -354,32 +354,31 @@ export function ScannerSection({ onNav, dark }) {
                             </div>
                         </div>
 
-                        {/* Compliance Frameworks */}
+                        {/* Scan Intelligence / Security Domains */}
                         <div style={{ flex:1, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 20px', boxShadow:'var(--card-shadow)', overflow:'hidden', display:'flex', flexDirection:'column' }}>
                             <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
                                 <div style={{ width:18, height:18, borderRadius:5, background:'rgba(255,153,0,0.1)', border:'1px solid rgba(255,153,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                    <CheckCircle size={10} color="#FF9900" />
+                                    <Shield size={10} color="#FF9900" />
                                 </div>
-                                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Compliance Alignment</span>
-                                <span style={{ marginLeft:'auto', fontSize:9, fontWeight:700, color:'#1d8102', background:'rgba(29,129,2,0.08)', border:'1px solid rgba(29,129,2,0.2)', borderRadius:10, padding:'1px 8px' }}>4 Frameworks</span>
+                                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Security Domains</span>
+                                <span style={{ marginLeft:'auto', fontSize:9, fontWeight:700, color:'#FF9900', background:'rgba(255,153,0,0.08)', border:'1px solid rgba(255,153,0,0.2)', borderRadius:10, padding:'1px 8px' }}>52+ Checks</span>
                             </div>
-                            <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, justifyContent:'center' }}>
+                            <div style={{ display:'flex', flexDirection:'column', gap:9, flex:1, justifyContent:'center' }}>
                                 {[
-                                    { name:'CIS AWS Foundations Benchmark',         controls:'28 controls', color:'#FF9900', pct:78, desc:'Identity, logging, network & monitoring' },
-                                    { name:'AWS Well-Architected Security Pillar',  controls:'17 checks',   color:'#0972d3', pct:85, desc:'IAM, detection, infrastructure protection' },
-                                    { name:'NIST CSF — Detect & Protect',           controls:'34 controls', color:'#8B5CF6', pct:65, desc:'Asset mgmt, access control, data security' },
-                                    { name:'PCI-DSS Cloud Controls',                controls:'12 checks',   color:'#1d8102', pct:55, desc:'Encryption, access restriction, monitoring' },
-                                ].map((f,i) => (
-                                    <div key={f.name} style={{ animation:`svcPop 0.3s ease ${i*0.06+0.02}s both` }}>
-                                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
-                                            <div>
-                                                <span style={{ fontSize:10.5, fontWeight:700, color:'var(--text)' }}>{f.name}</span>
-                                                <span style={{ fontSize:8.5, color:'var(--text3)', marginLeft:8 }}>{f.desc}</span>
-                                            </div>
-                                            <span style={{ fontSize:9, fontWeight:700, color:f.color, fontFamily:'monospace', flexShrink:0, marginLeft:8 }}>{f.controls}</span>
+                                    { icon:'🔑', name:'Identity & Access',  sub:'IAM users, roles, policies, MFA, access keys', checks:12, color:'#d13212', maxChecks:17 },
+                                    { icon:'🌐', name:'Network Security',   sub:'VPC, Security Groups, NACLs, flow logs',        checks:11, color:'#0972d3', maxChecks:17 },
+                                    { icon:'📦', name:'Data Protection',    sub:'S3 ACLs, KMS rotation, RDS encryption, EBS',   checks:17, color:'#FF9900', maxChecks:17 },
+                                    { icon:'📋', name:'Ops & Monitoring',   sub:'CloudTrail gaps, CloudWatch alarms, logging',   checks:7,  color:'#1d8102', maxChecks:17 },
+                                ].map((d,i) => (
+                                    <div key={d.name} style={{ animation:`svcPop 0.3s ease ${i*0.06+0.02}s both` }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4 }}>
+                                            <span style={{ fontSize:13 }}>{d.icon}</span>
+                                            <span style={{ fontSize:10.5, fontWeight:700, color:'var(--text)', flex:1 }}>{d.name}</span>
+                                            <span style={{ fontSize:8.5, color:d.color, fontWeight:800, fontFamily:'monospace', background:`${d.color}0d`, border:`1px solid ${d.color}22`, borderRadius:4, padding:'1px 6px' }}>{d.checks} checks</span>
                                         </div>
-                                        <div style={{ height:4, borderRadius:3, background:'var(--border)', overflow:'hidden' }}>
-                                            <div style={{ height:'100%', borderRadius:3, background:`linear-gradient(90deg,${f.color},${f.color}88)`, width:`${f.pct}%`, transition:'width 0.6s ease' }} />
+                                        <div style={{ fontSize:8, color:'var(--text3)', marginBottom:4, paddingLeft:20 }}>{d.sub}</div>
+                                        <div style={{ height:4, borderRadius:3, background:'var(--border)', overflow:'hidden', marginLeft:20 }}>
+                                            <div style={{ height:'100%', borderRadius:3, background:`linear-gradient(90deg,${d.color},${d.color}66)`, width:`${(d.checks/d.maxChecks)*100}%`, transition:'width 0.7s ease' }} />
                                         </div>
                                     </div>
                                 ))}
