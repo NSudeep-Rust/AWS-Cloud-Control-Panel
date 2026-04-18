@@ -407,41 +407,41 @@ export function ScannerSection({ onNav, dark }) {
                         @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
                     `}</style>
 
-                    {/* LEFT — Dark Terminal */}
-                    <div style={{ borderRadius:12, overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 8px 32px rgba(0,0,0,0.25)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                    {/* LEFT — Terminal (page-theme) */}
+                    <div style={{ borderRadius:12, overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'var(--card-shadow)', border:'1px solid var(--border)' }}>
                         {/* Title bar */}
-                        <div style={{ background:'#1e1e2e', padding:'9px 16px', display:'flex', alignItems:'center', gap:7, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ background:'var(--bg3, rgba(35,47,62,0.06))', padding:'9px 16px', display:'flex', alignItems:'center', gap:7, flexShrink:0, borderBottom:'1px solid var(--border)' }}>
                             {[['#d13212','#c0392b'],['#f59e0b','#d68910'],['#067340','#1d8102']].map(([bg,sh],i) => (
                                 <div key={i} style={{ width:11, height:11, borderRadius:'50%', background:bg, boxShadow:`0 0 4px ${sh}66` }} />
                             ))}
-                            <span style={{ marginLeft:8, fontSize:11, color:'rgba(255,255,255,0.45)', fontFamily:'monospace', letterSpacing:0.2 }}>&#9889; cloud-security-scanner — {awsId}</span>
+                            <span style={{ marginLeft:8, fontSize:11, color:'var(--text3)', fontFamily:'monospace', letterSpacing:0.2 }}>&#9889; cloud-security-scanner — {awsId}</span>
                             <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:5 }}>
                                 <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 5px rgba(29,129,2,0.7)', animation:'pulse 1.5s ease infinite' }} />
                                 <span style={{ fontSize:9, color:'#1d8102', fontWeight:700, fontFamily:'monospace' }}>LIVE</span>
                             </div>
                         </div>
                         {/* Body */}
-                        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px', fontFamily:'monospace', background:'#0d1117' }}>
+                        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px', fontFamily:'monospace', background:'var(--bg2)' }}>
                             {SCAN_LINES.slice(0, scanLineIdx + 1).map((line, i) => (
                                 <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:5, animation: i===scanLineIdx ? 'termLine 0.25s ease' : 'none' }}>
-                                    <span style={{ color: i<scanLineIdx ? '#3fb950' : '#FF9900', fontSize:11, flexShrink:0, width:14, textAlign:'center' }}>{i<scanLineIdx ? '✓' : '▶'}</span>
-                                    <span style={{ fontSize:11.5, color: i<scanLineIdx ? 'rgba(255,255,255,0.32)' : i===scanLineIdx ? '#e6edf3' : 'rgba(255,255,255,0.15)', fontWeight: i===scanLineIdx?600:400 }}>{line}</span>
+                                    <span style={{ color: i<scanLineIdx ? '#1d8102' : '#FF9900', fontSize:11, flexShrink:0, width:14, textAlign:'center' }}>{i<scanLineIdx ? '✓' : '▶'}</span>
+                                    <span style={{ fontSize:11.5, color: i<scanLineIdx ? 'var(--text3)' : i===scanLineIdx ? 'var(--text)' : 'var(--text3)', fontWeight: i===scanLineIdx?600:400, opacity: i<scanLineIdx ? 0.6 : 1 }}>{line}</span>
                                     {i===scanLineIdx && <span style={{ width:8, height:14, background:'#FF9900', borderRadius:1, animation:'cursorBlink 1s step-end infinite', marginLeft:2, flexShrink:0 }} />}
                                 </div>
                             ))}
                         </div>
                         {/* Progress */}
-                        <div style={{ flexShrink:0, background:'#161b22', padding:'12px 20px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ flexShrink:0, background:'var(--bg3, rgba(35,47,62,0.04))', padding:'12px 20px', borderTop:'1px solid var(--border)' }}>
                             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                                <span style={{ fontSize:9.5, color:'rgba(255,255,255,0.4)', fontFamily:'monospace', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Scan Progress</span>
+                                <span style={{ fontSize:9.5, color:'var(--text3)', fontFamily:'monospace', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Scan Progress</span>
                                 <span style={{ fontSize:10, color:'#FF9900', fontFamily:'monospace', fontWeight:700 }}>{pct}%</span>
                             </div>
-                            <div style={{ height:5, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden', marginBottom:6 }}>
+                            <div style={{ height:5, borderRadius:3, background:'var(--border)', overflow:'hidden', marginBottom:6 }}>
                                 <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#FF9900,#ec8a00)', width:`${pct}%`, transition:'width 0.8s ease', animation:'barGlow 2s ease infinite' }} />
                             </div>
                             <div style={{ display:'flex', justifyContent:'space-between' }}>
-                                <span style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>{scanLine}</span>
-                                <span style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>{elapsed}s elapsed</span>
+                                <span style={{ fontSize:9, color:'var(--text3)', fontFamily:'monospace' }}>{scanLine}</span>
+                                <span style={{ fontSize:9, color:'var(--text3)', fontFamily:'monospace' }}>{elapsed}s elapsed</span>
                             </div>
                         </div>
                     </div>
