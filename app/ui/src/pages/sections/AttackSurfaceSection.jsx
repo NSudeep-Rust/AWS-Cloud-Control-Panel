@@ -48,168 +48,151 @@ const CATS_META = [
 ]
 
 /* ───────────────────────────────────────────────────────
-   EMPTY STATE  —  full-page premium layout, no canvas
+   EMPTY STATE  —  Premium 2-col layout
 ──────────────────────────────────────────────────────── */
 function EmptyState({ dark }) {
-    const bg     = dark ? '#0d1117' : '#f0f2f5'
-    const card   = dark ? '#161b22' : '#ffffff'
-    const border = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-    const text   = dark ? '#e6edf3' : '#0f1111'
-    const text2  = dark ? '#8b949e' : '#5a6270'
-    const accent = '#d13212'
-
     return (
-        <div style={{ minHeight: '100%', background: bg, padding: '28px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <style>{`
-                @keyframes asSlideUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes asSweep     { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
-                @keyframes asPulseRing { 0%{transform:scale(0.7);opacity:0.7} 100%{transform:scale(2.2);opacity:0} }
-                @keyframes asFlicker   { 0%,100%{opacity:1} 45%{opacity:0.4} 55%{opacity:0.4} }
-                @keyframes asBarFlow   { 0%{background-position:200% center} 100%{background-position:-200% center} }
-                @keyframes asOrbitDot  { 0%{opacity:0.3} 50%{opacity:1} 100%{opacity:0.3} }
+                @keyframes asSlideUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+                @keyframes asShimmer   { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                @keyframes asPulseRing { 0%{transform:scale(0.82);opacity:0.55} 100%{transform:scale(2.6);opacity:0} }
+                @keyframes asBlink     { 0%,100%{opacity:1} 50%{opacity:0.15} }
+                @keyframes asPop       { 0%{opacity:0;transform:scale(0.93)} 100%{opacity:1;transform:scale(1)} }
+                @keyframes asOrbit     { to{transform:rotate(360deg)} }
+                @keyframes asOrbitRev  { to{transform:rotate(-360deg)} }
+                @keyframes asFloat     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+                @keyframes asSpin      { to{transform:rotate(360deg)} }
+                @keyframes asBarScan   { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
             `}</style>
 
-            {/* ── Section title ── */}
-            <div style={{ display:'flex', alignItems:'flex-start', gap:16, marginBottom:24, animation:'asSlideUp 0.5s ease both' }}>
-                <div style={{
-                    width:50, height:50, borderRadius:14, flexShrink:0,
-                    background:'rgba(209,50,18,0.12)', border:'1.5px solid rgba(209,50,18,0.3)',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:14, animation:'asSlideUp 0.4s ease both' }}>
+                <div style={{ width:46, height:46, borderRadius:12, flexShrink:0, background:'rgba(209,50,18,0.1)', border:'1.5px solid rgba(209,50,18,0.28)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#d13212" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={24} height={24}>
                         <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
                         <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
                     </svg>
                 </div>
                 <div>
-                    <div style={{ fontSize:20, fontWeight:800, color:text, letterSpacing:-0.5 }}>Attack Surface</div>
-                    <div style={{ fontSize:12, color:text2, marginTop:3 }}>
-                        Identifies every publicly-exposed resource across your AWS infrastructure
-                    </div>
+                    <div style={{ fontSize:19, fontWeight:800, color:'var(--text)', letterSpacing:-0.4, marginBottom:3 }}>Attack Surface</div>
+                    <div style={{ fontSize:11.5, color:'var(--text3)' }}>Identifies every publicly-exposed resource across your AWS infrastructure</div>
                 </div>
             </div>
 
-            {/* ── Main pipeline card ── */}
-            <div style={{
-                background: card,
-                border: `1.5px solid ${border}`,
-                borderRadius:18, overflow:'hidden',
-                animation:'asSlideUp 0.5s ease 0.05s both',
-                boxShadow: dark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.07)',
-            }}>
-                {/* Card header bar */}
-                <div style={{
-                    padding:'14px 24px',
-                    borderBottom:`1px solid ${border}`,
-                    display:'flex', alignItems:'center', justifyContent:'space-between',
-                }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div style={{ width:7, height:7, borderRadius:'50%', background:accent, animation:'asFlicker 2.4s ease infinite' }} />
-                        <span style={{ fontSize:11, fontWeight:800, letterSpacing:1.5, color:accent, textTransform:'uppercase' }}>
-                            Exposure Analysis Engine
-                        </span>
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                        <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 6px #1d810280' }} />
-                        <span style={{ fontSize:11, color:text2 }}>6 detectors ready</span>
+            {/* Main pipeline card */}
+            <div style={{ background:'var(--bg2)', border:'1.5px solid rgba(209,50,18,0.22)', borderRadius:14, overflow:'hidden', boxShadow:'0 4px 28px rgba(209,50,18,0.07), var(--card-shadow)', animation:'asSlideUp 0.4s ease 0.06s both' }}>
+                {/* Shimmer top bar */}
+                <div style={{ height:3, background:'linear-gradient(90deg,#d13212,#e07b00,#d13212)', backgroundSize:'200%', animation:'asShimmer 2.4s linear infinite' }} />
+
+                {/* Card header */}
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'13px 20px', borderBottom:'1px solid rgba(209,50,18,0.1)' }}>
+                    <div style={{ width:7, height:7, borderRadius:'50%', background:'#d13212', animation:'asBlink 1.6s ease infinite' }} />
+                    <span style={{ fontSize:10, fontWeight:800, letterSpacing:1.5, color:'#d13212', textTransform:'uppercase' }}>Exposure Analysis Engine</span>
+                    <div style={{ flex:1 }} />
+                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:10, color:'var(--text3)' }}>
+                        <span style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', display:'inline-block', boxShadow:'0 0 6px #1d810280' }} />
+                        6 detectors ready
                     </div>
                 </div>
 
-                {/* Animated scan progress bar */}
-                <div style={{ height:3, background: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', position:'relative', overflow:'hidden' }}>
-                    <div style={{
-                        position:'absolute', inset:0,
-                        background:`linear-gradient(90deg, transparent 0%, ${accent} 40%, #ff6b35 60%, transparent 100%)`,
-                        backgroundSize:'200% 100%',
-                        animation:'asBarFlow 2.4s linear infinite',
-                        opacity:0.6,
-                    }} />
-                </div>
+                {/* 2-col body */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1.65fr', minHeight:0 }}>
 
-                {/* 6 category cards grid */}
-                <div style={{
-                    display:'grid',
-                    gridTemplateColumns:'repeat(3, 1fr)',
-                    gap:1,
-                    background: border,
-                }}>
-                    {CATS_META.map((cat, i) => {
-                        const pal = SEV_PALETTE[cat.severity] || SEV_PALETTE.HIGH
-                        return (
-                            <div key={cat.id} style={{
-                                background: card,
-                                padding:'28px 20px 24px',
-                                textAlign:'center',
-                                position:'relative',
-                                overflow:'hidden',
-                                animation:`asSlideUp 0.5s ease ${0.1 + i * 0.07}s both`,
-                            }}>
-                                {/* Sweeping scan beam — staggered per card */}
-                                <div style={{
-                                    position:'absolute', left:0, right:0, height:'60%',
-                                    background:`linear-gradient(180deg, transparent 0%, ${pal.col}18 50%, transparent 100%)`,
-                                    animation:`asSweep 2.8s ease-in-out ${i * 0.45}s infinite`,
-                                    pointerEvents:'none',
-                                }} />
+                    {/* LEFT — Globe radar + stats */}
+                    <div style={{ padding:'28px 20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:18, borderRight:'1px solid rgba(209,50,18,0.1)', background:'rgba(209,50,18,0.02)' }}>
+                        {/* Concentric-ring globe */}
+                        <div style={{ position:'relative', width:120, height:120, display:'flex', alignItems:'center', justifyContent:'center', animation:'asFloat 4s ease infinite', flexShrink:0 }}>
+                            {/* Outer orbit ring - carries 2 dots */}
+                            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1px solid rgba(209,50,18,0.18)', animation:'asOrbit 7s linear infinite' }}>
+                                {[0, 180].map((deg, k) => (
+                                    <div key={k} style={{ position:'absolute', top:'50%', left:'50%', width:7, height:7, borderRadius:'50%', background: k===0 ? '#d13212' : '#e07b00', boxShadow:`0 0 8px ${k===0?'#d1321280':'#e07b0080'}`, transform:`translate(-50%,-50%) rotate(${deg}deg) translateX(58px)` }} />
+                                ))}
+                            </div>
+                            {/* Inner orbit ring - reversed */}
+                            <div style={{ position:'absolute', inset:16, borderRadius:'50%', border:'1px dashed rgba(209,50,18,0.14)', animation:'asOrbitRev 11s linear infinite' }}>
+                                {[90, 270].map((deg, k) => (
+                                    <div key={k} style={{ position:'absolute', top:'50%', left:'50%', width:5, height:5, borderRadius:'50%', background:'rgba(209,50,18,0.5)', transform:`translate(-50%,-50%) rotate(${deg}deg) translateX(36px)` }} />
+                                ))}
+                            </div>
+                            {/* Pulse rings — all same animation cycle, just staggered start */}
+                            {[0, 0.8, 1.6].map(delay => (
+                                <div key={delay} style={{ position:'absolute', width:72, height:72, borderRadius:'50%', border:'1.5px solid rgba(209,50,18,0.3)', animation:`asPulseRing 2.4s ease-out ${delay}s infinite` }} />
+                            ))}
+                            {/* Globe icon centre */}
+                            <div style={{ width:72, height:72, borderRadius:'50%', background:'rgba(209,50,18,0.1)', border:'2px solid rgba(209,50,18,0.45)', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', zIndex:2 }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#d13212" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" width={28} height={28}>
+                                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                                </svg>
+                            </div>
+                        </div>
 
-                                {/* Pulsing ring behind icon */}
-                                <div style={{ position:'relative', display:'inline-flex', alignItems:'center', justifyContent:'center', marginBottom:14 }}>
-                                    <div style={{
-                                        position:'absolute', width:56, height:56, borderRadius:'50%',
-                                        border:`1.5px solid ${pal.col}`,
-                                        animation:`asPulseRing 2.2s ease-out ${i * 0.35}s infinite`,
-                                    }} />
-                                    <div style={{
-                                        width:52, height:52, borderRadius:14,
-                                        background: pal.bg,
-                                        border:`1.5px solid ${pal.border}`,
-                                        display:'flex', alignItems:'center', justifyContent:'center',
-                                        color: pal.col,
-                                        position:'relative',
-                                    }}>
+                        {/* Label */}
+                        <div style={{ textAlign:'center' }}>
+                            <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', marginBottom:4 }}>Awaiting Scan Data</div>
+                            <div style={{ fontSize:10, color:'var(--text3)', lineHeight:1.6 }}>52+ exposure checks · 6 detection engines<br/>covering 9 AWS regions</div>
+                        </div>
+
+                        {/* 2×2 stat grid */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7, width:'100%' }}>
+                            {[
+                                { val:'52+', label:'Checks',    color:'#d13212' },
+                                { val:'6',   label:'Detectors', color:'#e07b00' },
+                                { val:'9',   label:'Regions',   color:'#0972d3' },
+                                { val:'All', label:'Coverage',  color:'#1d8102' },
+                            ].map(s => (
+                                <div key={s.label} style={{ background:`${s.color}0a`, border:`1px solid ${s.color}22`, borderRadius:8, padding:'7px 8px', textAlign:'center' }}>
+                                    <div style={{ fontSize:17, fontWeight:900, color:s.color, fontFamily:'monospace', background:`linear-gradient(90deg,${s.color},${s.color}bb,${s.color})`, backgroundSize:'200%', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', animation:'asShimmer 3s linear infinite' }}>{s.val}</div>
+                                    <div style={{ fontSize:8, color:'var(--text3)', textTransform:'uppercase', letterSpacing:0.8, marginTop:1 }}>{s.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* RIGHT — 6 category rows (uniform, no random beams) */}
+                    <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:9, justifyContent:'center' }}>
+                        <div style={{ fontSize:9, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1.2, marginBottom:3 }}>Detection Coverage</div>
+                        {CATS_META.map((cat, i) => {
+                            const pal = SEV_PALETTE[cat.severity] || SEV_PALETTE.HIGH
+                            return (
+                                <div key={cat.id} style={{
+                                    background:`${pal.col}07`, border:`1px solid ${pal.col}20`,
+                                    borderRadius:10, padding:'11px 14px',
+                                    display:'flex', alignItems:'center', gap:12,
+                                    animation:`asPop 0.3s ease ${i * 0.07}s both`,
+                                    transition:'background 0.15s',
+                                }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = `${pal.col}12` }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = `${pal.col}07` }}
+                                >
+                                    {/* Icon tile */}
+                                    <div style={{ width:38, height:38, borderRadius:9, flexShrink:0, background:pal.bg, border:`1.5px solid ${pal.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:pal.col }}>
                                         {cat.icon}
                                     </div>
+                                    {/* Content */}
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                        <div style={{ fontSize:11.5, fontWeight:700, color:'var(--text)', marginBottom:2 }}>{cat.label}</div>
+                                        <div style={{ fontSize:9.5, color:'var(--text3)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{cat.sub}</div>
+                                    </div>
+                                    {/* Severity badge */}
+                                    <span style={{ fontSize:8.5, fontWeight:800, color:pal.col, background:`${pal.col}10`, border:`1px solid ${pal.col}28`, borderRadius:4, padding:'2px 8px', flexShrink:0, letterSpacing:0.5 }}>{cat.severity}</span>
+                                    {/* Status dot — ALL same animation, no stagger */}
+                                    <div style={{ width:7, height:7, borderRadius:'50%', background:pal.col, animation:'asBlink 1.8s ease infinite', flexShrink:0 }} />
                                 </div>
-
-                                <div style={{ fontSize:12, fontWeight:800, color:text, letterSpacing:0.3, marginBottom:5 }}>
-                                    {cat.label}
-                                </div>
-                                <div style={{ fontSize:10.5, color:text2, lineHeight:1.5, marginBottom:14 }}>
-                                    {cat.sub}
-                                </div>
-
-                                {/* Skeleton scan bar */}
-                                <div style={{
-                                    height:4, borderRadius:4,
-                                    background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                                    overflow:'hidden', position:'relative',
-                                }}>
-                                    <div style={{
-                                        position:'absolute', inset:0,
-                                        background:`linear-gradient(90deg, transparent, ${pal.col}60, transparent)`,
-                                        backgroundSize:'200% 100%',
-                                        animation:`asBarFlow 1.8s linear ${i * 0.28}s infinite`,
-                                    }} />
-                                </div>
-                                <div style={{ fontSize:9, color:text2, marginTop:7, letterSpacing:0.8, textTransform:'uppercase', animation:`asOrbitDot 1.8s ease ${i*0.3}s infinite` }}>
-                                    Awaiting scan data
-                                </div>
-                            </div>
-                        )
-                    })}
+                            )
+                        })}
+                    </div>
                 </div>
 
-                {/* Bottom hint */}
-                <div style={{
-                    padding:'16px 24px',
-                    borderTop:`1px solid ${border}`,
-                    display:'flex', alignItems:'center', gap:10,
-                    background: dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-                }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <span style={{ fontSize:12, color:text2 }}>
+                {/* Footer CTA */}
+                <div style={{ padding:'14px 20px', borderTop:'1px solid rgba(209,50,18,0.08)', display:'flex', alignItems:'center', gap:10, background:'rgba(209,50,18,0.02)' }}>
+                    <div style={{ width:28, height:28, borderRadius:7, background:'rgba(209,50,18,0.08)', border:'1px solid rgba(209,50,18,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#d13212" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </div>
+                    <span style={{ fontSize:11.5, color:'var(--text3)' }}>
                         Run a security scan from the{' '}
                         <span style={{ color:'#e07b00', fontWeight:700 }}>Scanner</span>
                         {' '}to reveal your full attack surface map.
@@ -217,27 +200,28 @@ function EmptyState({ dark }) {
                 </div>
             </div>
 
-            {/* ── What this detects info row ── */}
-            <div style={{
-                display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginTop:16,
-                animation:'asSlideUp 0.5s ease 0.55s both',
-            }}>
+            {/* Bottom "what we detect" info row */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, animation:'asSlideUp 0.4s ease 0.32s both' }}>
                 {[
-                    { icon:'🪣', label:'Public S3 Buckets',      desc:'Buckets without Block Public Access' },
-                    { icon:'🔓', label:'Open Firewall Ports',     desc:'SGs allowing 0.0.0.0/0 inbound' },
-                    { icon:'🗄️', label:'Exposed Databases',       desc:'RDS instances publicly accessible' },
-                    { icon:'🖥️', label:'Internet-facing EC2',     desc:'Instances with direct public IPs' },
-                    { icon:'👁️', label:'Unmonitored Regions',     desc:'Regions with CloudTrail disabled' },
-                    { icon:'🔑', label:'IAM Over-Privileges',     desc:'Admin users, roles & missing MFA' },
+                    { icon:'🪣', label:'Public S3 Buckets',   desc:'Buckets without Block Public Access',    color:'#d13212' },
+                    { icon:'🔓', label:'Open Firewall Ports',  desc:'SGs allowing 0.0.0.0/0 inbound',        color:'#d13212' },
+                    { icon:'🗄️', label:'Exposed Databases',    desc:'RDS instances publicly accessible',      color:'#e07b00' },
+                    { icon:'🖥️', label:'Internet-facing EC2',  desc:'Instances with direct public IPs',       color:'#e07b00' },
+                    { icon:'👁️', label:'Unmonitored Regions',  desc:'Regions with CloudTrail disabled',       color:'#0972d3' },
+                    { icon:'🔑', label:'IAM Over-Privileges',  desc:'Admin users, roles & missing MFA',       color:'#0972d3' },
                 ].map((item, i) => (
                     <div key={i} style={{
-                        background: card, border:`1px solid ${border}`, borderRadius:12,
-                        padding:'14px 16px', display:'flex', alignItems:'center', gap:12,
-                    }}>
+                        background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:11,
+                        padding:'12px 14px', display:'flex', alignItems:'center', gap:11,
+                        boxShadow:'var(--card-shadow)', transition:'border-color 0.15s, box-shadow 0.15s',
+                    }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor=`${item.color}44`; e.currentTarget.style.boxShadow=`0 4px 16px ${item.color}12` }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.boxShadow='var(--card-shadow)' }}
+                    >
                         <div style={{ fontSize:20, flexShrink:0 }}>{item.icon}</div>
                         <div>
-                            <div style={{ fontSize:12, fontWeight:700, color:text }}>{item.label}</div>
-                            <div style={{ fontSize:10.5, color:text2, marginTop:2 }}>{item.desc}</div>
+                            <div style={{ fontSize:11.5, fontWeight:700, color:'var(--text)', marginBottom:2 }}>{item.label}</div>
+                            <div style={{ fontSize:9.5, color:'var(--text3)' }}>{item.desc}</div>
                         </div>
                     </div>
                 ))}
@@ -245,6 +229,7 @@ function EmptyState({ dark }) {
         </div>
     )
 }
+
 
 /* ───────────────────────────────────────────────────────
    CATEGORY CARD  (loaded state)
