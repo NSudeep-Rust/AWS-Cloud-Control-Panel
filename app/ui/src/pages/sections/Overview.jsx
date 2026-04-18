@@ -216,6 +216,42 @@ function SevBar({ label, count, color, total, dark }) {
     )
 }
 
+// Stable top-level component — avoids re-mounting on every Overview render tick
+const QuickAction = memo(function QuickAction({ icon: Icon, label, desc, color = '#FF9900', section, onNav }) {
+    const [hov, setHov] = useState(false)
+    return (
+        <button
+            className="ov-qa"
+            onClick={() => onNav(section)}
+            onMouseEnter={() => setHov(true)}
+            onMouseLeave={() => setHov(false)}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: hov ? `${color}0d` : 'transparent',
+                border: `1px solid ${hov ? `${color}35` : 'transparent'}`,
+                borderRadius: 8, padding: '7px 9px',
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'all 0.15s ease', width: '100%',
+            }}>
+            <div style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: hov ? `${color}22` : `${color}14`,
+                border: `1px solid ${color}28`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
+                boxShadow: hov ? `0 2px 8px ${color}30` : 'none',
+            }}>
+                <Icon size={14} color={color} strokeWidth={1.9} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: hov ? color : 'var(--text)', lineHeight: 1.2, transition: 'color 0.12s' }}>{label}</div>
+                <div style={{ fontSize: 9.5, color: 'var(--text3)', marginTop: 1 }}>{desc}</div>
+            </div>
+            <ChevronRight size={11} color={hov ? color : 'var(--text3)'} style={{ flexShrink: 0, opacity: hov ? 0.7 : 0.4, transition: 'all 0.12s' }} />
+        </button>
+    )
+})
+
 const RADAR_REGIONS = [
     { id: 'us-east-1', c: '#FF9900' }, { id: 'us-east-2', c: '#FF9900' }, { id: 'us-west-2', c: '#FF9900' },
     { id: 'eu-west-1', c: '#0972d3' }, { id: 'eu-central-1', c: '#0972d3' }, { id: 'eu-north-1', c: '#0972d3' },
@@ -469,58 +505,8 @@ export default function Overview({ onNav, dark }) {
                     : '#d13212'
 
 
-    function FindingRow({ finding, idx }) {
-        const sev = SEV[finding.severity] || SEV.LOW
-        const [hov, setHov] = useState(false)
-        return (
-            <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 7px', borderRadius: 4, background: hov ? (dark ? 'rgba(255,255,255,0.04)' : 'rgba(35,47,62,0.04)') : (idx % 2 === 0 ? 'transparent' : (dark ? 'rgba(255,255,255,0.015)' : 'rgba(35,47,62,0.02)')), border: `1px solid ${hov ? 'var(--border)' : 'transparent'}`, transition: 'all 0.1s' }}>
-                <div style={{ color: sev.color, flexShrink: 0, opacity: 0.85 }}>{findingIcon(finding.type)}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finding.type}</div>
-                    <div style={{ fontSize: 9, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finding.resource_id} · {finding.region}</div>
-                </div>
-                <span style={{ fontSize: 9, fontWeight: 700, color: sev.color, background: sev.bg, border: `1px solid ${sev.border}`, borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace', flexShrink: 0 }}>{finding.severity}</span>
-            </div>
-        )
-    }
-
-    function QuickAction({ icon: Icon, label, desc, color = '#FF9900', section, animDelay = '0s' }) {
-        const [hov, setHov] = useState(false)
-        return (
-            <button
-                className="ov-qa"
-                onClick={() => onNav(section)}
-                onMouseEnter={() => setHov(true)}
-                onMouseLeave={() => setHov(false)}
-                style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    background: hov ? `${color}0d` : 'transparent',
-                    border: `1px solid ${hov ? `${color}35` : 'transparent'}`,
-                    borderRadius: 8,
-                    padding: '7px 9px',
-                    cursor: 'pointer', textAlign: 'left',
-                    transition: 'all 0.15s ease', width: '100%',
-                    animation: `ov-up 0.35s ease ${animDelay} both`,
-                }}>
-                <div style={{
-                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                    background: hov ? `${color}22` : `${color}14`,
-                    border: `1px solid ${color}28`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s',
-                    boxShadow: hov ? `0 2px 8px ${color}30` : 'none',
-                }}>
-                    <Icon size={14} color={color} strokeWidth={1.9} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: hov ? color : 'var(--text)', lineHeight: 1.2, transition: 'color 0.12s' }}>{label}</div>
-                    <div style={{ fontSize: 9.5, color: 'var(--text3)', marginTop: 1.5 }}>{desc}</div>
-                </div>
-                <ChevronRight size={11} color={hov ? color : 'var(--text3)'} style={{ flexShrink: 0, opacity: hov ? 0.7 : 0.4, transition: 'all 0.12s' }} />
-            </button>
-        )
-    }
+    // FindingRow removed (duplicate — FindingItem memo above is used instead)
+    // QuickAction removed — now a stable top-level memo component
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 'calc(100vh - 64px)', minHeight: 0 }}>
@@ -776,37 +762,64 @@ export default function Overview({ onNav, dark }) {
                     )}
                 </Card>
 
-                {/* C. QUICK ACTIONS */}
-                <Card style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 }} accentColor="#FF9900">
-                    <CardLabel icon={Zap} label="Quick Actions" />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
-                        <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner"        animDelay=".05s" />
-                        <QuickAction icon={ShieldAlert} label="Threats"       desc={monitorRunning ? 'Monitor active' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats" animDelay=".08s" />
-                        <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#7953d2" section="iam-view"       animDelay=".11s" />
-                        <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute"        animDelay=".14s" />
-                        <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#6e7f96" section="rollback"       animDelay=".17s" />
-                        <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface" animDelay=".20s" />
-                        <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics"      animDelay=".23s" />
-                        <QuickAction icon={History}    label="History"        desc="Audit log & events"         color="#0a8a6a" section="history"        animDelay=".26s" />
+                {/* C. RIGHT COLUMN: Quick Actions + Premium Account Card */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden', minHeight: 0 }}>
+
+                    {/* Quick Actions — stable memo, no refresh issues */}
+                    <Card style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }} accentColor="#FF9900">
+                        <CardLabel icon={Zap} label="Quick Actions" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                            <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner"        onNav={onNav} />
+                            <QuickAction icon={ShieldAlert} label="Threats"      desc={monitorRunning ? 'Monitor active' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats"       onNav={onNav} />
+                            <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#7953d2" section="iam-view"       onNav={onNav} />
+                            <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute"        onNav={onNav} />
+                            <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#6e7f96" section="rollback"       onNav={onNav} />
+                            <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface"  onNav={onNav} />
+                            <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics"       onNav={onNav} />
+                            <QuickAction icon={History}    label="History"        desc="Audit log & events"         color="#0a8a6a" section="history"         onNav={onNav} />
+                        </div>
+                    </Card>
+
+                    {/* Premium AWS Account Card — separate, always visible */}
+                    <div style={{
+                        flexShrink: 0,
+                        background: 'linear-gradient(145deg, #1a2332 0%, #232F3E 100%)',
+                        borderRadius: 10,
+                        padding: '11px 13px',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        boxShadow: '0 4px 18px rgba(0,0,0,0.22)',
+                    }}>
+                        {/* Header row */}
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:9, paddingBottom:8, borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+                            <div style={{ width:24, height:24, borderRadius:6, background:'rgba(255,153,0,0.15)', border:'1px solid rgba(255,153,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                <Shield size={12} color="#FF9900" />
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:8, fontWeight:700, color:'rgba(255,255,255,0.38)', textTransform:'uppercase', letterSpacing:1 }}>Connected Account</div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#ffffff', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{awsId}</div>
+                            </div>
+                            <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                                <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 7px rgba(29,129,2,0.75)', animation:'ov-pulse 2s ease-in-out infinite' }} />
+                                <span style={{ fontSize:8.5, color:'#4caf50', fontWeight:800, letterSpacing:0.6 }}>LIVE</span>
+                            </div>
+                        </div>
+                        {/* 2×2 info grid */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4 }}>
+                            {[
+                                { label:'Identity', value: profile,                             color:'#c9d1d9' },
+                                { label:'Type',     value: isIam ? 'IAM User' : 'Root',         color: isIam ? '#73c2f7' : '#FF9900' },
+                                { label:'Region',   value: region,                              color:'#73c2f7' },
+                                { label:'Version',  value: appVersion ? `v${appVersion}` : '—', color:'#c9d1d9' },
+                            ].map(row => (
+                                <div key={row.label} style={{ background:'rgba(255,255,255,0.04)', borderRadius:7, padding:'6px 8px', border:'1px solid rgba(255,255,255,0.06)' }}>
+                                    <div style={{ fontSize:7.5, color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:0.7, marginBottom:3 }}>{row.label}</div>
+                                    <div style={{ fontSize:9.5, fontWeight:700, color:row.color, fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.value}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Account Info */}
-                    <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)', flexShrink: 0, marginTop: 8 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7 }}>Account Info</div>
-                        {[
-                            { label: 'AWS Account', value: awsId },
-                            { label: 'Identity',    value: profile },
-                            { label: 'Type',        value: isIam ? 'IAM User' : 'Root Account' },
-                            { label: 'Region',      value: region, color: '#0972d3' },
-                            { label: 'Version',     value: appVersion ? `v${appVersion}` : '—' },
-                        ].map(row => (
-                            <div key={row.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'4px 0', borderBottom:'1px solid var(--border)' }}>
-                                <span style={{ fontSize:9.5, color:'var(--text3)' }}>{row.label}</span>
-                                <span style={{ fontSize:10, fontWeight:700, color: row.color || 'var(--text)', fontFamily:'monospace', maxWidth:155, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
+                </div>
             </div>
         </div>
     )
