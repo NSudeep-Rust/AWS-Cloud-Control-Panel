@@ -247,136 +247,142 @@ export function ScannerSection({ onNav, dark }) {
 
             {/* ── IDLE ── */}
             {status === 'idle' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36, padding: '20px 0' }}>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.65fr', gap: 14, minHeight: 0 }}>
                     <style>{`
-                        @keyframes orbitRing { to { transform: rotate(360deg) } }
+                        @keyframes orbitRing    { to { transform: rotate(360deg) } }
                         @keyframes orbitRingRev { to { transform: rotate(-360deg) } }
-                        @keyframes shieldPulse { 0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px rgba(255,153,0,0.4))} 50%{transform:scale(1.06);filter:drop-shadow(0 0 22px rgba(255,153,0,0.7))} }
-                        @keyframes orbitDot { to { transform: rotate(360deg) translateX(58px) rotate(-360deg) } }
-                        @keyframes orbitDot2 { to { transform: rotate(360deg) translateX(80px) rotate(-360deg) } }
-                        @keyframes scanBeam { 0%{opacity:0;transform:scaleY(0)} 20%{opacity:1;transform:scaleY(1)} 80%{opacity:1} 100%{opacity:0;transform:scaleY(0)} }
-                        @keyframes idleFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-                        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                        @keyframes shieldPulse  { 0%,100%{filter:drop-shadow(0 0 8px rgba(255,153,0,0.4))} 50%{filter:drop-shadow(0 0 24px rgba(255,153,0,0.72))} }
+                        @keyframes idleFloat    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+                        @keyframes shimmer      { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                        @keyframes svcPop       { 0%{opacity:0;transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
+                        @keyframes rgPop        { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
                     `}</style>
 
-                    {/* Hero visual */}
-                    <div style={{ position: 'relative', width: 200, height: 200, animation: 'idleFloat 4s ease infinite' }}>
-                        {/* Outer orbit ring */}
-                        <div style={{
-                            position: 'absolute', inset: 0, borderRadius: '50%',
-                            border: '1.5px solid rgba(255,153,0,0.15)',
-                            animation: 'orbitRing 8s linear infinite',
-                        }}>
-                            {/* 3 orbit dots on outer ring */}
-                            {[0, 120, 240].map((deg, i) => (
-                                <div key={i} style={{
-                                    position: 'absolute', top: '50%', left: '50%',
-                                    width: i === 0 ? 10 : 7, height: i === 0 ? 10 : 7,
-                                    borderRadius: '50%',
-                                    background: i === 0 ? '#FF9900' : i === 1 ? '#0972d3' : '#1d8102',
-                                    boxShadow: `0 0 ${i === 0 ? 10 : 6}px ${i === 0 ? '#FF990088' : i === 1 ? '#0972d388' : '#1d810288'}`,
-                                    transform: `translate(-50%,-50%) rotate(${deg}deg) translateX(98px)`,
-                                    marginTop: 0,
-                                }} />
-                            ))}
-                        </div>
-                        {/* Middle ring */}
-                        <div style={{
-                            position: 'absolute', inset: 22, borderRadius: '50%',
-                            border: '1px dashed rgba(255,153,0,0.2)',
-                            animation: 'orbitRingRev 12s linear infinite',
-                        }}>
-                            {[60, 180, 300].map((deg, i) => (
-                                <div key={i} style={{
-                                    position: 'absolute', top: '50%', left: '50%',
-                                    width: 6, height: 6, borderRadius: '50%',
-                                    background: 'rgba(255,153,0,0.5)',
-                                    transform: `translate(-50%,-50%) rotate(${deg}deg) translateX(70px)`,
-                                }} />
-                            ))}
-                        </div>
-                        {/* Inner ring */}
-                        <div style={{
-                            position: 'absolute', inset: 44, borderRadius: '50%',
-                            border: '1px solid rgba(255,153,0,0.12)',
-                        }} />
-                        {/* Center shield */}
-                        <div style={{
-                            position: 'absolute', inset: 56,
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, rgba(255,153,0,0.15), rgba(255,153,0,0.08))',
-                            border: '2px solid rgba(255,153,0,0.5)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            animation: 'shieldPulse 2.5s ease infinite',
-                            backdropFilter: 'blur(4px)',
-                        }}>
-                            <Shield size={34} color="#FF9900" strokeWidth={1.5} />
-                        </div>
-                    </div>
+                    {/* LEFT: Hero + Animation + CTA */}
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'28px 22px', overflow:'hidden', position:'relative', boxShadow:'var(--card-shadow)' }}>
+                        {/* Radial glow */}
+                        <div style={{ position:'absolute', width:320, height:320, borderRadius:'50%', background:'radial-gradient(ellipse, rgba(255,153,0,0.05) 0%, transparent 70%)', pointerEvents:'none' }} />
+                        {/* Animated top bar */}
+                        <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,#FF9900,#ec8a00,#FF9900)', backgroundSize:'200%', animation:'shimmer 3s linear infinite' }} />
 
-                    {/* Text block */}
-                    <div style={{ textAlign: 'center', maxWidth: 460 }}>
-                        <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text)', marginBottom: 10, letterSpacing: -0.5 }}>Ready to Scan</div>
-                        <div style={{ fontSize: 13.5, color: 'var(--text3)', lineHeight: 1.7 }}>
-                            Full multi-region security analysis across <strong style={{ color: 'var(--text2)' }}>9 AWS regions</strong>
-                            &nbsp;&middot;&nbsp;52+ check types across IAM, S3, EC2, VPC, KMS &amp; more.
-                        </div>
-                    </div>
-
-                    {/* Stats row */}
-                    <div style={{ display: 'flex', gap: 32 }}>
-                        {[{ label: 'Check Types', val: '52+' }, { label: 'Services', val: '12+' }, { label: 'Regions', val: '9' }, { label: 'Coverage', val: 'Global' }].map(s => (
-                            <div key={s.label} style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: 24, fontWeight: 900, color: '#FF9900', fontFamily: 'monospace',
-                                    background: 'linear-gradient(90deg, #FF9900, #ec8a00, #FF9900)',
-                                    backgroundSize: '200%',
-                                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                                    animation: 'shimmer 3s linear infinite',
-                                }}>{s.val}</div>
-                                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.8 }}>{s.label}</div>
+                        {/* Orbital animation */}
+                        <div style={{ position:'relative', width:160, height:160, animation:'idleFloat 4s ease infinite', flexShrink:0 }}>
+                            <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1.5px solid rgba(255,153,0,0.15)', animation:'orbitRing 8s linear infinite' }}>
+                                {[0,120,240].map((deg,i) => (
+                                    <div key={i} style={{ position:'absolute', top:'50%', left:'50%', width:i===0?10:7, height:i===0?10:7, borderRadius:'50%', background:i===0?'#FF9900':i===1?'#0972d3':'#1d8102', boxShadow:`0 0 ${i===0?10:6}px ${i===0?'#FF990088':i===1?'#0972d388':'#1d810288'}`, transform:`translate(-50%,-50%) rotate(${deg}deg) translateX(78px)` }} />
+                                ))}
                             </div>
-                        ))}
+                            <div style={{ position:'absolute', inset:18, borderRadius:'50%', border:'1px dashed rgba(255,153,0,0.2)', animation:'orbitRingRev 12s linear infinite' }}>
+                                {[60,180,300].map((deg,i) => (
+                                    <div key={i} style={{ position:'absolute', top:'50%', left:'50%', width:5, height:5, borderRadius:'50%', background:'rgba(255,153,0,0.45)', transform:`translate(-50%,-50%) rotate(${deg}deg) translateX(52px)` }} />
+                                ))}
+                            </div>
+                            <div style={{ position:'absolute', inset:38, borderRadius:'50%', border:'1px solid rgba(255,153,0,0.1)' }} />
+                            <div style={{ position:'absolute', inset:46, borderRadius:'50%', background:'linear-gradient(135deg,rgba(255,153,0,0.15),rgba(255,153,0,0.06))', border:'2px solid rgba(255,153,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', animation:'shieldPulse 2.5s ease infinite' }}>
+                                <Shield size={28} color="#FF9900" strokeWidth={1.5} />
+                            </div>
+                        </div>
+
+                        {/* Text */}
+                        <div style={{ textAlign:'center' }}>
+                            <div style={{ fontSize:22, fontWeight:900, color:'var(--text)', letterSpacing:-0.5, marginBottom:7 }}>Ready to Scan</div>
+                            <div style={{ fontSize:12, color:'var(--text3)', lineHeight:1.65 }}>
+                                Multi-region security analysis across <strong style={{ color:'var(--text2)' }}>9 AWS regions</strong><br />
+                                52+ check types · IAM, S3, EC2, VPC, KMS &amp; more
+                            </div>
+                        </div>
+
+                        {/* Stats 2x2 */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7, width:'100%' }}>
+                            {[
+                                { val:'52+',    label:'Check Types', color:'#FF9900' },
+                                { val:'12+',    label:'Services',    color:'#0972d3' },
+                                { val:'9',      label:'Regions',     color:'#1d8102' },
+                                { val:'Global', label:'Coverage',    color:'#8B5CF6' },
+                            ].map(s => (
+                                <div key={s.label} style={{ background:`${s.color}0a`, border:`1px solid ${s.color}22`, borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
+                                    <div style={{ fontSize:18, fontWeight:900, color:s.color, fontFamily:'monospace', background:`linear-gradient(90deg,${s.color},${s.color}bb,${s.color})`, backgroundSize:'200%', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', animation:'shimmer 3s linear infinite' }}>{s.val}</div>
+                                    <div style={{ fontSize:8.5, color:'var(--text3)', textTransform:'uppercase', letterSpacing:0.8, marginTop:2 }}>{s.label}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* CTA */}
+                        <button onClick={triggerScan} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 0', borderRadius:10, background:'linear-gradient(135deg,#FF9900,#ec8a00)', color:'#232F3E', border:'none', cursor:'pointer', fontSize:14, fontWeight:800, letterSpacing:0.3, boxShadow:'0 6px 22px rgba(255,153,0,0.38)', transition:'all 0.18s', width:'100%', justifyContent:'center' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 30px rgba(255,153,0,0.52)' }}
+                            onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 6px 22px rgba(255,153,0,0.38)' }}>
+                            <Zap size={16} /> Start Security Scan
+                        </button>
                     </div>
 
-                    {/* Region grid — real AWS region names now */}
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 540 }}>
-                        {[
-                            { id: 'us-east-1', label: 'US East (N. Virginia)', color: '#FF9900' },
-                            { id: 'us-east-2', label: 'US East (Ohio)', color: '#FF9900' },
-                            { id: 'us-west-2', label: 'US West (Oregon)', color: '#FF9900' },
-                            { id: 'eu-west-1', label: 'EU (Ireland)', color: '#0972d3' },
-                            { id: 'eu-central-1', label: 'EU (Frankfurt)', color: '#0972d3' },
-                            { id: 'eu-north-1', label: 'EU (Stockholm)', color: '#0972d3' },
-                            { id: 'ap-northeast-1', label: 'AP (Tokyo)', color: '#1d8102' },
-                            { id: 'ap-southeast-1', label: 'AP (Singapore)', color: '#1d8102' },
-                            { id: 'ap-south-1', label: 'AP (Mumbai)', color: '#1d8102' },
-                        ].map(r => (
-                            <span key={r.id} style={{
-                                fontSize: 10, fontFamily: 'monospace', color: r.color,
-                                background: `${r.color}0d`,
-                                border: `1px solid ${r.color}35`,
-                                borderRadius: 5, padding: '4px 10px',
-                                fontWeight: 600,
-                            }}>{r.id}</span>
-                        ))}
-                    </div>
+                    {/* RIGHT: Coverage breakdown */}
+                    <div style={{ display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden' }}>
 
-                    {/* CTA button */}
-                    <button onClick={triggerScan} style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '14px 40px', borderRadius: 10,
-                        background: 'linear-gradient(135deg, #FF9900, #ec8a00)',
-                        color: '#232F3E', border: 'none', cursor: 'pointer',
-                        fontSize: 15, fontWeight: 800, letterSpacing: 0.3,
-                        boxShadow: '0 6px 28px rgba(255,153,0,0.40)',
-                        transition: 'all 0.18s',
-                    }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 36px rgba(255,153,0,0.55)' }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(255,153,0,0.40)' }}
-                    >
-                        <Zap size={17} />
-                        Start Security Scan
-                    </button>
+                        {/* Service Coverage */}
+                        <div style={{ flex:1, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 20px', overflow:'hidden', boxShadow:'var(--card-shadow)' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:14 }}>
+                                <div style={{ width:18, height:18, borderRadius:5, background:'rgba(255,153,0,0.12)', border:'1px solid rgba(255,153,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    <Search size={10} color="#FF9900" />
+                                </div>
+                                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Services Scanned</span>
+                                <span style={{ marginLeft:'auto', fontSize:9, fontWeight:700, color:'#FF9900', background:'rgba(255,153,0,0.08)', border:'1px solid rgba(255,153,0,0.2)', borderRadius:10, padding:'1px 8px' }}>52+ Checks</span>
+                            </div>
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8 }}>
+                                {[
+                                    { Icon: Key,      name:'IAM',        checks:'12 checks', color:'#d13212', delay:'.02s' },
+                                    { Icon: Globe,    name:'S3',         checks:'8 checks',  color:'#FF9900', delay:'.04s' },
+                                    { Icon: Server,   name:'EC2',        checks:'9 checks',  color:'#0972d3', delay:'.06s' },
+                                    { Icon: Lock,     name:'VPC / SG',   checks:'7 checks',  color:'#8B5CF6', delay:'.08s' },
+                                    { Icon: Eye,      name:'CloudTrail', checks:'4 checks',  color:'#f59e0b', delay:'.10s' },
+                                    { Icon: Database, name:'RDS',        checks:'5 checks',  color:'#1d8102', delay:'.12s' },
+                                    { Icon: Server,   name:'EBS',        checks:'3 checks',  color:'#0972d3', delay:'.14s' },
+                                    { Icon: Lock,     name:'KMS',        checks:'4 checks',  color:'#e67e22', delay:'.16s' },
+                                    { Icon: Activity, name:'CloudWatch', checks:'2 checks',  color:'#7953d2', delay:'.18s' },
+                                ].map(svc => (
+                                    <div key={svc.name} style={{ background:`${svc.color}08`, border:`1px solid ${svc.color}1e`, borderRadius:8, padding:'10px 10px 8px', animation:`svcPop 0.3s ease ${svc.delay} both`, transition:'border-color 0.15s, background 0.15s', cursor:'default' }}
+                                        onMouseEnter={e => { e.currentTarget.style.background=`${svc.color}14`; e.currentTarget.style.borderColor=`${svc.color}44` }}
+                                        onMouseLeave={e => { e.currentTarget.style.background=`${svc.color}08`; e.currentTarget.style.borderColor=`${svc.color}1e` }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
+                                            <div style={{ width:24, height:24, borderRadius:6, background:`${svc.color}14`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                                <svc.Icon size={13} color={svc.color} />
+                                            </div>
+                                            <span style={{ fontSize:11, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{svc.name}</span>
+                                        </div>
+                                        <div style={{ fontSize:9, color:svc.color, fontWeight:700, fontFamily:'monospace' }}>{svc.checks}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Region Coverage */}
+                        <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 20px', flexShrink:0, boxShadow:'var(--card-shadow)' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+                                <div style={{ width:18, height:18, borderRadius:5, background:'rgba(9,114,211,0.1)', border:'1px solid rgba(9,114,211,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    <Globe size={10} color="#0972d3" />
+                                </div>
+                                <span style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Region Coverage</span>
+                                <span style={{ marginLeft:'auto', fontSize:9, fontWeight:700, color:'#1d8102', background:'rgba(29,129,2,0.08)', border:'1px solid rgba(29,129,2,0.2)', borderRadius:10, padding:'1px 8px' }}>9 Active</span>
+                            </div>
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6 }}>
+                                {[
+                                    { id:'us-east-1',      label:'N. Virginia', color:'#FF9900', delay:'.02s' },
+                                    { id:'us-east-2',      label:'Ohio',        color:'#FF9900', delay:'.04s' },
+                                    { id:'us-west-2',      label:'Oregon',      color:'#FF9900', delay:'.06s' },
+                                    { id:'eu-west-1',      label:'Ireland',     color:'#0972d3', delay:'.08s' },
+                                    { id:'eu-central-1',   label:'Frankfurt',   color:'#0972d3', delay:'.10s' },
+                                    { id:'eu-north-1',     label:'Stockholm',   color:'#0972d3', delay:'.12s' },
+                                    { id:'ap-northeast-1', label:'Tokyo',       color:'#1d8102', delay:'.14s' },
+                                    { id:'ap-southeast-1', label:'Singapore',   color:'#1d8102', delay:'.16s' },
+                                    { id:'ap-south-1',     label:'Mumbai',      color:'#1d8102', delay:'.18s' },
+                                ].map(r => (
+                                    <div key={r.id} style={{ background:`${r.color}08`, border:`1px solid ${r.color}22`, borderRadius:6, padding:'6px 8px', animation:`rgPop 0.3s ease ${r.delay} both` }}>
+                                        <div style={{ fontSize:8.5, fontFamily:'monospace', color:r.color, fontWeight:700 }}>{r.id}</div>
+                                        <div style={{ fontSize:8, color:'var(--text3)', marginTop:1 }}>{r.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -394,61 +400,83 @@ export function ScannerSection({ onNav, dark }) {
 
             {/* ── SCANNING ── */}
             {scanning && (
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, minHeight: 0 }}>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, minHeight: 0 }}>
+                    <style>{`
+                        @keyframes termLine    { 0%{opacity:0;transform:translateX(-8px)} 100%{opacity:1;transform:translateX(0)} }
+                        @keyframes barGlow     { 0%,100%{box-shadow:0 0 8px rgba(255,153,0,0.3)} 50%{box-shadow:0 0 18px rgba(255,153,0,0.6)} }
+                        @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+                    `}</style>
 
-                    {/* LEFT — Terminal */}
-                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 18 }}>
-                            {['#d13212', '#f59e0b', '#067340'].map((c, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: 0.7 }} />)}
-                            <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>cloud-security-scanner — {awsId}</span>
+                    {/* LEFT — Dark Terminal */}
+                    <div style={{ borderRadius:12, overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 8px 32px rgba(0,0,0,0.25)', border:'1px solid rgba(255,255,255,0.06)' }}>
+                        {/* Title bar */}
+                        <div style={{ background:'#1e1e2e', padding:'9px 16px', display:'flex', alignItems:'center', gap:7, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                            {[['#d13212','#c0392b'],['#f59e0b','#d68910'],['#067340','#1d8102']].map(([bg,sh],i) => (
+                                <div key={i} style={{ width:11, height:11, borderRadius:'50%', background:bg, boxShadow:`0 0 4px ${sh}66` }} />
+                            ))}
+                            <span style={{ marginLeft:8, fontSize:11, color:'rgba(255,255,255,0.45)', fontFamily:'monospace', letterSpacing:0.2 }}>&#9889; cloud-security-scanner — {awsId}</span>
+                            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:5 }}>
+                                <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 5px rgba(29,129,2,0.7)', animation:'pulse 1.5s ease infinite' }} />
+                                <span style={{ fontSize:9, color:'#1d8102', fontWeight:700, fontFamily:'monospace' }}>LIVE</span>
+                            </div>
                         </div>
-                        <div style={{ flex: 1, overflowY: 'auto', fontFamily: 'monospace' }}>
+                        {/* Body */}
+                        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px', fontFamily:'monospace', background:'#0d1117' }}>
                             {SCAN_LINES.slice(0, scanLineIdx + 1).map((line, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, animation: i === scanLineIdx ? 'fadeUp 0.3s ease' : 'none' }}>
-                                    <span style={{ color: i < scanLineIdx ? '#067340' : '#FF9900', fontSize: 11, flexShrink: 0 }}>{i < scanLineIdx ? '✓' : '▶'}</span>
-                                    <span style={{ fontSize: 12, color: i < scanLineIdx ? 'var(--text3)' : 'var(--text)', fontWeight: i === scanLineIdx ? 600 : 400 }}>{line}</span>
-                                    {i === scanLineIdx && <span style={{ width: 8, height: 14, background: '#FF9900', borderRadius: 1, animation: 'pulse 0.8s ease infinite' }} />}
+                                <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:5, animation: i===scanLineIdx ? 'termLine 0.25s ease' : 'none' }}>
+                                    <span style={{ color: i<scanLineIdx ? '#3fb950' : '#FF9900', fontSize:11, flexShrink:0, width:14, textAlign:'center' }}>{i<scanLineIdx ? '✓' : '▶'}</span>
+                                    <span style={{ fontSize:11.5, color: i<scanLineIdx ? 'rgba(255,255,255,0.32)' : i===scanLineIdx ? '#e6edf3' : 'rgba(255,255,255,0.15)', fontWeight: i===scanLineIdx?600:400 }}>{line}</span>
+                                    {i===scanLineIdx && <span style={{ width:8, height:14, background:'#FF9900', borderRadius:1, animation:'cursorBlink 1s step-end infinite', marginLeft:2, flexShrink:0 }} />}
                                 </div>
                             ))}
                         </div>
                         {/* Progress */}
-                        <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace', fontWeight: 600 }}>SCAN PROGRESS</span>
-                                <span style={{ fontSize: 10, color: '#FF9900', fontFamily: 'monospace', fontWeight: 700 }}>{pct}%</span>
+                        <div style={{ flexShrink:0, background:'#161b22', padding:'12px 20px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                                <span style={{ fontSize:9.5, color:'rgba(255,255,255,0.4)', fontFamily:'monospace', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8 }}>Scan Progress</span>
+                                <span style={{ fontSize:10, color:'#FF9900', fontFamily:'monospace', fontWeight:700 }}>{pct}%</span>
                             </div>
-                            <div style={{ height: 4, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #FF9900, #ec8a00)', width: `${pct}%`, transition: 'width 0.8s ease' }} />
+                            <div style={{ height:5, borderRadius:3, background:'rgba(255,255,255,0.08)', overflow:'hidden', marginBottom:6 }}>
+                                <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#FF9900,#ec8a00)', width:`${pct}%`, transition:'width 0.8s ease', animation:'barGlow 2s ease infinite' }} />
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-                                <span style={{ fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace' }}>{scanLine}</span>
-                                <span style={{ fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace' }}>{elapsed}s elapsed</span>
+                            <div style={{ display:'flex', justifyContent:'space-between' }}>
+                                <span style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>{scanLine}</span>
+                                <span style={{ fontSize:9, color:'rgba(255,255,255,0.3)', fontFamily:'monospace' }}>{elapsed}s elapsed</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* RIGHT — Fact card */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div style={{ flex: 1, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '28px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', transition: 'opacity 0.3s ease', opacity: factVisible ? 1 : 0 }}>
-                            <div style={{ fontSize: 48, marginBottom: 16, lineHeight: 1 }}>{fact?.icon}</div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#FF9900', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>AWS Fact</div>
-                            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>{fact?.title}</div>
-                            <div style={{ fontSize: 32, fontWeight: 900, color: '#FF9900', fontFamily: 'monospace', marginBottom: 12, lineHeight: 1 }}>{fact?.stat}</div>
-                            <div style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.7 }}>{fact?.desc}</div>
-                            <div style={{ display: 'flex', gap: 5, marginTop: 20 }}>
-                                {AWS_FACTS.map((_, i) => <div key={i} style={{ width: i === factIdx ? 18 : 5, height: 5, borderRadius: 3, background: i === factIdx ? '#FF9900' : 'var(--border2)', transition: 'all 0.3s ease' }} />)}
+                    {/* RIGHT — Fact + Stats */}
+                    <div style={{ display:'flex', flexDirection:'column', gap:12, minHeight:0 }}>
+                        {/* Fact card */}
+                        <div style={{ flex:1, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'24px 28px', display:'flex', flexDirection:'column', justifyContent:'center', overflow:'hidden', opacity: factVisible?1:0, transition:'opacity 0.4s ease', boxShadow:'var(--card-shadow)', position:'relative' }}>
+                            <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,#FF9900,#FF990044)' }} />
+                            <div style={{ fontSize:44, marginBottom:14, lineHeight:1 }}>{fact?.icon}</div>
+                            <div style={{ fontSize:10, fontWeight:800, color:'#FF9900', textTransform:'uppercase', letterSpacing:1.2, marginBottom:6 }}>AWS Fact</div>
+                            <div style={{ fontSize:18, fontWeight:800, color:'var(--text)', marginBottom:8, lineHeight:1.25 }}>{fact?.title}</div>
+                            <div style={{ fontSize:28, fontWeight:900, color:'#FF9900', fontFamily:'monospace', marginBottom:12, lineHeight:1 }}>{fact?.stat}</div>
+                            <div style={{ fontSize:12.5, color:'var(--text3)', lineHeight:1.7 }}>{fact?.desc}</div>
+                            <div style={{ display:'flex', gap:5, marginTop:18 }}>
+                                {AWS_FACTS.map((_,i) => (
+                                    <div key={i} style={{ width:i===factIdx?18:5, height:5, borderRadius:3, background:i===factIdx?'#FF9900':'var(--border2)', transition:'all 0.35s ease' }} />
+                                ))}
                             </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flexShrink: 0 }}>
+
+                        {/* 4 stat tiles with colored top accent */}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, flexShrink:0 }}>
                             {[
-                                { label: 'Elapsed', val: `${elapsed}s`, color: '#0972d3' },
-                                { label: 'Step', val: `${Math.min(scanLineIdx + 1, SCAN_LINES.length)}/${SCAN_LINES.length}`, color: '#FF9900' },
-                                { label: 'Regions', val: 'Multi-Region', color: '#8B5CF6' },
-                                { label: 'Mode', val: 'DRY RUN', color: '#067340' },
+                                { label:'Elapsed', val:`${elapsed}s`,                                                         color:'#0972d3' },
+                                { label:'Step',    val:`${Math.min(scanLineIdx+1,SCAN_LINES.length)}/${SCAN_LINES.length}`,   color:'#FF9900' },
+                                { label:'Regions', val:'Multi-Region',                                                        color:'#8B5CF6' },
+                                { label:'Mode',    val:'DRY RUN',                                                             color:'#1d8102' },
                             ].map(c => (
-                                <div key={c.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
-                                    <div style={{ fontSize: 9, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{c.label}</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: c.color, fontFamily: 'monospace' }}>{c.val}</div>
+                                <div key={c.label} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10, overflow:'hidden', boxShadow:'var(--card-shadow)' }}>
+                                    <div style={{ height:2, background:`linear-gradient(90deg,${c.color},${c.color}55)` }} />
+                                    <div style={{ padding:'10px 14px' }}>
+                                        <div style={{ fontSize:8.5, color:'var(--text3)', fontWeight:700, textTransform:'uppercase', letterSpacing:0.8, marginBottom:5 }}>{c.label}</div>
+                                        <div style={{ fontSize:16, fontWeight:800, color:c.color, fontFamily:'monospace' }}>{c.val}</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
