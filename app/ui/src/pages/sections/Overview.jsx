@@ -17,6 +17,16 @@ import {
 
 const API = 'http://127.0.0.1:8000'
 
+const OV_CSS = `
+  @keyframes ov-up    { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes ov-num   { 0%{opacity:0;transform:scale(.85)} 100%{opacity:1;transform:scale(1)} }
+  @keyframes ov-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  @keyframes ov-glow  { 0%,100%{box-shadow:0 0 0 0 rgba(6,115,64,0)} 50%{box-shadow:0 0 14px rgba(6,115,64,.35)} }
+  @keyframes ov-scan  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .ov-stat:hover .ov-bar { width:100% !important; }
+  .ov-qa:hover { transform: translateX(3px) !important; }
+`
+
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.1)', border: 'rgba(209,50,18,0.2)' },
     HIGH: { color: '#e67e22', bg: 'rgba(230,126,34,0.1)', border: 'rgba(230,126,34,0.2)' },
@@ -89,41 +99,80 @@ const FindingItem = memo(function FindingItem({ f, i, dark, onNav, setHighlightF
     )
 })
 
-function Card({ children, style = {}, onClick }) {
+function Card({ children, style = {}, onClick, accentColor }) {
     const [hov, setHov] = useState(false)
+    const ac = accentColor || null
     return (
         <div onClick={onClick}
             onMouseEnter={() => onClick && setHov(true)}
             onMouseLeave={() => onClick && setHov(false)}
-            style={{ background: 'var(--bg2)', border: `1px solid ${hov ? 'rgba(255,153,0,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '12px 14px', boxShadow: hov ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.15s, box-shadow 0.15s', ...style }}>
-            {children}
+            style={{
+                background: 'var(--bg2)',
+                border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.28)' : 'var(--border)'}`,
+                borderRadius: 10,
+                overflow: 'hidden',
+                boxShadow: hov && onClick ? '0 6px 20px rgba(255,153,0,0.12)' : 'var(--card-shadow)',
+                cursor: onClick ? 'pointer' : 'default',
+                transition: 'border-color 0.18s, box-shadow 0.18s',
+                position: 'relative',
+                ...style
+            }}>
+            {ac && <div style={{ height: 2, background: `linear-gradient(90deg, ${ac}, ${ac}66)` }} />}
+            <div style={{ padding: '12px 14px', height: ac ? 'calc(100% - 2px)' : '100%', boxSizing: 'border-box' }}>
+                {children}
+            </div>
         </div>
     )
 }
 
 function CardLabel({ icon: Icon, label, action }) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                {Icon && <Icon size={11} color="#FF9900" />}
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {Icon && (
+                    <div style={{ width: 20, height: 20, borderRadius: 5, background: 'rgba(255,153,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={11} color="#FF9900" />
+                    </div>
+                )}
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</span>
             </div>
             {action}
         </div>
     )
 }
 
-function StatTile({ label, value, sub, valueColor = 'var(--text)', icon: Icon, onClick }) {
+function StatTile({ label, value, sub, valueColor = 'var(--text)', icon: Icon, onClick, accentColor = '#FF9900', animDelay = '0s' }) {
     const [hov, setHov] = useState(false)
+    const ac = accentColor
     return (
-        <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-            style={{ background: 'var(--bg2)', border: `1px solid ${hov && onClick ? 'rgba(255,153,0,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.15s, box-shadow 0.15s', boxShadow: hov && onClick ? '0 4px 16px rgba(255,153,0,0.1)' : 'var(--card-shadow)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 72 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
-                {Icon && <Icon size={12} color="var(--text3)" strokeWidth={1.7} />}
+        <div className="ov-stat" onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+            style={{
+                background: 'var(--bg2)',
+                border: `1px solid ${hov && onClick ? `${ac}44` : 'var(--border)'}`,
+                borderRadius: 10,
+                overflow: 'hidden',
+                cursor: onClick ? 'pointer' : 'default',
+                transition: 'all 0.18s ease',
+                boxShadow: hov && onClick ? `0 6px 18px ${ac}28` : 'var(--card-shadow)',
+                transform: hov && onClick ? 'translateY(-2px)' : 'translateY(0)',
+                animation: `ov-up 0.4s ease ${animDelay} both`,
+            }}>
+            {/* Colored top accent bar */}
+            <div style={{ height: 3, background: `linear-gradient(90deg,${ac},${ac}55)`, position:'relative' }}>
+                <div className="ov-bar" style={{ position:'absolute', inset:0, background:`linear-gradient(90deg,${ac}dd,${ac}22)`, width:'55%', transition:'width .3s ease' }} />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: valueColor, fontFamily: 'monospace', lineHeight: 1 }}>{value}</div>
-            {sub && <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>{sub}</div>}
+            <div style={{ padding: '9px 11px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.7 }}>{label}</span>
+                    {Icon && (
+                        <div style={{ width: 22, height: 22, borderRadius: 6, background: `${ac}14`, display: 'flex', alignItems: 'center', justifyContent:'center', border:`1px solid ${ac}20` }}>
+                            <Icon size={11} color={ac} strokeWidth={1.8} />
+                        </div>
+                    )}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: valueColor, fontFamily: 'monospace', lineHeight: 1, animation: 'ov-num .35s ease both' }}>{value}</div>
+                {sub && <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>{sub}</div>}
+            </div>
         </div>
     )
 }
@@ -436,78 +485,109 @@ export default function Overview({ onNav, dark }) {
         )
     }
 
-    function QuickAction({ icon: Icon, label, desc, color = '#FF9900', section }) {
+    function QuickAction({ icon: Icon, label, desc, color = '#FF9900', section, animDelay = '0s' }) {
         const [hov, setHov] = useState(false)
         return (
             <button
+                className="ov-qa"
                 onClick={() => onNav(section)}
                 onMouseEnter={() => setHov(true)}
                 onMouseLeave={() => setHov(false)}
                 style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    background: hov ? (dark ? 'rgba(255,255,255,0.05)' : 'rgba(35,47,62,0.04)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(35,47,62,0.02)'),
-                    border: `1px solid ${hov ? 'rgba(255,153,0,0.3)' : 'var(--border)'}`,
-                    borderRadius: 6,
-                    padding: '5px 8px',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: hov ? `${color}0d` : 'transparent',
+                    border: `1px solid ${hov ? `${color}35` : 'transparent'}`,
+                    borderRadius: 8,
+                    padding: '7px 9px',
                     cursor: 'pointer', textAlign: 'left',
-                    transition: 'all 0.12s', width: '100%',
+                    transition: 'all 0.15s ease', width: '100%',
+                    animation: `ov-up 0.35s ease ${animDelay} both`,
                 }}>
-                <div style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0, background: `${color}15`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={13} color={color} />
+                <div style={{
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                    background: hov ? `${color}22` : `${color}14`,
+                    border: `1px solid ${color}28`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s',
+                    boxShadow: hov ? `0 2px 8px ${color}30` : 'none',
+                }}>
+                    <Icon size={14} color={color} strokeWidth={1.9} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{label}</div>
-                    <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 1 }}>{desc}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: hov ? color : 'var(--text)', lineHeight: 1.2, transition: 'color 0.12s' }}>{label}</div>
+                    <div style={{ fontSize: 9.5, color: 'var(--text3)', marginTop: 1.5 }}>{desc}</div>
                 </div>
-                <ChevronRight size={11} color="var(--text3)" style={{ flexShrink: 0, opacity: 0.5 }} />
+                <ChevronRight size={11} color={hov ? color : 'var(--text3)'} style={{ flexShrink: 0, opacity: hov ? 0.7 : 0.4, transition: 'all 0.12s' }} />
             </button>
         )
     }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 'calc(100vh - 64px)', minHeight: 0 }}>
+        <style>{OV_CSS}</style>
+
             {/* ── 1. HEADER ── */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                        <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>CloudShield Command Center</h1>
-                        {isIam && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#0972d3', background: 'rgba(9,114,211,0.1)', border: '1px solid rgba(9,114,211,0.25)', borderRadius: 4, padding: '2px 7px', letterSpacing: 0.4 }}>IAM USER</span>
-                        )}
-                        {monitorRunning && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#067340', background: 'rgba(6,115,64,0.1)', border: '1px solid rgba(6,115,64,0.25)', borderRadius: 20, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#067340', display: 'inline-block', animation: 'pulse 1.5s ease infinite' }} />
-                                LIVE MONITOR ON
-                            </span>
-                        )}
+            <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+                background: 'var(--bg2)', borderRadius: 10, padding: '12px 18px',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--card-shadow)',
+                animation: 'ov-up 0.3s ease both',
+                position: 'relative', overflow: 'hidden',
+            }}>
+                {/* Subtle accent top line */}
+                <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,#FF9900,#0972d3,#FF9900)', backgroundSize:'200%', animation:'ov-scan 4s ease infinite' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    {/* Shield icon */}
+                    <div style={{ width:42, height:42, borderRadius:10, background:'rgba(255,153,0,0.1)', border:'1px solid rgba(255,153,0,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <Shield size={22} color="#FF9900" strokeWidth={1.8} />
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text2)' }}>{awsId}</span>
-                        <span> · {profile} · {region}</span>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                            <h1 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', margin: 0, letterSpacing: -0.3 }}>CloudShield Command Center</h1>
+                            {isIam && (
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#0972d3', background: 'rgba(9,114,211,0.1)', border: '1px solid rgba(9,114,211,0.25)', borderRadius: 4, padding: '2px 7px', letterSpacing: 0.5 }}>IAM USER</span>
+                            )}
+                            {monitorRunning && (
+                                <span style={{ fontSize: 9, fontWeight: 700, color: '#067340', background: 'rgba(6,115,64,0.1)', border: '1px solid rgba(6,115,64,0.25)', borderRadius: 20, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#067340', display: 'inline-block', animation: 'ov-pulse 1.4s ease infinite' }} />
+                                    LIVE MONITOR
+                                </span>
+                            )}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text2)', background: 'var(--bg3,rgba(35,47,62,0.06))', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>{awsId}</span>
+                            <span style={{ color: 'var(--border2,var(--border))' }}>·</span>
+                            <span>{profile}</span>
+                            <span style={{ color: 'var(--border2,var(--border))' }}>·</span>
+                            <span style={{ color: '#0972d3', fontWeight: 600 }}>{region}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'monospace', fontWeight: 600 }}>{time.toLocaleTimeString()}</div>
-                        <div style={{ fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace' }}>{time.toLocaleDateString()}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Live clock */}
+                    <div style={{ textAlign: 'right', background: 'var(--bg3,rgba(35,47,62,0.05))', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px' }}>
+                        <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'monospace', fontWeight: 700, letterSpacing: 0.5 }}>{time.toLocaleTimeString()}</div>
+                        <div style={{ fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace', marginTop: 1 }}>{time.toLocaleDateString()}</div>
                     </div>
 
-                    {/* Stop button — shown only while scanning */}
                     {scanning && (
-                        <button onClick={stopScan} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 6, background: 'rgba(209,50,18,0.1)', color: '#d13212', border: '1px solid rgba(209,50,18,0.3)', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'all 0.15s' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(209,50,18,0.18)' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(209,50,18,0.1)' }}>
-                            <Square size={11} fill="#d13212" />Stop
+                        <button onClick={stopScan}
+                            style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 14px', borderRadius:7, background:'rgba(209,50,18,0.1)', color:'#d13212', border:'1px solid rgba(209,50,18,0.3)', cursor:'pointer', fontSize:12, fontWeight:700, transition:'all 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.background='rgba(209,50,18,0.18)'}
+                            onMouseLeave={e => e.currentTarget.style.background='rgba(209,50,18,0.1)'}>
+                            <Square size={11} fill="#d13212" /> Stop
                         </button>
                     )}
 
-                    {/* Run scan button */}
-                    <button onClick={triggerScan} disabled={scanning} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 6, background: scanning ? 'rgba(255,153,0,0.55)' : '#FF9900', color: '#232F3E', border: 'none', cursor: scanning ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, boxShadow: !scanning ? '0 2px 8px rgba(255,153,0,0.25)' : 'none', transition: 'background 0.15s' }}
-                        onMouseEnter={e => { if (!scanning) e.currentTarget.style.background = '#ec8a00' }}
-                        onMouseLeave={e => { if (!scanning) e.currentTarget.style.background = '#FF9900' }}>
+                    <button onClick={triggerScan} disabled={scanning}
+                        style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:7, background: scanning?'rgba(255,153,0,0.55)':'#FF9900', color:'#232F3E', border:'none', cursor: scanning?'not-allowed':'pointer', fontSize:12, fontWeight:800, boxShadow: !scanning?'0 3px 10px rgba(255,153,0,0.35)':'none', transition:'all 0.15s', letterSpacing:0.2 }}
+                        onMouseEnter={e => { if (!scanning) { e.currentTarget.style.background='#ec8a00'; e.currentTarget.style.transform='translateY(-1px)' } }}
+                        onMouseLeave={e => { if (!scanning) { e.currentTarget.style.background='#FF9900'; e.currentTarget.style.transform='translateY(0)' } }}>
                         {scanning
-                            ? <><div style={{ width: 11, height: 11, borderRadius: '50%', border: '2px solid rgba(35,47,62,0.3)', borderTopColor: '#232F3E', animation: 'spin 0.7s linear infinite' }} />Scanning...</>
+                            ? <><div style={{ width:11, height:11, borderRadius:'50%', border:'2px solid rgba(35,47,62,0.3)', borderTopColor:'#232F3E', animation:'spin 0.7s linear infinite' }} />Scanning...</>
                             : <><Search size={12} />Run Scan</>
                         }
                     </button>
@@ -516,22 +596,31 @@ export default function Overview({ onNav, dark }) {
 
             {/* ── 2. STAT TILES ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8, flexShrink: 0 }}>
-                <StatTile label="Total Findings" value={hasScan ? totalFindings : '—'} sub={hasScan ? 'last scan' : 'run a scan'} valueColor="var(--text)" icon={Search}
-                    onClick={hasScan ? () => { onNav('scanner') } : undefined} />
-                <StatTile label="Critical" value={hasScan ? criticalCount : '—'} sub="immediate fix" valueColor={criticalCount > 0 ? '#d13212' : 'var(--text)'} icon={AlertTriangle}
+                <StatTile label="Total Findings" value={hasScan ? totalFindings : '—'} sub={hasScan ? 'last scan' : 'run a scan'} valueColor="var(--text)" icon={Search} accentColor="#637282" animDelay="0s"
+                    onClick={hasScan ? () => onNav('scanner') : undefined} />
+                <StatTile label="Critical" value={hasScan ? criticalCount : '—'} sub="immediate fix" valueColor={criticalCount > 0 ? '#d13212' : 'var(--text)'} icon={AlertTriangle} accentColor="#d13212" animDelay=".05s"
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_CRITICAL__'); onNav('scanner') } : undefined} />
-                <StatTile label="High" value={hasScan ? highCount : '—'} sub="need attention" valueColor={highCount > 0 ? '#e67e22' : 'var(--text)'} icon={ShieldAlert}
+                <StatTile label="High" value={hasScan ? highCount : '—'} sub="need attention" valueColor={highCount > 0 ? '#e67e22' : 'var(--text)'} icon={ShieldAlert} accentColor="#e67e22" animDelay=".10s"
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_HIGH__'); onNav('scanner') } : undefined} />
-                <StatTile label="Medium" value={hasScan ? mediumCount : '—'} sub="moderate risk" valueColor={mediumCount > 0 ? '#f59e0b' : 'var(--text)'} icon={Activity}
+                <StatTile label="Medium" value={hasScan ? mediumCount : '—'} sub="moderate risk" valueColor={mediumCount > 0 ? '#f59e0b' : 'var(--text)'} icon={Activity} accentColor="#f59e0b" animDelay=".15s"
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_MEDIUM__'); onNav('scanner') } : undefined} />
-                <StatTile label="Low" value={hasScan ? lowCount : '—'} sub="low priority" valueColor={lowCount > 0 ? '#0972d3' : 'var(--text)'} icon={Shield}
+                <StatTile label="Low" value={hasScan ? lowCount : '—'} sub="low priority" valueColor={lowCount > 0 ? '#0972d3' : 'var(--text)'} icon={Shield} accentColor="#0972d3" animDelay=".20s"
                     onClick={hasScan ? () => { setHighlightFindingId('__filter_LOW__'); onNav('scanner') } : undefined} />
-                <StatTile label="Attack Surface" value="→" sub="exposure map" valueColor="#d13212" icon={ShieldAlert} onClick={() => onNav('attack-surface')} />
-                <StatTile label="Scan Events" value={history?.total_events ?? '—'} sub="history log" valueColor="var(--text)" icon={History} onClick={() => onNav('history')} />
+                <StatTile label="Attack Surface" value="→" sub="exposure map" valueColor="#d13212" icon={ShieldAlert} accentColor="#d13212" animDelay=".25s" onClick={() => onNav('attack-surface')} />
+                <StatTile label="Scan Events" value={history?.total_events ?? '—'} sub="history log" valueColor="var(--text)" icon={History} accentColor="#0a8a6a" animDelay=".30s" onClick={() => onNav('history')} />
             </div>
 
-            {/* ── 3. THREAT MONITOR STRIP — Windows Defender style toggle ── */}
-            <div style={{ background: 'var(--bg2)', border: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.25)' : 'var(--border)'}`, borderRadius: 8, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--card-shadow)', flexShrink: 0, transition: 'border-color 0.3s' }}>
+            {/* ── 3. THREAT MONITOR STRIP ── */}
+            <div style={{
+                background: 'var(--bg2)',
+                border: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.3)' : 'var(--border)'}`,
+                borderRadius: 10, padding: '8px 16px',
+                display: 'flex', alignItems: 'center', gap: 14,
+                boxShadow: monitorRunning ? '0 0 0 0 rgba(6,115,64,0)' : 'var(--card-shadow)',
+                flexShrink: 0,
+                transition: 'border-color 0.4s, box-shadow 0.4s',
+                animation: monitorRunning ? 'ov-glow 3s ease infinite' : 'none',
+            }}>
                 {/* Animated status indicator */}
                 <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
                     {/* Outer pulse ring — only when active */}
@@ -687,32 +776,33 @@ export default function Overview({ onNav, dark }) {
                     )}
                 </Card>
 
-                {/* C. QUICK ACTIONS — moved to right, expanded with Alerts */}
-                <Card style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 }}>
+                {/* C. QUICK ACTIONS */}
+                <Card style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 }} accentColor="#FF9900">
                     <CardLabel icon={Zap} label="Quick Actions" />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                        <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner" />
-                        <QuickAction icon={ShieldAlert} label="Threats"       desc={monitorRunning ? 'Monitor running' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats" />
-                        <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#0972d3" section="iam-view" />
-                        <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute" />
-                        <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#e67e22" section="rollback" />
-                        <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface" />
-                        <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics" />
-                        <QuickAction icon={History}    label="History"        desc="Audit log & events"         color="#0972d3" section="history" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
+                        <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner"        animDelay=".05s" />
+                        <QuickAction icon={ShieldAlert} label="Threats"       desc={monitorRunning ? 'Monitor active' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats" animDelay=".08s" />
+                        <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#7953d2" section="iam-view"       animDelay=".11s" />
+                        <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute"        animDelay=".14s" />
+                        <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#6e7f96" section="rollback"       animDelay=".17s" />
+                        <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface" animDelay=".20s" />
+                        <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics"      animDelay=".23s" />
+                        <QuickAction icon={History}    label="History"        desc="Audit log & events"         color="#0a8a6a" section="history"        animDelay=".26s" />
                     </div>
 
-                    <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)', flexShrink: 0, marginTop: 6 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Account Info</div>
+                    {/* Account Info */}
+                    <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)', flexShrink: 0, marginTop: 8 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7 }}>Account Info</div>
                         {[
                             { label: 'AWS Account', value: awsId },
-                            { label: 'Identity', value: profile },
-                            { label: 'Type', value: isIam ? 'IAM User' : 'Root Account' },
-                            { label: 'Region', value: region },
-                            { label: 'Version', value: appVersion ? `v${appVersion}` : '—' },
+                            { label: 'Identity',    value: profile },
+                            { label: 'Type',        value: isIam ? 'IAM User' : 'Root Account' },
+                            { label: 'Region',      value: region, color: '#0972d3' },
+                            { label: 'Version',     value: appVersion ? `v${appVersion}` : '—' },
                         ].map(row => (
-                            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
-                                <span style={{ fontSize: 9, color: 'var(--text3)' }}>{row.label}</span>
-                                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)', fontFamily: 'monospace', maxWidth: 155, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</span>
+                            <div key={row.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'4px 0', borderBottom:'1px solid var(--border)' }}>
+                                <span style={{ fontSize:9.5, color:'var(--text3)' }}>{row.label}</span>
+                                <span style={{ fontSize:10, fontWeight:700, color: row.color || 'var(--text)', fontFamily:'monospace', maxWidth:155, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.value}</span>
                             </div>
                         ))}
                     </div>
