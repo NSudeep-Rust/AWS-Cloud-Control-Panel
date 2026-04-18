@@ -117,8 +117,8 @@ function Card({ children, style = {}, onClick, accentColor }) {
                 position: 'relative',
                 ...style
             }}>
-            {ac && <div style={{ height: 2, background: `linear-gradient(90deg, ${ac}, ${ac}66)` }} />}
-            <div style={{ padding: '12px 14px', height: ac ? 'calc(100% - 2px)' : '100%', boxSizing: 'border-box' }}>
+            {ac && <div style={{ height: 2, background: `linear-gradient(90deg, ${ac}, ${ac}66)`, flexShrink: 0 }} />}
+            <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
                 {children}
             </div>
         </div>
@@ -772,7 +772,7 @@ export default function Overview({ onNav, dark }) {
                             <QuickAction icon={Search}     label="Full Scan"      desc="Scan all regions"           color="#0972d3" section="scanner"        onNav={onNav} />
                             <QuickAction icon={ShieldAlert} label="Threats"      desc={monitorRunning ? 'Monitor active' : 'Start live monitoring'} color={monitorRunning ? '#067340' : '#f59e0b'} section="threats"       onNav={onNav} />
                             <QuickAction icon={Users}      label="IAM View"       desc="Identity risk matrix"       color="#7953d2" section="iam-view"       onNav={onNav} />
-                            <QuickAction icon={Play}       label="Execute Fixes"  desc="Apply remediations"         color="#FF9900" section="execute"        onNav={onNav} />
+                            <QuickAction icon={Play}       label="Remediation"    desc="Apply remediations"         color="#FF9900" section="execute"        onNav={onNav} />
                             <QuickAction icon={RotateCcw}  label="Rollback"       desc="Revert applied fixes"       color="#6e7f96" section="rollback"       onNav={onNav} />
                             <QuickAction icon={Globe}      label="Attack Surface" desc="Publicly exposed resources" color="#d13212" section="attack-surface"  onNav={onNav} />
                             <QuickAction icon={BarChart2}  label="Analytics"      desc="Risk score & reports"       color="#8B5CF6" section="analytics"       onNav={onNav} />
@@ -780,42 +780,46 @@ export default function Overview({ onNav, dark }) {
                         </div>
                     </Card>
 
-                    {/* Premium AWS Account Card — separate, always visible */}
+                    {/* Account Info — matches page light/dark theme */}
                     <div style={{
                         flexShrink: 0,
-                        background: 'linear-gradient(145deg, #1a2332 0%, #232F3E 100%)',
+                        background: 'var(--bg2)',
                         borderRadius: 10,
-                        padding: '11px 13px',
-                        border: '1px solid rgba(255,255,255,0.09)',
-                        boxShadow: '0 4px 18px rgba(0,0,0,0.22)',
+                        overflow: 'hidden',
+                        border: '1px solid var(--border)',
+                        boxShadow: 'var(--card-shadow)',
                     }}>
-                        {/* Header row */}
-                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:9, paddingBottom:8, borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
-                            <div style={{ width:24, height:24, borderRadius:6, background:'rgba(255,153,0,0.15)', border:'1px solid rgba(255,153,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                                <Shield size={12} color="#FF9900" />
-                            </div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:8, fontWeight:700, color:'rgba(255,255,255,0.38)', textTransform:'uppercase', letterSpacing:1 }}>Connected Account</div>
-                                <div style={{ fontSize:10, fontWeight:700, color:'#ffffff', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{awsId}</div>
-                            </div>
-                            <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
-                                <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 7px rgba(29,129,2,0.75)', animation:'ov-pulse 2s ease-in-out infinite' }} />
-                                <span style={{ fontSize:8.5, color:'#4caf50', fontWeight:800, letterSpacing:0.6 }}>LIVE</span>
-                            </div>
-                        </div>
-                        {/* 2×2 info grid */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4 }}>
-                            {[
-                                { label:'Identity', value: profile,                             color:'#c9d1d9' },
-                                { label:'Type',     value: isIam ? 'IAM User' : 'Root',         color: isIam ? '#73c2f7' : '#FF9900' },
-                                { label:'Region',   value: region,                              color:'#73c2f7' },
-                                { label:'Version',  value: appVersion ? `v${appVersion}` : '—', color:'#c9d1d9' },
-                            ].map(row => (
-                                <div key={row.label} style={{ background:'rgba(255,255,255,0.04)', borderRadius:7, padding:'6px 8px', border:'1px solid rgba(255,255,255,0.06)' }}>
-                                    <div style={{ fontSize:7.5, color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:0.7, marginBottom:3 }}>{row.label}</div>
-                                    <div style={{ fontSize:9.5, fontWeight:700, color:row.color, fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.value}</div>
+                        {/* Orange top accent */}
+                        <div style={{ height: 2, background: 'linear-gradient(90deg, #FF9900, #FF990055)', flexShrink: 0 }} />
+                        <div style={{ padding: '10px 12px' }}>
+                            {/* Header */}
+                            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
+                                <div style={{ width:22, height:22, borderRadius:6, background:'rgba(255,153,0,0.1)', border:'1px solid rgba(255,153,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                    <Shield size={11} color="#FF9900" />
                                 </div>
-                            ))}
+                                <div style={{ flex:1, minWidth:0 }}>
+                                    <div style={{ fontSize:8, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:1 }}>Connected Account</div>
+                                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{awsId}</div>
+                                </div>
+                                <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                                    <div style={{ width:6, height:6, borderRadius:'50%', background:'#1d8102', boxShadow:'0 0 5px rgba(29,129,2,0.5)', animation:'ov-pulse 2s ease-in-out infinite' }} />
+                                    <span style={{ fontSize:8.5, color:'#1d8102', fontWeight:800, letterSpacing:0.5 }}>LIVE</span>
+                                </div>
+                            </div>
+                            {/* 2×2 info grid */}
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4 }}>
+                                {[
+                                    { label:'Identity', value: profile },
+                                    { label:'Type',     value: isIam ? 'IAM User' : 'Root', valueColor: isIam ? '#0972d3' : '#FF9900' },
+                                    { label:'Region',   value: region,   valueColor: '#0972d3' },
+                                    { label:'Version',  value: appVersion ? `v${appVersion}` : '—' },
+                                ].map(row => (
+                                    <div key={row.label} style={{ background: 'var(--bg3, rgba(35,47,62,0.04))', borderRadius:6, padding:'5px 7px', border:'1px solid var(--border)' }}>
+                                        <div style={{ fontSize:7.5, color:'var(--text3)', textTransform:'uppercase', letterSpacing:0.7, marginBottom:2 }}>{row.label}</div>
+                                        <div style={{ fontSize:9.5, fontWeight:700, color: row.valueColor || 'var(--text)', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row.value}</div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
