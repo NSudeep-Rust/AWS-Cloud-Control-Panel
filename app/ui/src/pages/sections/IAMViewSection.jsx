@@ -576,7 +576,7 @@ export default function IAMViewSection({ dark }) {
                             No identities match this filter.
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(440px, 1fr))', gap: 10 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             {filtered.map((id, i) => (
                                 <IdentityCard key={id.id} identity={id} dark={dark} idx={i} />
                             ))}
