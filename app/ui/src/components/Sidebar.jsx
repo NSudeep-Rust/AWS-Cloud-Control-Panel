@@ -176,14 +176,18 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
             {/* ── Logo zone — always dark gradient ──────────────────────────── */}
             <div style={{
                 background:     'linear-gradient(145deg, #1a2332 0%, #232F3E 100%)',
-                padding:        '0 12px',
-                height:         56,
+                padding:        collapsed ? '10px 0 8px' : '0 12px',
+                height:         collapsed ? 'auto' : 56,
+                minHeight:      collapsed ? 72 : 56,
                 display:        'flex',
+                flexDirection:  collapsed ? 'column' : 'row',
                 alignItems:     'center',
-                gap:            10,
+                justifyContent: 'center',
+                gap:            collapsed ? 6 : 10,
                 flexShrink:     0,
                 borderBottom:   '1px solid rgba(255,255,255,0.08)',
                 position:       'relative',
+                transition:     'padding .26s ease, height .26s ease',
             }}>
                 {/* AWS logo — white version, always visible */}
                 <svg width="34" height="21" viewBox="0 0 85 52" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink:0, minWidth:34 }}>
@@ -192,11 +196,13 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                     <path d="M61.3 35.3c-.9-1.2-6.1-.6-8.4-.3-.7.1-.8-.5-.2-.9 4.1-2.9 10.9-2.1 11.7-1.1.8 1-.2 7.7-4.1 10.9-.6.5-1.2.2-.9-.4.9-2.2 2.8-7 1.9-8.2z" fill="#FF9900"/>
                 </svg>
 
-                {/* Text — fades + slides on collapse */}
-                <div style={{ flex:1, overflow:'hidden', ...textStyle }}>
-                    <div style={{ fontSize:13, fontWeight:800, color:'#ffffff', lineHeight:1.2, letterSpacing:-0.2, whiteSpace:'nowrap' }}>CloudShield</div>
-                    <div style={{ fontSize:8.5, color:'#FF9900', letterSpacing:1, fontWeight:700, textTransform:'uppercase', marginTop:1, whiteSpace:'nowrap' }}>Security Panel</div>
-                </div>
+                {/* Text — only in expanded mode */}
+                {!collapsed && (
+                    <div style={{ flex:1, overflow:'hidden' }}>
+                        <div style={{ fontSize:13, fontWeight:800, color:'#ffffff', lineHeight:1.2, letterSpacing:-0.2, whiteSpace:'nowrap' }}>CloudShield</div>
+                        <div style={{ fontSize:8.5, color:'#FF9900', letterSpacing:1, fontWeight:700, textTransform:'uppercase', marginTop:1, whiteSpace:'nowrap' }}>Security Panel</div>
+                    </div>
+                )}
 
                 {/* Collapse toggle */}
                 <button
