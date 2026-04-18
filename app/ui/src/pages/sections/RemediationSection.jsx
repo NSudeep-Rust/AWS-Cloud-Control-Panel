@@ -38,49 +38,35 @@ function fmtAction(a) { return (a||'Unknown').replace(/_/g,' ').replace(/\b\w/g,
 
 // ─── Empty Pipeline (Premium Redesign) ────────────────────────────────────────
 function EmptyPipeline() {
-  const [activeStage, setActiveStage] = useState(0)
-  const [dotPos, setDotPos] = useState(0)
-
-  useEffect(() => {
-    const iv = setInterval(() => setActiveStage(s => (s + 1) % 4), 1800)
-    return () => clearInterval(iv)
-  }, [])
-
-  useEffect(() => {
-    const iv = setInterval(() => setDotPos(p => (p + 1) % 100), 28)
-    return () => clearInterval(iv)
-  }, [])
-
   const STEPS = [
-    { icon: '🔍', label: 'DETECT',  sub: 'Scan findings',     color: '#e07b00', desc: 'Identifies 52+ vulnerability types across IAM, S3, EC2, VPC, KMS & more' },
-    { icon: '📋', label: 'PLAN',    sub: 'Generate fix plan',  color: '#FF9900', desc: 'Builds a dry-run preview with exact AWS action and safety reason' },
-    { icon: '⚡', label: 'EXECUTE', sub: 'Apply to AWS',       color: '#1d8102', desc: 'Makes live API changes with danger guard for irreversible operations' },
-    { icon: '✅', label: 'FIXED',   sub: 'Mark resolved',      color: '#0972d3', desc: 'Removes from queue and records to Rollback section for undo' },
+    { icon: '🔍', label: 'DETECT',  sub: 'Scan findings',    color: '#e07b00' },
+    { icon: '📋', label: 'PLAN',    sub: 'Generate fix plan', color: '#FF9900' },
+    { icon: '⚡', label: 'EXECUTE', sub: 'Apply to AWS',      color: '#1d8102' },
+    { icon: '✅', label: 'FIXED',   sub: 'Mark resolved',     color: '#0972d3' },
   ]
 
   const FEATURES = [
-    { icon: '🔄', title: 'Dry Run First',      desc: 'Preview every fix before any AWS change is made' },
-    { icon: '🛡️', title: 'Danger Guard',        desc: 'Irreversible actions require explicit confirmation' },
-    { icon: '↩️',  title: 'Rollback Support',   desc: 'Undo any reversible fix from the Rollback section' },
-    { icon: '⚡', title: 'Parallel Engines',    desc: '8 service engines process findings simultaneously' },
-    { icon: '🎯', title: 'Auto Prioritise',     desc: 'CRITICAL & HIGH findings surfaced first' },
-    { icon: '📊', title: 'Full Audit Trail',    desc: 'Every action logged with timestamp & outcome' },
+    { icon: '🔄', title: 'Dry Run First',    desc: 'Preview every fix before any AWS change is made' },
+    { icon: '🛡️', title: 'Danger Guard',      desc: 'Irreversible actions require explicit confirmation' },
+    { icon: '↩️',  title: 'Rollback Support', desc: 'Undo any reversible fix from the Rollback section' },
+    { icon: '⚡', title: 'Parallel Engines',  desc: '8 service engines process findings simultaneously' },
+    { icon: '🎯', title: 'Auto Prioritise',   desc: 'CRITICAL & HIGH findings surfaced first' },
+    { icon: '📊', title: 'Full Audit Trail',  desc: 'Every action logged with timestamp & outcome' },
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <style>{`
-        @keyframes remBlink   { 0%,100%{opacity:1} 50%{opacity:0.2} }
-        @keyframes remFadeIn  { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:none} }
-        @keyframes remShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-        @keyframes dotFlow    { 0%{left:-10%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{left:110%;opacity:0} }
-        @keyframes stageGlow  { 0%,100%{box-shadow:0 0 0 0 transparent} 50%{box-shadow:0 0 0 6px rgba(255,153,0,0.18)} }
-        @keyframes remNodePop { 0%{opacity:0;transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes remBlink    { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        @keyframes remShimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes remNodePop  { 0%{opacity:0;transform:scale(0.9)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes stageFloat  { 0%,100%{transform:scale(1);box-shadow:0 2px 12px rgba(0,0,0,0.04)} 50%{transform:scale(1.04);box-shadow:0 0 24px rgba(255,153,0,0.22)} }
+        @keyframes iconPulse   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+        @keyframes dotFlow     { 0%{left:-12px;opacity:0} 15%{opacity:1} 85%{opacity:1} 100%{left:calc(100% + 12px);opacity:0} }
       `}</style>
 
       {/* ── Pipeline Card ── */}
       <div style={{ background: 'var(--bg2)', border: '1.5px solid rgba(255,153,0,0.25)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 28px rgba(255,153,0,0.08), var(--card-shadow)' }}>
-        {/* Animated top bar */}
         <div style={{ height: 3, background: 'linear-gradient(90deg,#FF9900,#ec8a00,#FF9900)', backgroundSize: '200%', animation: 'remShimmer 2.5s linear infinite' }} />
 
         <div style={{ padding: '20px 24px 22px' }}>
@@ -94,58 +80,44 @@ function EmptyPipeline() {
             </div>
           </div>
 
-          {/* Stage cards row */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
-            {STEPS.map((step, i) => {
-              const isActive = activeStage === i
-              return (
-                <div key={step.label} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                  {/* Stage card */}
+          {/* Stage cards — wave-float with staggered delays, dots relay between them */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            {STEPS.map((step, i) => (
+              <div key={step.label} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                {/* Stage card — each floats with its own staggered delay → smooth wave */}
+                <div style={{
+                  flex: 1, padding: '28px 16px 22px', borderRadius: 14, textAlign: 'center',
+                  background: `${step.color}07`,
+                  border: `1px solid ${step.color}35`,
+                  animation: `remNodePop 0.35s ease ${i * 0.09}s both, stageFloat 3s ease ${i * 0.75}s infinite`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                }}>
+                  {/* Emoji icon with its own gentle pulse */}
                   <div style={{
-                    flex: 1, padding: '20px 14px 18px', borderRadius: 12, textAlign: 'center',
-                    background: isActive ? `${step.color}0e` : `${step.color}05`,
-                    border: `1.5px solid ${isActive ? step.color + '60' : step.color + '22'}`,
-                    boxShadow: isActive ? `0 0 24px ${step.color}22` : 'none',
-                    transition: 'all 0.35s ease',
-                    animation: `remNodePop 0.3s ease ${i * 0.1}s both`,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    fontSize: 40,
+                    animation: `iconPulse 3s ease ${i * 0.75}s infinite`,
+                    display: 'inline-block',
                   }}>
-                    {/* Icon with ring when active */}
-                    <div style={{ position: 'relative', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {isActive && (
-                        <>
-                          <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `2px solid ${step.color}40`, animation: 'stageGlow 1.5s ease infinite' }} />
-                          <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `1px solid ${step.color}20`, animation: 'stageGlow 1.5s ease 0.4s infinite' }} />
-                        </>
-                      )}
-                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: isActive ? `${step.color}16` : `${step.color}09`, border: `2px solid ${isActive ? step.color + '60' : step.color + '25'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, transition: 'all 0.3s' }}>
-                        {step.icon}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: step.color, letterSpacing: 1.2, textTransform: 'uppercase' }}>{step.label}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>{step.sub}</div>
-                    {isActive && (
-                      <div style={{ fontSize: 8.5, color: step.color, background: `${step.color}0d`, border: `1px solid ${step.color}25`, borderRadius: 4, padding: '3px 8px', lineHeight: 1.4, marginTop: 2, animation: 'remFadeIn 0.25s ease', maxWidth: 140 }}>
-                        {step.desc}
-                      </div>
-                    )}
+                    {step.icon}
                   </div>
-
-                  {/* Animated connector */}
-                  {i < STEPS.length - 1 && (
-                    <div style={{ width: 36, flexShrink: 0, position: 'relative', height: 3, background: `linear-gradient(90deg, ${step.color}30, ${STEPS[i+1].color}30)`, borderRadius: 2, overflow: 'hidden' }}>
-                      <div style={{
-                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                        width: 10, height: 10, borderRadius: '50%',
-                        background: `radial-gradient(circle, ${STEPS[i+1].color}, ${STEPS[i+1].color}88)`,
-                        boxShadow: `0 0 8px ${STEPS[i+1].color}88`,
-                        animation: `dotFlow 2.2s ease ${i * 0.55}s infinite`,
-                      }} />
-                    </div>
-                  )}
+                  <div style={{ fontSize: 11, fontWeight: 800, color: step.color, letterSpacing: 1.2, textTransform: 'uppercase' }}>{step.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>{step.sub}</div>
                 </div>
-              )
-            })}
+
+                {/* Connector — dot flows to next stage continuously */}
+                {i < STEPS.length - 1 && (
+                  <div style={{ width: 40, flexShrink: 0, position: 'relative', height: 2.5, background: 'rgba(255,153,0,0.15)' }}>
+                    <div style={{
+                      position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: STEPS[i + 1].color,
+                      boxShadow: `0 0 8px ${STEPS[i + 1].color}`,
+                      animation: `dotFlow 2.8s ease ${i * 0.7}s infinite`,
+                    }} />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
