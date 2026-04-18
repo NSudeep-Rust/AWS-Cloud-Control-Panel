@@ -58,74 +58,128 @@ function findingIcon(type = '') {
 
 const getModule = getModuleGroup
 
-
-const SCAN_BANNERS = [
-    { icon: '🔑', title: 'IAM Security', sub: 'Analyzing admin policies & privilege escalation paths' },
-    { icon: '🌐', title: 'VPC Network', sub: 'Scanning security groups & flow log configurations' },
-    { icon: '🔒', title: 'Key Management', sub: 'Checking KMS rotation & secret exposure patterns' },
-    { icon: '📦', title: 'S3 Storage', sub: 'Detecting public buckets & missing encryption' },
-    { icon: '💻', title: 'EC2 Compute', sub: 'Reviewing instance roles & EBS encryption status' },
-    { icon: '📋', title: 'CloudTrail', sub: 'Verifying audit trail completeness & logging gaps' },
-    { icon: '🔥', title: 'Threat Intel', sub: 'Cross-referencing against AWS threat signatures' },
-    { icon: '🚨', title: 'Alert Engine', sub: 'Monitoring CRITICAL & HIGH severity changes live' },
-    { icon: '🛡️', title: 'Firewall Rules', sub: 'Detecting over-permissive NACL & security groups' },
-    { icon: '🗄️', title: 'RDS Databases', sub: 'Checking encryption, public access & backup policies' },
-]
-
-
+// ── Enhanced Threat Radar ──────────────────────────────────────────────
 function ThreatRadar({ running, dark }) {
     const [angle, setAngle] = useState(0)
     const blips = [
-        { cx: 38, cy: 28, c: '#d13212' }, { cx: 62, cy: 52, c: '#e67e22' },
-        { cx: 28, cy: 58, c: '#d13212' }, { cx: 70, cy: 35, c: '#f59e0b' },
-        { cx: 50, cy: 72, c: '#e67e22' },
+        { cx: 36, cy: 26, c: '#d13212', r: 2.8 },
+        { cx: 64, cy: 54, c: '#e67e22', r: 2.2 },
+        { cx: 26, cy: 60, c: '#d13212', r: 2.0 },
+        { cx: 72, cy: 33, c: '#f59e0b', r: 1.8 },
+        { cx: 50, cy: 74, c: '#e67e22', r: 2.4 },
+        { cx: 41, cy: 43, c: '#d13212', r: 2.6 },
     ]
     useEffect(() => {
         if (!running) return
-        const iv = setInterval(() => setAngle(a => (a + 3) % 360), 25)
+        const iv = setInterval(() => setAngle(a => (a + 2) % 360), 20)
         return () => clearInterval(iv)
     }, [running])
 
     const toR = d => (d * Math.PI) / 180
+    const sweepDeg = 38
     const sx = 50 + 44 * Math.cos(toR(angle - 90))
     const sy = 50 + 44 * Math.sin(toR(angle - 90))
-    const tx = 50 + 44 * Math.cos(toR(angle - 125))
-    const ty = 50 + 44 * Math.sin(toR(angle - 125))
+    const tx = 50 + 44 * Math.cos(toR(angle - 90 - sweepDeg))
+    const ty = 50 + 44 * Math.sin(toR(angle - 90 - sweepDeg))
+
+    const gc = 'rgba(6,115,64,0.14)'
+    const lc = 'rgba(6,115,64,0.28)'
 
     return (
         <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display: 'block' }}>
-            {/* Rings */}
-            <circle cx="50" cy="50" r="48" fill={dark ? 'rgba(255,255,255,0.02)' : 'rgba(6,115,64,0.04)'} stroke={dark ? 'rgba(6,115,64,0.3)' : 'rgba(6,115,64,0.2)'} strokeWidth="0.8" />
-            {[36, 24, 12].map(r => (
-                <circle key={r} cx="50" cy="50" r={r} fill="none" stroke={dark ? 'rgba(6,115,64,0.2)' : 'rgba(6,115,64,0.15)'} strokeWidth="0.6" strokeDasharray="3 3" />
+            {/* Background */}
+            <circle cx="50" cy="50" r="48" fill={dark ? 'rgba(6,115,64,0.04)' : 'rgba(6,115,64,0.03)'} />
+
+            {/* 5 concentric rings */}
+            {[8, 16, 24, 32, 40].map(r => (
+                <circle key={r} cx="50" cy="50" r={r} fill="none"
+                    stroke={r === 40 ? lc : gc}
+                    strokeWidth={r === 40 ? 0.8 : 0.5}
+                    strokeDasharray={r < 40 ? '2.5 3' : undefined}
+                />
             ))}
-            <line x1="6" y1="50" x2="94" y2="50" stroke={dark ? 'rgba(6,115,64,0.2)' : 'rgba(6,115,64,0.15)'} strokeWidth="0.5" />
-            <line x1="50" y1="6" x2="50" y2="94" stroke={dark ? 'rgba(6,115,64,0.2)' : 'rgba(6,115,64,0.15)'} strokeWidth="0.5" />
+
+            {/* 8 spokes (cardinal + diagonal) */}
+            {[0, 45, 90, 135].map(deg => {
+                const c = Math.cos(toR(deg)), s = Math.sin(toR(deg))
+                return (
+                    <line key={deg}
+                        x1={50 - 44 * c} y1={50 - 44 * s}
+                        x2={50 + 44 * c} y2={50 + 44 * s}
+                        stroke={deg % 90 === 0 ? lc : gc}
+                        strokeWidth={deg % 90 === 0 ? 0.55 : 0.3}
+                    />
+                )
+            })}
+
+            {/* Outer border ring */}
+            <circle cx="50" cy="50" r="47" fill="none" stroke={lc} strokeWidth="0.6" />
+
+            {/* Tick marks every 15° */}
+            {Array.from({ length: 24 }, (_, i) => {
+                const a = i * 15
+                const cc = Math.cos(toR(a - 90)), ss = Math.sin(toR(a - 90))
+                const inner = i % 6 === 0 ? 40 : 43.5
+                return (
+                    <line key={i}
+                        x1={50 + inner * cc} y1={50 + inner * ss}
+                        x2={50 + 46.5 * cc} y2={50 + 46.5 * ss}
+                        stroke={lc} strokeWidth={i % 6 === 0 ? 0.9 : 0.4}
+                    />
+                )
+            })}
+
             {/* Sweep */}
             {running && (
                 <>
-                    <path d={`M50,50 L${tx},${ty} A44,44 0 0,1 ${sx},${sy} Z`} fill="rgba(6,115,64,0.18)" />
-                    <line x1="50" y1="50" x2={sx} y2={sy} stroke="#067340" strokeWidth="2" strokeLinecap="round" />
+                    <path d={`M50,50 L${tx},${ty} A44,44 0 0,1 ${sx},${sy} Z`}
+                        fill="rgba(6,115,64,0.18)" />
+                    {/* Fading ghost arc */}
+                    <path d={`M50,50 L${50 + 44 * Math.cos(toR(angle - 90 - sweepDeg * 0.6))},${50 + 44 * Math.sin(toR(angle - 90 - sweepDeg * 0.6))} A44,44 0 0,1 ${tx},${ty} Z`}
+                        fill="rgba(6,115,64,0.07)" />
+                    {/* Sweep arm */}
+                    <line x1="50" y1="50" x2={sx} y2={sy}
+                        stroke="#067340" strokeWidth="2.2" strokeLinecap="round" opacity="0.9" />
+                    {/* Tip glow */}
+                    <circle cx={sx} cy={sy} r="2.2" fill="#3fb950" opacity="0.85">
+                        <animate attributeName="opacity" values="0.85;0.3;0.85" dur="0.6s" repeatCount="indefinite" />
+                    </circle>
                 </>
             )}
+
             {/* Blips */}
             {running && blips.map((b, i) => (
-                <circle key={i} cx={b.cx} cy={b.cy} r="2.5" fill={b.c} opacity="0.9">
-                    <animate attributeName="opacity" values="0.9;0.2;0.9" dur={`${1.4 + i * 0.3}s`} repeatCount="indefinite" />
-                    <animate attributeName="r" values="2.5;4;2.5" dur={`${1.4 + i * 0.3}s`} repeatCount="indefinite" />
-                </circle>
+                <g key={i}>
+                    <circle cx={b.cx} cy={b.cy} r={b.r * 2.2} fill={b.c} opacity="0">
+                        <animate attributeName="r" values={`${b.r};${b.r * 3.5};${b.r}`} dur={`${1.8 + i * 0.25}s`} repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.45;0;0.45" dur={`${1.8 + i * 0.25}s`} repeatCount="indefinite" />
+                    </circle>
+                    <circle cx={b.cx} cy={b.cy} r={b.r} fill={b.c} opacity="0.9">
+                        <animate attributeName="opacity" values="0.9;0.4;0.9" dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" />
+                    </circle>
+                </g>
             ))}
-            {/* Center dot */}
+
+            {/* Static standby dots (not running) */}
+            {!running && [
+                { cx: 36, cy: 26 }, { cx: 64, cy: 54 }, { cx: 26, cy: 60 },
+                { cx: 72, cy: 33 }, { cx: 50, cy: 74 },
+            ].map((b, i) => (
+                <circle key={i} cx={b.cx} cy={b.cy} r="1.5" fill="#687078" opacity="0.35" />
+            ))}
+
+            {/* Center */}
             <circle cx="50" cy="50" r="3" fill={running ? '#067340' : '#687078'} />
+            <circle cx="50" cy="50" r="1.2" fill={running ? '#3fb950' : '#8d9191'} />
         </svg>
     )
 }
 
+// ── Finding Card (unchanged) ───────────────────────────────────────────
 const FindingCard = memo(function FindingCard({ f, dark }) {
     const [expanded, setExpanded] = useState(false)
     const sev = SEV[f.severity] || SEV.LOW
     const hasAutoFix = f.execution?.status === 'PLANNED'
-    const isManual = f.execution?.status === 'INFO'
 
     return (
         <div style={{
@@ -133,7 +187,6 @@ const FindingCard = memo(function FindingCard({ f, dark }) {
             borderRadius: 8, overflow: 'hidden',
             boxShadow: 'var(--card-shadow)', transition: 'box-shadow 0.15s',
         }}>
-            {/* Header */}
             <div style={{ padding: '10px 12px', borderBottom: `1px solid ${sev.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
                     <div style={{ color: sev.color, flexShrink: 0, marginTop: 1 }}>{findingIcon(f.type)}</div>
@@ -144,8 +197,6 @@ const FindingCard = memo(function FindingCard({ f, dark }) {
                     <span style={{ fontSize: 9, fontWeight: 700, color: sev.color, background: sev.bg, border: `1px solid ${sev.border}`, borderRadius: 3, padding: '2px 6px', fontFamily: 'monospace', flexShrink: 0 }}>{f.severity}</span>
                 </div>
             </div>
-
-            {/* Remediation strip */}
             <div style={{ padding: '8px 12px', background: hasAutoFix ? 'rgba(6,115,64,0.04)' : 'rgba(245,158,11,0.04)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     {hasAutoFix
@@ -162,8 +213,6 @@ const FindingCard = memo(function FindingCard({ f, dark }) {
                 {!f.remediation?.recommended_fix && (
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic' }}>{f.execution?.message}</div>
                 )}
-
-                {/* Expand for reason */}
                 {f.remediation?.reason && (
                     <button onClick={() => setExpanded(e => !e)} style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 9, color: 'var(--text3)', fontWeight: 600 }}>
                         {expanded ? <><ChevronUp size={9} />Hide reason</> : <><ChevronDown size={9} />Why?</>}
@@ -177,28 +226,18 @@ const FindingCard = memo(function FindingCard({ f, dark }) {
     )
 })
 
+// ── Filter Bar (unchanged) ─────────────────────────────────────────────
 function FilterBar({ active, onChange, counts, modules, activeModule, onModule }) {
     const filters = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'AUTO-FIX', 'MANUAL']
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Module dropdown */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Module</span>
-                <select
-                    value={activeModule}
-                    onChange={e => onModule(e.target.value)}
-                    style={{
-                        fontSize: 11, fontWeight: 600, padding: '4px 10px',
-                        borderRadius: 6, border: '1px solid var(--border)',
-                        background: 'var(--bg2)', color: 'var(--text)',
-                        cursor: 'pointer', outline: 'none', minWidth: 140,
-                    }}
-                >
+                <select value={activeModule} onChange={e => onModule(e.target.value)}
+                    style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', cursor: 'pointer', outline: 'none', minWidth: 140 }}>
                     {modules.map(m => <option key={m} value={m}>{m === 'ALL' ? 'All Modules' : m}</option>)}
                 </select>
             </div>
-
-            {/* Severity filter pills */}
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                 {filters.map(f => {
                     const count = counts[f] ?? 0
@@ -221,7 +260,7 @@ function FilterBar({ active, onChange, counts, modules, activeModule, onModule }
     )
 }
 
-
+// ── Main Component ─────────────────────────────────────────────────────
 export default function ThreatsSection({ dark }) {
     const { account } = useAuth()
     const { scanId, status: scanStatus, findings: scanFindings } = useScan()
@@ -326,9 +365,7 @@ export default function ThreatsSection({ dark }) {
     }
 
     const allFindings = threats?.findings || []
-
     const moduleList = ['ALL', ...Array.from(new Set(allFindings.map(f => getModule(f.type)))).sort()]
-
     const filtered = allFindings.filter(f => {
         const modOk = moduleFilter === 'ALL' || getModule(f.type) === moduleFilter
         if (!modOk) return false
@@ -348,39 +385,53 @@ export default function ThreatsSection({ dark }) {
         'AUTO-FIX': allFindings.filter(f => modOk(f) && f.execution?.status === 'PLANNED').length,
         'MANUAL':   allFindings.filter(f => modOk(f) && f.execution?.status === 'INFO').length,
     }
-
     const hasScan = !!(activeScanId)
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <style>{`
+                @keyframes shimmer      { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                @keyframes threatMarq   { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+                @keyframes socPulse     { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.7);opacity:0} }
+                @keyframes socBlink     { 0%,100%{opacity:1} 50%{opacity:0} }
+                @keyframes socGlow      { 0%,100%{box-shadow:0 0 14px rgba(6,115,64,0.25)} 50%{box-shadow:0 0 28px rgba(6,115,64,0.5)} }
+                @keyframes socScan      { 0%{width:0%} 70%,100%{width:100%} }
+                @keyframes fadeSlideUp  { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
+                @keyframes tickerFade   { 0%,100%{opacity:0} 15%,85%{opacity:1} }
+            `}</style>
 
             {/* ── HEADER ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 3 }}>
                         <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Threat Monitor</h1>
+                        {/* Live / Offline badge */}
                         <span style={{
-                            fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '2px 8px',
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 9, fontWeight: 800, borderRadius: 20, padding: '3px 10px',
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
                             color: monitorRunning ? '#067340' : '#687078',
-                            background: monitorRunning ? 'rgba(6,115,64,0.1)' : 'rgba(105,112,119,0.1)',
-                            border: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.25)' : 'rgba(105,112,119,0.2)'}`,
+                            background: monitorRunning ? 'rgba(6,115,64,0.1)' : 'rgba(105,112,119,0.08)',
+                            border: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.3)' : 'rgba(105,112,119,0.2)'}`,
                         }}>
-                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: monitorRunning ? '#067340' : '#687078', display: 'inline-block', animation: monitorRunning ? 'pulse 1.5s ease infinite' : 'none' }} />
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: monitorRunning ? '#067340' : '#687078', display: 'inline-block', animation: monitorRunning ? 'pulse 1.5s ease infinite' : 'none' }} />
                             {monitorRunning ? 'LIVE' : 'OFFLINE'}
                         </span>
+                        {threats && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#FF9900', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.22)', borderRadius: 4, padding: '2px 8px' }}>
+                                {threats.total_findings} threats analyzed
+                            </span>
+                        )}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text2)' }}>{awsId}</span>
-                        {threats && <span> · {threats.total_findings} threats analyzed</span>}
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                        {awsId} · Continuous AWS Security Monitoring
                     </div>
                 </div>
                 {hasScan && (
                     <button onClick={() => runThreatAnalysis(activeScanId)} disabled={loadingThreats} style={{
-                        display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px',
-                        borderRadius: 6, background: 'var(--bg2)', color: 'var(--text2)',
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                        borderRadius: 7, background: 'var(--bg2)', color: 'var(--text2)',
                         border: '1px solid var(--border)', cursor: loadingThreats ? 'not-allowed' : 'pointer',
-                        fontSize: 11, fontWeight: 600,
+                        fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
                     }}>
                         <RefreshCw size={11} style={{ animation: loadingThreats ? 'spin 0.7s linear infinite' : 'none' }} />
                         Re-analyze
@@ -392,89 +443,100 @@ export default function ThreatsSection({ dark }) {
             <div style={{
                 background: 'var(--bg2)',
                 border: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.3)' : 'var(--border)'}`,
-                borderRadius: 12, overflow: 'hidden',
-                boxShadow: monitorRunning ? '0 0 32px rgba(6,115,64,0.08)' : 'var(--card-shadow)',
+                borderRadius: 12,
+                boxShadow: monitorRunning ? '0 0 32px rgba(6,115,64,0.08), var(--card-shadow)' : 'var(--card-shadow)',
                 transition: 'border-color 0.4s, box-shadow 0.4s',
+                overflow: 'hidden',
             }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', minHeight: 200 }}>
+                {/* Colored top bar */}
+                <div style={{ height: 2, background: monitorRunning ? 'linear-gradient(90deg, #067340, #1d8102, #067340)' : 'var(--border)', backgroundSize: '200%', animation: monitorRunning ? 'shimmer 3s linear infinite' : 'none', transition: 'background 0.5s' }} />
 
-                    {/* Radar panel */}
+                <div style={{ display: 'grid', gridTemplateColumns: '210px 1fr', minHeight: 210 }}>
+                    {/* LEFT — Radar panel */}
                     <div style={{
-                        background: monitorRunning
-                            ? (dark ? 'rgba(6,115,64,0.08)' : 'rgba(6,115,64,0.05)')
-                            : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(35,47,62,0.02)'),
-                        borderRight: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.2)' : 'var(--border)'}`,
+                        background: monitorRunning ? 'rgba(6,115,64,0.04)' : 'rgba(35,47,62,0.02)',
+                        borderRight: `1px solid ${monitorRunning ? 'rgba(6,115,64,0.18)' : 'var(--border)'}`,
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        padding: 20, gap: 10, transition: 'background 0.4s',
+                        padding: '20px 16px', gap: 10, transition: 'background 0.4s',
                     }}>
-                        <div style={{ width: 130, height: 130, position: 'relative' }}>
-                            {/* Pulse rings when running */}
+                        {/* Radar with pulse rings */}
+                        <div style={{ position: 'relative', width: 148, height: 148 }}>
                             {monitorRunning && [0, 1, 2].map(i => (
                                 <div key={i} style={{
-                                    position: 'absolute', inset: -i * 8 - 4,
+                                    position: 'absolute', inset: -i * 9 - 5,
                                     borderRadius: '50%',
-                                    border: `1.5px solid rgba(6,115,64,${0.35 - i * 0.1})`,
-                                    animation: `overviewPulseRing ${2 + i * 0.4}s ease-out ${i * 0.5}s infinite`,
+                                    border: `1.5px solid rgba(6,115,64,${0.38 - i * 0.11})`,
+                                    animation: `overviewPulseRing ${2.2 + i * 0.4}s ease-out ${i * 0.55}s infinite`,
                                 }} />
                             ))}
                             <ThreatRadar running={monitorRunning} dark={dark} />
                         </div>
+                        {/* Status label */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: monitorRunning ? '#067340' : 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                {monitorRunning ? 'Monitoring' : 'Standby'}
+                            <div style={{
+                                fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2,
+                                color: monitorRunning ? '#067340' : 'var(--text3)',
+                            }}>
+                                {monitorRunning ? '⬤ Monitoring' : '◯ Standby'}
                             </div>
                             {monitorStatus?.interval && (
-                                <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Every {monitorStatus.interval}s</div>
+                                <div style={{ fontSize: 8.5, color: 'var(--text3)', marginTop: 2, fontFamily: 'monospace' }}>
+                                    Scan every {monitorStatus.interval}s
+                                </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Control panel */}
-                    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    {/* RIGHT — Control panel */}
+                    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                        {/* Title + description */}
                         <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Real-Time Threat Detection</div>
-                            <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.6, maxWidth: 480 }}>
-                                Continuously scans your AWS environment for new and resolved security findings. Detects CRITICAL and HIGH severity threats and generates instant alerts.
+                            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>
+                                Real-Time Threat Detection
                             </div>
-
-                            {/* Running status ticker */}
+                            <div style={{ fontSize: 11.5, color: 'var(--text3)', lineHeight: 1.7, maxWidth: 520 }}>
+                                Continuously monitors your AWS environment for new and resolved security findings.
+                                Detects <strong style={{ color: '#d13212' }}>CRITICAL</strong> and <strong style={{ color: '#e67e22' }}>HIGH</strong> severity threats — alerts delivered via live desktop notifications.
+                            </div>
+                            {/* Live ticker */}
                             {monitorRunning && (
-                                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: '#067340', fontFamily: 'monospace', fontWeight: 600 }}>
-                                    <Activity size={10} color="#067340" style={{ animation: 'pulse 1s ease infinite' }} />
-                                    {MONITOR_MSGS[msgIdx]}
+                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: 'rgba(6,115,64,0.06)', border: '1px solid rgba(6,115,64,0.18)', borderRadius: 7, animation: 'fadeSlideUp 0.3s ease' }}>
+                                    <Activity size={11} color="#067340" style={{ animation: 'pulse 1s ease infinite', flexShrink: 0 }} />
+                                    <span style={{ fontSize: 10.5, color: '#067340', fontFamily: 'monospace', fontWeight: 600 }}>{MONITOR_MSGS[msgIdx]}</span>
                                 </div>
                             )}
-
-                            {/* Stopped state hint */}
                             {!monitorRunning && !toggling && (
-                                <div style={{ marginTop: 12, fontSize: 10, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <ShieldAlert size={10} color="var(--text3)" />
-                                    Real-time protection is currently OFF. Start the monitor to enable continuous scanning.
+                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', background: 'rgba(105,112,119,0.05)', border: '1px solid var(--border)', borderRadius: 7 }}>
+                                    <ShieldAlert size={11} color="var(--text3)" />
+                                    <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>Protection is currently <strong>OFF</strong> — start the monitor to enable continuous scanning</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* Stats row when running */}
+                        {/* Stats row — running state */}
                         {monitorRunning && monitorStatus && (
-                            <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                                 {[
-                                    { label: 'Status', value: monitorStatus.running ? 'Running' : 'Stopped', color: '#067340' },
-                                    { label: 'Interval', value: `${monitorStatus.interval || 60}s`, color: 'var(--text)' },
-                                    { label: 'Last Run', value: monitorStatus.last_run ? new Date(monitorStatus.last_run).toLocaleTimeString() : '—', color: 'var(--text)' },
+                                    { label: 'Status',   val: 'Running',                                                                         color: '#067340' },
+                                    { label: 'Interval', val: `${monitorStatus.interval || 60}s`,                                                 color: '#0972d3' },
+                                    { label: 'Last Run', val: monitorStatus.last_run ? new Date(monitorStatus.last_run).toLocaleTimeString() : '—', color: '#FF9900' },
                                 ].map(s => (
-                                    <div key={s.label}>
-                                        <div style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{s.label}</div>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: s.color, fontFamily: 'monospace' }}>{s.value}</div>
+                                    <div key={s.label} style={{ background: 'var(--bg3, rgba(35,47,62,0.04))', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                                        <div style={{ height: 2, background: `linear-gradient(90deg, ${s.color}, ${s.color}55)` }} />
+                                        <div style={{ padding: '8px 10px' }}>
+                                            <div style={{ fontSize: 8.5, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3, fontWeight: 700 }}>{s.label}</div>
+                                            <div style={{ fontSize: 14, fontWeight: 800, color: s.color, fontFamily: 'monospace' }}>{s.val}</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         )}
 
-                        {/* Start / Stop button */}
-                        <div style={{ marginTop: 16 }}>
+                        {/* Start / Stop */}
+                        <div>
                             <button onClick={toggle} disabled={toggling} style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                                padding: '10px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                                padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700,
                                 cursor: toggling ? 'wait' : 'pointer', border: 'none',
                                 transition: 'all 0.2s',
                                 ...(monitorRunning
@@ -497,195 +559,132 @@ export default function ThreatsSection({ dark }) {
                     </div>
                 </div>
 
-                {/* AWS Fact ticker at bottom */}
-                <div style={{
-                    borderTop: `1px solid var(--border)`, padding: '8px 20px',
-                    background: dark ? 'rgba(255,255,255,0.015)' : 'rgba(35,47,62,0.02)',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                }}>
+                {/* AWS Fact ticker */}
+                <div style={{ borderTop: '1px solid var(--border)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,153,0,0.02)' }}>
                     <Zap size={10} color="#FF9900" />
-                    <span style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic' }}>
+                    <span style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic', flex: 1, key: factIdx, animation: 'tickerFade 5s ease' }}>
                         <strong style={{ color: '#FF9900', fontStyle: 'normal' }}>AWS Fact:</strong> {AWS_FACTS[factIdx]}
                     </span>
                 </div>
             </div>
 
-            {/* ── THREAT ANALYSIS SECTION ── */}
+            {/* ── THREAT ANALYSIS ── */}
             <div style={{ minHeight: 380 }}>
+                {/* Section title */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <AlertTriangle size={13} color="#FF9900" />
-                        Threat Analysis
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(255,153,0,0.1)', border: '1px solid rgba(255,153,0,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AlertTriangle size={12} color="#FF9900" />
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Threat Analysis</span>
                         {threats && <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', fontFamily: 'monospace' }}>· {threats.total_findings} findings</span>}
                     </div>
                     {threats && (
-                        <div style={{ display: 'flex', gap: 10, fontSize: 10, color: 'var(--text3)' }}>
-                            <span style={{ color: '#067340', fontWeight: 700 }}>{counts['AUTO-FIX']} auto-fixable</span>
-                            <span>·</span>
-                            <span style={{ color: '#f59e0b', fontWeight: 700 }}>{counts['MANUAL']} manual</span>
+                        <div style={{ display: 'flex', gap: 8, fontSize: 10 }}>
+                            <span style={{ background: 'rgba(6,115,64,0.08)', border: '1px solid rgba(6,115,64,0.2)', borderRadius: 4, padding: '2px 8px', color: '#067340', fontWeight: 700 }}>✓ {counts['AUTO-FIX']} auto-fixable</span>
+                            <span style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 4, padding: '2px 8px', color: '#f59e0b', fontWeight: 700 }}>⚠ {counts['MANUAL']} manual</span>
                         </div>
                     )}
                 </div>
 
-                {/* No scan yet — full SOC animated empty state */}
+                {/* ── NO-SCAN EMPTY STATE ── */}
                 {!hasScan && !loadingThreats && !threats && (() => {
-                    const ORG  = { color: '#FF9900',  glow: 'rgba(255,153,0,0.2)'   }  // AWS orange — primary
-                    const BLU  = { color: '#5b9bd5',  glow: 'rgba(91,155,213,0.2)'  }  // AWS steel blue — infra/network
-                    const GRN  = { color: '#3ea97c',  glow: 'rgba(62,169,124,0.2)'  }  // AWS teal-green — compliance
-                    const MODULE_CARDS = [
-                        { icon: '🔑', title: 'IAM Security',    sub: 'Admin policies & privilege paths',   ...ORG },
-                        { icon: '🌐', title: 'VPC Network',     sub: 'Security groups & flow logs',        ...BLU },
-                        { icon: '📦', title: 'S3 Storage',      sub: 'Public buckets & encryption gaps',   ...ORG },
-                        { icon: '💻', title: 'EC2 Compute',     sub: 'Instance roles & EBS status',        ...BLU },
-                        { icon: '📋', title: 'CloudTrail',      sub: 'Audit trail & logging gaps',         ...GRN },
-                        { icon: '🔥', title: 'Threat Intel',    sub: 'AWS threat signature matching',      ...ORG },
-                        { icon: '🛡️', title: 'Firewall',        sub: 'NACL & security group rules',        ...GRN },
-                        { icon: '🗄️', title: 'RDS Databases',   sub: 'Encryption & public access',         ...BLU },
-                        { icon: '🔒', title: 'KMS Keys',        sub: 'Rotation & secret exposure',         ...GRN },
-                        { icon: '🚨', title: 'Alert Engine',    sub: 'CRITICAL & HIGH severity watch',     ...ORG },
+                    const MODULES = [
+                        { icon: '🔑', title: 'IAM',        color: '#d13212', delay: '.00s' },
+                        { icon: '🌐', title: 'VPC / SG',   color: '#0972d3', delay: '.05s' },
+                        { icon: '📦', title: 'S3',          color: '#FF9900', delay: '.10s' },
+                        { icon: '💻', title: 'EC2 / EBS',  color: '#0972d3', delay: '.15s' },
+                        { icon: '📋', title: 'CloudTrail', color: '#1d8102', delay: '.20s' },
+                        { icon: '🔒', title: 'KMS',        color: '#8B5CF6', delay: '.25s' },
+                        { icon: '🗄️', title: 'RDS',        color: '#0972d3', delay: '.30s' },
+                        { icon: '🛡️', title: 'Firewall',   color: '#1d8102', delay: '.35s' },
+                    ]
+                    const TICKER = [
+                        { icon: '🔑', title: 'IAM Security',    sub: 'Admin policies & privilege paths' },
+                        { icon: '🌐', title: 'VPC Network',     sub: 'Security groups & flow logs' },
+                        { icon: '📦', title: 'S3 Storage',      sub: 'Public buckets & encryption gaps' },
+                        { icon: '💻', title: 'EC2 Compute',     sub: 'Instance roles & EBS status' },
+                        { icon: '📋', title: 'CloudTrail',      sub: 'Audit trail & logging gaps' },
+                        { icon: '🔥', title: 'Threat Intel',    sub: 'AWS threat signature matching' },
+                        { icon: '🛡️', title: 'Firewall',        sub: 'NACL & security group rules' },
+                        { icon: '🗄️', title: 'RDS Databases',   sub: 'Encryption & public access' },
+                        { icon: '🔒', title: 'KMS Keys',        sub: 'Rotation & secret exposure' },
+                        { icon: '🚨', title: 'Alert Engine',    sub: 'CRITICAL & HIGH severity watch' },
                     ]
                     return (
-                    <div style={{
-                        background: dark ? 'var(--bg2)' : 'linear-gradient(160deg, #fffcf5 0%, #fff8ec 60%, #fffcf5 100%)',
-                        border: `1px solid ${dark ? 'rgba(255,153,0,0.18)' : 'rgba(232,154,0,0.28)'}`,
-                        borderRadius: 14, overflow: 'hidden',
-                        boxShadow: '0 1px 8px rgba(255,153,0,0.08), 0 2px 16px rgba(15,17,17,0.06)',
-                        marginBottom: 60,
-                    }}>
-                        <style>{`
-                            @keyframes threatMarquee {
-                                0%   { transform: translateX(0) }
-                                100% { transform: translateX(-50%) }
-                            }
-                            @keyframes socPulse {
-                                0%, 100% { transform: scale(1); opacity: 0.6 }
-                                50%       { transform: scale(1.65); opacity: 0 }
-                            }
-                            @keyframes socBlink {
-                                0%, 100% { opacity: 1 } 50% { opacity: 0 }
-                            }
-                            @keyframes socGlow {
-                                0%, 100% { box-shadow: 0 0 14px rgba(255,153,0,0.25) }
-                                50%       { box-shadow: 0 0 28px rgba(255,153,0,0.45) }
-                            }
-                            @keyframes socScan {
-                                0%   { width: 0% }
-                                70%  { width: 100% }
-                                100% { width: 100% }
-                            }
-                        `}</style>
+                        <div style={{
+                            background: 'var(--bg2)', border: '1px solid var(--border)',
+                            borderRadius: 12, overflow: 'hidden',
+                            boxShadow: 'var(--card-shadow)',
+                        }}>
+                            {/* Top accent */}
+                            <div style={{ height: 2, background: 'linear-gradient(90deg,#FF9900,rgba(255,153,0,0.3),transparent)' }} />
 
-                        {/* Compact single-row layout */}
-                        <div style={{ display: 'flex', alignItems: 'center', padding: '18px 24px', gap: 24 }}>
-
-                            {/* Shield */}
-                            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                                <div style={{ position: 'relative', width: 72, height: 72 }}>
-                                    {[0,1].map(i => (
-                                        <div key={i} style={{
-                                            position: 'absolute',
-                                            inset: -i * 10 - 3,
-                                            borderRadius: '50%',
-                                            border: `1.5px solid rgba(232,154,0,${0.45 - i * 0.18})`,
-                                            animation: `socPulse ${2 + i * 0.6}s ease-out ${i * 0.7}s infinite`,
-                                        }} />
-                                    ))}
-                                    <div style={{
-                                        width: 72, height: 72, borderRadius: '50%',
-                                        background: dark ? 'rgba(255,153,0,0.07)' : '#fff9ee',
-                                        border: '2px solid rgba(232,154,0,0.45)',
-                                        boxShadow: 'inset 0 0 24px rgba(255,153,0,0.12)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 28, animation: 'socGlow 2.5s ease infinite',
-                                    }}>🛡️</div>
+                            {/* Body: 2-column */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: 200 }}>
+                                {/* LEFT — Radar */}
+                                <div style={{ background: 'rgba(6,115,64,0.03)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, gap: 10 }}>
+                                    <div style={{ position: 'relative', width: 150, height: 150 }}>
+                                        {[0, 1].map(i => (
+                                            <div key={i} style={{ position: 'absolute', inset: -i * 9 - 4, borderRadius: '50%', border: `1.5px solid rgba(255,153,0,${0.25 - i * 0.1})`, animation: `socPulse ${2.2 + i * 0.5}s ease-out ${i * 0.6}s infinite` }} />
+                                        ))}
+                                        <ThreatRadar running={false} dark={dark} />
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 9, fontWeight: 800, color: '#FF9900', textTransform: 'uppercase', letterSpacing: 1.5 }}>THREAT ENGINE</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 4 }}>
+                                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#FF9900', display: 'inline-block', animation: 'socBlink 1.2s ease infinite' }} />
+                                            <span style={{ fontSize: 8.5, color: 'var(--text3)', fontFamily: 'monospace' }}>STANDBY</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ color: '#c07000', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>THREAT ENGINE</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 3 }}>
-                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#FF9900', display: 'inline-block', animation: 'socBlink 1s ease infinite' }} />
-                                        <span style={{ fontSize: 8.5, color: '#8d9191', fontFamily: 'monospace' }}>STANDBY</span>
+
+                                {/* RIGHT — Module grid + status */}
+                                <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    {/* Module status */}
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                                            <div style={{ width: 16, height: 16, borderRadius: 4, background: 'rgba(255,153,0,0.1)', border: '1px solid rgba(255,153,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Activity size={9} color="#FF9900" />
+                                            </div>
+                                            <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1 }}>Module Status</span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                                            {MODULES.map((m, i) => (
+                                                <div key={m.title} style={{ background: `${m.color}08`, border: `1px solid ${m.color}1e`, borderRadius: 7, padding: '7px 8px', animation: `socScan 1.4s ease ${m.delay} both` }}>
+                                                    <div style={{ fontSize: 14, marginBottom: 3 }}>{m.icon}</div>
+                                                    <div style={{ fontSize: 9, fontWeight: 700, color: m.color, textTransform: 'uppercase', letterSpacing: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                                                    <div style={{ fontSize: 7.5, color: '#1d8102', fontWeight: 700, fontFamily: 'monospace', marginTop: 2 }}>READY</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', background: 'rgba(29,129,2,0.05)', border: '1px solid rgba(29,129,2,0.18)', borderRadius: 7 }}>
+                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1d8102', display: 'inline-block', animation: 'socBlink 1.2s ease infinite' }} />
+                                        <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace' }}>All engines online · Run a scan from <strong style={{ color: 'var(--text2)' }}>Overview</strong> or <strong style={{ color: 'var(--text2)' }}>Scanner</strong> to begin threat analysis</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Divider */}
-                            <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(232,154,0,0.2)', flexShrink: 0 }} />
-
-                            {/* Module bars — 2 columns */}
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: '#c07000', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-                                    MODULE STATUS
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px 20px' }}>
-                                    {[
-                                        { name: 'IAM',        color: '#e07b00' },
-                                        { name: 'EC2 / EBS',  color: '#5b9bd5' },
-                                        { name: 'S3',         color: '#e07b00' },
-                                        { name: 'VPC',        color: '#5b9bd5' },
-                                        { name: 'CloudTrail', color: '#3ea97c' },
-                                        { name: 'Firewall',   color: '#3ea97c' },
-                                    ].map((m, i) => (
-                                        <div key={m.name}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                                <span style={{ fontSize: 9.5, color: 'var(--text2)', fontWeight: 600 }}>{m.name}</span>
-                                                <span style={{ fontSize: 8.5, color: m.color, fontWeight: 700, fontFamily: 'monospace' }}>READY</span>
-                                            </div>
-                                            <div style={{ height: 3, background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(35,47,62,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                                                <div style={{
-                                                    height: '100%', borderRadius: 3,
-                                                    background: `linear-gradient(90deg, ${m.color}, ${m.color}99)`,
-                                                    width: '100%',
-                                                    animation: `socScan 1.6s ease ${i * 0.12}s both`,
-                                                }} />
-                                            </div>
+                            {/* Scrolling module cards */}
+                            <div style={{ borderTop: '1px solid var(--border)', overflow: 'hidden', padding: '10px 0' }}>
+                                <div style={{ display: 'flex', gap: 10, paddingLeft: 16, width: 'max-content', animation: 'threatMarq 28s linear infinite', willChange: 'transform' }}>
+                                    {[...TICKER, ...TICKER].map((b, i) => (
+                                        <div key={i} style={{ flexShrink: 0, width: 150, background: 'var(--bg2)', border: '1px solid var(--border)', borderLeft: '3px solid #FF9900', borderRadius: 7, padding: '9px 11px' }}>
+                                            <div style={{ fontSize: 14, marginBottom: 3 }}>{b.icon}</div>
+                                            <div style={{ fontSize: 9.5, fontWeight: 800, color: '#FF9900', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{b.title}</div>
+                                            <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.4 }}>{b.sub}</div>
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--text3)', fontFamily: 'monospace' }}>
-                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#1d8102', display: 'inline-block', animation: 'socBlink 1.2s ease infinite' }} />
-                                    All engines online · Run a scan from Overview or Scanner to begin threat analysis
-                                </div>
                             </div>
                         </div>
-
-                        {/* Divider */}
-                        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(232,154,0,0.25), transparent)' }} />
-
-                        {/* Scrolling module cards */}
-                        <div style={{ overflow: 'hidden', padding: '12px 0' }}>
-                            <div style={{
-                                display: 'flex', gap: 10, paddingLeft: 16,
-                                width: 'max-content',
-                                animation: 'threatMarquee 30s linear infinite',
-                                willChange: 'transform',
-                            }}>
-                                {[...MODULE_CARDS, ...MODULE_CARDS].map((b, i) => (
-                                    <div key={i} style={{
-                                        flexShrink: 0, width: 148,
-                                        background: dark ? 'var(--bg3)' : '#ffffff',
-                                        border: `1px solid ${b.color}33`,
-                                        borderLeft: `3px solid ${b.color}`,
-                                        borderRadius: 8, padding: '10px 12px',
-                                        boxShadow: '0 1px 4px rgba(15,17,17,0.07)',
-                                        position: 'relative', overflow: 'hidden',
-                                    }}>
-                                        <div style={{ position: 'absolute', top: -8, right: -8, fontSize: 30, opacity: 0.05 }}>{b.icon}</div>
-                                        <div style={{ fontSize: 16, marginBottom: 5, position: 'relative' }}>{b.icon}</div>
-                                        <div style={{ fontSize: 9.5, fontWeight: 800, color: b.color, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3, position: 'relative' }}>{b.title}</div>
-                                        <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.4, position: 'relative' }}>{b.sub}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                     )
                 })()}
 
-
-
                 {/* Loading */}
                 {loadingThreats && (
-                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '48px 24px', textAlign: 'center' }}>
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '48px 24px', textAlign: 'center', boxShadow: 'var(--card-shadow)' }}>
                         <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid rgba(255,153,0,0.2)', borderTopColor: '#FF9900', animation: 'spin 0.7s linear infinite', margin: '0 auto 12px' }} />
                         <div style={{ fontSize: 12, color: 'var(--text3)' }}>Analyzing threats and building remediation plan...</div>
                     </div>
@@ -702,7 +701,25 @@ export default function ThreatsSection({ dark }) {
                 {/* Findings grid */}
                 {threats && !loadingThreats && (
                     <>
-                        {/* Filter bar */}
+                        {/* Severity summary tiles */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+                            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
+                                const cfg = SEV[sev]
+                                const n = counts[sev]
+                                const active = filter === sev
+                                return (
+                                    <div key={sev} onClick={() => setFilter(f => f === sev ? 'ALL' : sev)}
+                                        style={{ background: active ? cfg.bg : 'var(--bg2)', border: `1.5px solid ${active ? cfg.color : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ fontSize: 22, fontWeight: 900, color: cfg.color, fontFamily: 'monospace', lineHeight: 1 }}>{n}</div>
+                                        <div>
+                                            <div style={{ fontSize: 9.5, fontWeight: 800, color: cfg.color, letterSpacing: 0.5 }}>{sev}</div>
+                                            <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 1 }}>findings</div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
                         <div style={{ marginBottom: 10 }}>
                             <FilterBar
                                 active={filter} onChange={f => { setFilter(f) }}
