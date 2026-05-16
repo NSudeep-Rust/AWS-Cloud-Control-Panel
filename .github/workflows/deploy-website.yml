@@ -1,7 +1,5 @@
 name: 🚀 Deploy to CloudShield.me
 
-# Triggers on push to main (only when app code changes)
-# Also can be triggered manually from GitHub Actions tab
 on:
   push:
     branches:
@@ -16,7 +14,7 @@ on:
       - 'app/config/**'
       - 'app/core/**'
       - 'app/database/**'
-  workflow_dispatch:   # manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -29,7 +27,15 @@ jobs:
       - name: 📥 Checkout source
         uses: actions/checkout@v4
 
-      # ── 2. Build React frontend ──────────────────────────────────────────────
+      # ── 2. Setup SSH key ────────────────────────────────────────────────────
+      - name: 🔑 Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # ── 3. Build React frontend ──────────────────────────────────────────────
       - name: 🟢 Set up Node.js 18
         uses: actions/setup-node@v4
         with:
@@ -40,62 +46,55 @@ jobs:
       - name: 📦 Install frontend dependencies
         run: cd app/ui && npm ci
 
-      - name: 🔨 Build React (production — cloudshield.me)
+      - name: 🔨 Build React (production)
         run: cd app/ui && npm run build
         env:
           VITE_API_URL: https://cloudshield.me
           VITE_WEB_MODE: true
 
-      # ── 3. Upload frontend dist/ to EC2 ─────────────────────────────────────
+      # ── 4. Upload frontend dist via SCP ─────────────────────────────────────
       - name: 📤 Upload frontend dist to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "app/ui/dist/"
-          target: "/tmp/cs-deploy/"
+        run: |
+          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
+            app/ui/dist \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-dist
 
-      # ── 4. Upload backend app/ to EC2 ───────────────────────────────────────
+      # ── 5. Upload backend via SCP ────────────────────────────────────────────
       - name: 📤 Upload backend to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "app/api/,app/modules/,app/config/,app/core/,app/database/"
-          target: "/tmp/cs-backend/"
+        run: |
+          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
+            app/api app/modules app/config app/core app/database \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-backend
 
-      # ── 5. Apply changes + restart service on EC2 ───────────────────────────
-      - name: 🔄 Apply & restart on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+      # ── 6. Apply + restart on EC2 ────────────────────────────────────────────
+      - name: 🔄 Apply changes & restart service
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
+            ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
 
             echo "📁 Deploying frontend..."
-            sudo cp -rf /tmp/cs-deploy/app/ui/dist/* /root/cloudshield/app/ui/dist/
+            sudo cp -rf /tmp/cs-dist/* /root/cloudshield/app/ui/dist/
+            rm -rf /tmp/cs-dist
             echo "✅ Frontend deployed"
 
             echo "📁 Deploying backend..."
-            sudo cp -rf /tmp/cs-backend/app/api       /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/app/modules   /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/app/config    /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/app/core      /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/app/database  /root/cloudshield/app/
+            sudo cp -rf /tmp/cs-backend/api       /root/cloudshield/app/
+            sudo cp -rf /tmp/cs-backend/modules   /root/cloudshield/app/
+            sudo cp -rf /tmp/cs-backend/config    /root/cloudshield/app/
+            sudo cp -rf /tmp/cs-backend/core      /root/cloudshield/app/
+            sudo cp -rf /tmp/cs-backend/database  /root/cloudshield/app/
+            rm -rf /tmp/cs-backend
             echo "✅ Backend deployed"
-
-            echo "🧹 Cleaning up temp files..."
-            rm -rf /tmp/cs-deploy /tmp/cs-backend
 
             echo "🔄 Restarting CloudShield service..."
             sudo systemctl restart cloudshield
             sleep 5
 
-            # Verify service is running — fails the action if crashed
             sudo systemctl is-active cloudshield \
               && echo "🎉 CloudShield.me is live!" \
-              || (echo "❌ Service failed to start!" && sudo journalctl -u cloudshield -n 30 && exit 1)
+              || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
+          EOF
+
+      - name: ✅ Done
+        run: echo "🚀 CloudShield.me deployed successfully!"
