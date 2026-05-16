@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const SCAN_REGIONS = [
     'us-east-1',
@@ -39,7 +39,8 @@ export function ScanProvider({ children }) {
     useEffect(() => {
         function connect() {
             try {
-                const ws = new WebSocket('ws://127.0.0.1:8000/ws/alerts')
+                const _wsBase = API.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:')
+                const ws = new WebSocket(`${_wsBase}/ws/alerts`)
                 wsRef.current = ws
 
                 ws.onmessage = (e) => {

@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react'
+﻿import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const SCAN_REGIONS = [
     { id: 'us-east-1',      name: 'N. Virginia', group: 'US',   azs: 6, azIds: ['a','b','c','d','e','f'] },

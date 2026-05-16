@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 /* ── Colour palette ───────────────────────────────── */
 const SEV_PALETTE = {

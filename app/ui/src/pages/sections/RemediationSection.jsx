@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
 import { Wrench, CheckCircle, AlertTriangle, Clock, Play, Zap, RotateCcw, Shield, RefreshCw, Search, ChevronRight } from 'lucide-react'
 import { getServiceTag } from '@/utils/getModuleGroup'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const DANGER_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE', 'FORCE_TERMINATE_EC2_INSTANCE',

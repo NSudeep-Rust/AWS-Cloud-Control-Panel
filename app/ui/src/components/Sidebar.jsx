@@ -1,4 +1,4 @@
-import { useAuth } from '@/context/AuthContext'
+﻿import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Search, ShieldAlert, Wrench, RotateCcw,
@@ -73,7 +73,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
         setClearing(true)
         try {
             if (clearData) {
-                const API = 'http://127.0.0.1:8000'
+                const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
                 const awsId = account?.aws_account_id || account?.account_id
                 if (awsId) {
                     await fetch(`${API}/api/session/wipe?account_id=${encodeURIComponent(awsId)}`, { method: 'DELETE' }).catch(() => {})

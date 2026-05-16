@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { RotateCcw, CheckCircle, AlertTriangle, Clock, Ban, Trash2 } from 'lucide-react'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const NON_ROLLBACKABLE_ACTIONS = new Set([
   'TERMINATE_EC2_INSTANCE',

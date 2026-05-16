@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react'
+﻿import { useState, useEffect, useRef, memo } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
 
@@ -15,7 +15,7 @@ import {
     Lock, Globe, Key, Database, Server, Eye, Square, Users
 } from 'lucide-react'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const OV_CSS = `
   @keyframes ov-up    { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }

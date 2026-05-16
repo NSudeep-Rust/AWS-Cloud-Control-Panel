@@ -4,6 +4,8 @@ import { ChevronRight, Check, Plus, User, Key, Cloud } from 'lucide-react'
 import { accountsAPI } from '../api/index'
 import { useAuth } from '../context/AuthContext'
 
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+
 const AWS_REGIONS = [
     'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
     'ap-south-1', 'ap-northeast-1', 'ap-northeast-2', 'ap-northeast-3',
@@ -104,7 +106,7 @@ export default function AccountSetupPage() {
     }, [])
 
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/version').then(r => r.json()).then(d => setAppVersion(d.version)).catch(() => {})
+        fetch(`${API}/api/version`).then(r => r.json()).then(d => setAppVersion(d.version)).catch(() => {})
     }, [])
 
     useEffect(() => {

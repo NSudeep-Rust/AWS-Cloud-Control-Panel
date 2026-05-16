@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react'
+﻿import { useState, useEffect, useRef, memo } from 'react'
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { getModuleGroup } from '@/utils/getModuleGroup'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.08)', border: 'rgba(209,50,18,0.22)', label: 'CRITICAL' },

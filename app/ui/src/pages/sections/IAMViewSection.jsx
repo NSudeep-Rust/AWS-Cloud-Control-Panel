@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useScan } from '@/context/ScanContext'
 import axios from 'axios'
 import { Key, Shield, Users, Settings, Lock, AlertTriangle, CheckCircle, Activity, Globe, Eye, RefreshCw } from 'lucide-react'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 // ─── Risk palette ──────────────────────────────────────────────────────────────
 const RISK = {

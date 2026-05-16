@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { getModuleGroup } from '@/utils/getModuleGroup'
 
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+
 const SEV = {
     CRITICAL: { color: '#d13212', bg: 'rgba(209,50,18,0.07)', border: 'rgba(209,50,18,0.45)', rank: 0 },
     HIGH: { color: '#e67e22', bg: 'rgba(230,126,34,0.07)', border: 'rgba(230,126,34,0.45)', rank: 1 },
@@ -133,7 +135,7 @@ export function ScannerSection({ onNav, dark }) {
         if (!dbId || testing) return
         setTesting(true); setTestResult(null)
         try {
-            const r = await fetch(`http://127.0.0.1:8000/api/scan/test-aws?account_id=${dbId}`)
+            const r = await fetch(`${API}/api/scan/test-aws?account_id=${dbId}`)
             const d = await r.json()
             setTestResult(d)
         } catch (e) {

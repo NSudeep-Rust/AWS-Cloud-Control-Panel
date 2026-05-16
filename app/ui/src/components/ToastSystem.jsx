@@ -1,10 +1,10 @@
-
+﻿
 import { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContext'
 import { ShieldAlert, AlertTriangle, Info, X, ChevronRight, Shield } from 'lucide-react'
 
-const API = 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const POLL_MS = 4_000            // poll every 4 seconds (WS fallback only)
 const AUTO_DISMISS_MS = 12_000   // toast stays for 12 seconds
 const MAX_TOASTS = 3            // max visible at once (capped to prevent stacking)

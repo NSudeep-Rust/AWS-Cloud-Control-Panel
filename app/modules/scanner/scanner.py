@@ -15,8 +15,14 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-MAX_WORKERS       = 24   # outer pool -- handles all region + global tasks concurrently
-INNER_MAX_WORKERS = 12   # inner pool -- 9 sub-scanners per region + headroom
+import os
+
+# Worker counts are tuned per-environment via env vars.
+# Server (1GB RAM t3.micro) → low values to prevent OOM kills.
+# Local dev / EXE (developer machine with 8GB+) → high values for speed.
+# Set SCAN_MAX_WORKERS / SCAN_INNER_MAX_WORKERS in .env to override.
+MAX_WORKERS       = int(os.getenv("SCAN_MAX_WORKERS",       "24"))  # outer pool
+INNER_MAX_WORKERS = int(os.getenv("SCAN_INNER_MAX_WORKERS", "12"))  # per-region inner pool
 
 
 class Scanner:
@@ -152,8 +158,8 @@ class Scanner:
         for r in self.regions:
             tasks[f"region:{r}"] = (lambda _r=r: self._scan_region(_r))
 
-        # Scale worker count: 24 base + 1 per bucket (S3 tasks are tiny)
-        max_w = min(len(tasks), MAX_WORKERS + len(s3_bucket_map))
+        # Cap at MAX_WORKERS — do NOT scale with S3 bucket count (causes OOM on small servers)
+        max_w = min(len(tasks), MAX_WORKERS)
 
         with ThreadPoolExecutor(max_workers=max_w) as outer:
             futures = {outer.submit(fn): name for name, fn in tasks.items()}
