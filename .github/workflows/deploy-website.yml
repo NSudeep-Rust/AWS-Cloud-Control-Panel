@@ -52,55 +52,59 @@ jobs:
           VITE_API_URL: https://cloudshield.me
           VITE_WEB_MODE: true
 
-      # ── 4. Pre-create temp dirs on EC2 ──────────────────────────────────────
-      - name: 📁 Create temp dirs on EC2
+      # ── 4. Package everything into one tar file ──────────────────────────────
+      - name: 📦 Package files for deployment
         run: |
-          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
-            ubuntu@${{ secrets.EC2_HOST }} \
-            'rm -rf /tmp/cs-dist /tmp/cs-backend && mkdir -p /tmp/cs-dist /tmp/cs-backend'
+          tar -czf /tmp/cloudshield-deploy.tar.gz \
+            app/ui/dist \
+            app/api \
+            app/modules \
+            app/config \
+            app/core \
+            app/database
+          echo "Package size: $(du -sh /tmp/cloudshield-deploy.tar.gz)"
 
-      # ── 5. Upload frontend dist via SCP ─────────────────────────────────────
-      - name: 📤 Upload frontend dist to EC2
+      # ── 5. Upload single tar file via SCP ────────────────────────────────────
+      - name: 📤 Upload to EC2
         run: |
-          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
-            app/ui/dist/. \
-            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-dist/
+          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
+            /tmp/cloudshield-deploy.tar.gz \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cloudshield-deploy.tar.gz
 
-      # ── 6. Upload backend via SCP ────────────────────────────────────────────
-      - name: 📤 Upload backend to EC2
-        run: |
-          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
-            app/api/. app/modules/. app/config/. app/core/. app/database/. \
-            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-backend/
-
-      # ── 7. Apply + restart on EC2 ────────────────────────────────────────────
+      # ── 6. Extract + apply + restart on EC2 ─────────────────────────────────
       - name: 🔄 Apply changes & restart service
         run: |
           ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
             ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            set -e
+          set -e
 
-            echo "📁 Deploying frontend..."
-            sudo cp -rf /tmp/cs-dist/* /root/cloudshield/app/ui/dist/
-            rm -rf /tmp/cs-dist
-            echo "✅ Frontend deployed"
+          echo "📦 Extracting deployment package..."
+          cd /tmp
+          tar -xzf cloudshield-deploy.tar.gz
+          rm cloudshield-deploy.tar.gz
 
-            echo "📁 Deploying backend..."
-            sudo cp -rf /tmp/cs-backend/api       /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/modules   /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/config    /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/core      /root/cloudshield/app/
-            sudo cp -rf /tmp/cs-backend/database  /root/cloudshield/app/
-            rm -rf /tmp/cs-backend
-            echo "✅ Backend deployed"
+          echo "📁 Deploying frontend..."
+          sudo cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
+          echo "✅ Frontend deployed"
 
-            echo "🔄 Restarting CloudShield service..."
-            sudo systemctl restart cloudshield
-            sleep 5
+          echo "📁 Deploying backend..."
+          sudo cp -rf /tmp/app/api       /root/cloudshield/app/
+          sudo cp -rf /tmp/app/modules   /root/cloudshield/app/
+          sudo cp -rf /tmp/app/config    /root/cloudshield/app/
+          sudo cp -rf /tmp/app/core      /root/cloudshield/app/
+          sudo cp -rf /tmp/app/database  /root/cloudshield/app/
+          echo "✅ Backend deployed"
 
-            sudo systemctl is-active cloudshield \
-              && echo "🎉 CloudShield.me is live!" \
-              || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
+          echo "🧹 Cleaning up..."
+          rm -rf /tmp/app
+
+          echo "🔄 Restarting CloudShield service..."
+          sudo systemctl restart cloudshield
+          sleep 5
+
+          sudo systemctl is-active cloudshield \
+            && echo "🎉 CloudShield.me is live!" \
+            || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
           EOF
 
       - name: ✅ Done
