@@ -37,6 +37,21 @@ export default function WebAuthPage() {
   const glowOuter = useRef(null)
   const glowInner = useRef(null)
 
+  // After saving token, route user correctly:
+  //   → /setup if they have no AWS accounts yet (new user)
+  //   → /    if they already have accounts (returning user)
+  async function routeAfterLogin(token) {
+    try {
+      const r = await fetch(`${API}/api/accounts/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const d = await r.json()
+      navigate(d.accounts && d.accounts.length > 0 ? '/' : '/setup')
+    } catch {
+      navigate('/setup')  // fallback: show setup if we can't check
+    }
+  }
+
   // Handle OAuth callback token OR oauth_error OR reset_token in URL
   useEffect(() => {
     const token      = searchParams.get('token')
@@ -47,7 +62,7 @@ export default function WebAuthPage() {
     if (token) {
       localStorage.setItem('cloudshield_web_token', token)
       if (email) localStorage.setItem('cloudshield_web_email', email)
-      navigate('/')
+      routeAfterLogin(token)           // ← smart routing based on accounts
     } else if (oauthErr) {
       setMsg({ type: 'error', text: decodeURIComponent(oauthErr) })
     } else if (resetTok) {
@@ -114,7 +129,7 @@ export default function WebAuthPage() {
         if (!r.ok) throw new Error(d.detail || 'Login failed')
         localStorage.setItem('cloudshield_web_token', d.access_token)
         localStorage.setItem('cloudshield_web_email', d.email)
-        navigate('/')
+        await routeAfterLogin(d.access_token)   // ← smart routing
       }
     } catch(err) { setMsg({ type:'error', text: err.message }) }
     finally { setLoading(false) }

@@ -1,8 +1,19 @@
 import axios from 'axios'
 
-const BASE = 'http://127.0.0.1:8000'
+const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const api = axios.create({ baseURL: BASE })
+
+// ── Auto-attach JWT token for web mode ─────────────────────────────────────
+// In desktop mode there's no token → header is simply not added (safe)
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('cloudshield_web_token')
+  if (token) {
+    config.headers = config.headers || {}
+    config.headers['Authorization'] = `Bearer ${token}`
+  }
+  return config
+})
 
 export const accountsAPI = {
     list: () => api.get('/api/accounts/'),

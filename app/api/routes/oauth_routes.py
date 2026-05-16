@@ -23,7 +23,8 @@ from app.core.auth import create_access_token, hash_password
 
 router = APIRouter(prefix="/api/auth", tags=["OAuth"])
 
-BASE_URL     = os.getenv("WEB_BASE_URL", "https://cloudshield.me")
+BASE_URL     = os.getenv("WEB_BASE_URL",  "https://cloudshield.me")  # FastAPI server
+FRONTEND_URL = os.getenv("FRONTEND_URL", BASE_URL)                   # React app (localhost:5173 in dev, same as BASE_URL in prod)
 GOOGLE_ID    = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_SEC   = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GITHUB_ID    = os.getenv("GITHUB_CLIENT_ID", "")
@@ -45,7 +46,7 @@ def github_check():
 def google_login():
     if not GOOGLE_ID:
         return RedirectResponse(
-            f"{BASE_URL}/auth?oauth_error=Google+OAuth+not+configured.+Set+GOOGLE_CLIENT_ID."
+            f"{FRONTEND_URL}/auth?oauth_error=Google+OAuth+not+configured.+Set+GOOGLE_CLIENT_ID."
         )
     callback = f"{BASE_URL}/api/auth/google/callback"
     scope    = "openid%20email%20profile"
@@ -80,14 +81,14 @@ def google_callback(code: str = "", error: str = "", db: Session = Depends(get_d
 
         email = id_token_resp.get("email", "").lower()
         if not email:
-            return RedirectResponse(f"{BASE_URL}/auth?oauth_error=Could+not+get+email+from+Google")
+            return RedirectResponse(f"{FRONTEND_URL}/auth?oauth_error=Could+not+get+email+from+Google")
 
         user = _get_or_create_user(db, email, provider="google")
         token = create_access_token(user.id)
-        return RedirectResponse(f"{BASE_URL}/auth?token={token}&email={email}")
+        return RedirectResponse(f"{FRONTEND_URL}/auth?token={token}&email={email}")
 
     except Exception as e:
-        return RedirectResponse(f"{BASE_URL}/auth?oauth_error=Google+auth+failed:+{str(e)[:80]}")
+        return RedirectResponse(f"{FRONTEND_URL}/auth?oauth_error=Google+auth+failed:+{str(e)[:80]}")
 
 
 # ── GitHub OAuth ───────────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ def google_callback(code: str = "", error: str = "", db: Session = Depends(get_d
 def github_login():
     if not GITHUB_ID:
         return RedirectResponse(
-            f"{BASE_URL}/auth?oauth_error=GitHub+OAuth+not+configured.+Set+GITHUB_CLIENT_ID."
+            f"{FRONTEND_URL}/auth?oauth_error=GitHub+OAuth+not+configured.+Set+GITHUB_CLIENT_ID."
         )
     callback = f"{BASE_URL}/api/auth/github/callback"
     url = (
@@ -138,15 +139,15 @@ def github_callback(code: str = "", error: str = "", db: Session = Depends(get_d
             None
         )
         if not email:
-            return RedirectResponse(f"{BASE_URL}/auth?oauth_error=No+verified+email+on+GitHub+account")
+            return RedirectResponse(f"{FRONTEND_URL}/auth?oauth_error=No+verified+email+on+GitHub+account")
 
         email = email.lower()
         user  = _get_or_create_user(db, email, provider="github")
         token = create_access_token(user.id)
-        return RedirectResponse(f"{BASE_URL}/auth?token={token}&email={email}")
+        return RedirectResponse(f"{FRONTEND_URL}/auth?token={token}&email={email}")
 
     except Exception as e:
-        return RedirectResponse(f"{BASE_URL}/auth?oauth_error=GitHub+auth+failed:+{str(e)[:80]}")
+        return RedirectResponse(f"{FRONTEND_URL}/auth?oauth_error=GitHub+auth+failed:+{str(e)[:80]}")
 
 
 # ── Shared helper ──────────────────────────────────────────────────────────────

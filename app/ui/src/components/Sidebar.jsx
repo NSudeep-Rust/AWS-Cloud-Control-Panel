@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard, Search, ShieldAlert, Wrench, RotateCcw,
     History, BarChart2, LogOut, Sun, Moon,
-    Globe, Users, PanelLeftClose, PanelLeftOpen, RefreshCcw
+    Globe, Users, PanelLeftClose, PanelLeftOpen, RefreshCcw, ShieldCheck
 } from 'lucide-react'
 import { useState } from 'react'
+
+const WEB_MODE = import.meta.env.VITE_WEB_MODE === 'true'
 
 const NAV_GROUPS = [
     {
@@ -484,7 +486,7 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                 {/* Disconnect */}
                 <button
                     onClick={openDisconnect}
-                    title="Disconnect"
+                    title="Disconnect AWS account"
                     style={{
                         display:'flex', alignItems:'center', gap: collapsed?0:9,
                         width:'100%', padding: collapsed?'7px 0':'7px 9px',
@@ -499,6 +501,144 @@ export default function Sidebar({ active, onNav, dark, onToggleDark }) {
                     <LogOut size={14}/>
                     {!collapsed && <span>Disconnect</span>}
                 </button>
+
+                {/* ── Web User Profile Card (web mode only) ─────────────── */}
+                {WEB_MODE && (() => {
+                    const webEmail = localStorage.getItem('cloudshield_web_email') || ''
+                    const initial  = webEmail ? webEmail[0].toUpperCase() : 'U'
+                    const username = webEmail.split('@')[0] || 'User'
+                    function webSignOut() {
+                        localStorage.removeItem('cloudshield_web_token')
+                        localStorage.removeItem('cloudshield_web_email')
+                        navigate('/auth', { replace: true })
+                    }
+                    return (
+                        <>
+                        {/* Gradient divider */}
+                        <div style={{
+                            height: 1, margin: '7px 4px 9px',
+                            background: `linear-gradient(90deg,transparent,${dark?'rgba(255,153,0,0.30)':'rgba(255,153,0,0.35)'},transparent)`,
+                        }}/>
+
+                        {!collapsed ? (
+                            /* ── Expanded: premium card ── */
+                            <div style={{
+                                margin: '0 5px 2px',
+                                borderRadius: 11,
+                                border: `1px solid ${dark?'rgba(255,153,0,0.22)':'rgba(255,153,0,0.28)'}`,
+                                background: dark
+                                    ? 'linear-gradient(145deg,rgba(255,153,0,0.07) 0%,rgba(255,80,0,0.03) 100%)'
+                                    : 'linear-gradient(145deg,rgba(255,248,235,0.95) 0%,rgba(255,240,210,0.6) 100%)',
+                                padding: '10px 12px 9px',
+                                position: 'relative', overflow: 'hidden',
+                                boxShadow: dark
+                                    ? '0 2px 14px rgba(255,153,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05)'
+                                    : '0 2px 12px rgba(255,153,0,0.10), inset 0 1px 0 rgba(255,255,255,0.8)',
+                            }}>
+                                {/* Glow orb */}
+                                <div style={{
+                                    position:'absolute', top:-18, right:-18,
+                                    width:56, height:56, borderRadius:'50%',
+                                    background:'radial-gradient(circle,rgba(255,153,0,0.18) 0%,transparent 70%)',
+                                    pointerEvents:'none',
+                                }}/>
+
+                                {/* User row */}
+                                <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:9 }}>
+                                    {/* Avatar */}
+                                    <div style={{
+                                        position:'relative', flexShrink:0,
+                                    }}>
+                                        <div style={{
+                                            width:32, height:32, borderRadius:'50%',
+                                            background:'linear-gradient(135deg,#FF9900 0%,#e07b00 100%)',
+                                            display:'flex', alignItems:'center', justifyContent:'center',
+                                            fontSize:13, fontWeight:900, color:'#fff',
+                                            letterSpacing:0.3,
+                                            boxShadow:'0 3px 12px rgba(255,153,0,0.45)',
+                                            border:'2px solid rgba(255,153,0,0.35)',
+                                        }}>{initial}</div>
+                                        {/* Live dot */}
+                                        <div style={{
+                                            position:'absolute', bottom:-1, right:-1,
+                                            width:9, height:9, borderRadius:'50%',
+                                            background:'linear-gradient(135deg,#28a745,#1d8102)',
+                                            border:`2px solid ${dark?'#161b22':'#fff'}`,
+                                            boxShadow:'0 0 6px rgba(29,129,2,0.5)',
+                                        }}/>
+                                    </div>
+
+                                    {/* Name + email */}
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                        <div style={{
+                                            fontSize:11.5, fontWeight:800,
+                                            color: dark?'#e6edf3':'#16191f',
+                                            overflow:'hidden', textOverflow:'ellipsis',
+                                            whiteSpace:'nowrap', letterSpacing:-0.1,
+                                        }}>{username}</div>
+                                        <div style={{
+                                            fontSize:9.5,
+                                            color: dark?'#6e7f8e':'#7a8898',
+                                            overflow:'hidden', textOverflow:'ellipsis',
+                                            whiteSpace:'nowrap', marginTop:1,
+                                        }}>{webEmail}</div>
+                                    </div>
+                                </div>
+
+                                {/* Sign Out button — premium red gradient */}
+                                <button
+                                    id="web-sign-out"
+                                    onClick={webSignOut}
+                                    style={{
+                                        width:'100%', padding:'7px 0',
+                                        background:'linear-gradient(135deg,#c0392b 0%,#e74c3c 100%)',
+                                        border:'none', borderRadius:8,
+                                        cursor:'pointer', fontSize:11.5, fontWeight:700,
+                                        color:'#fff', letterSpacing:0.4,
+                                        display:'flex', alignItems:'center',
+                                        justifyContent:'center', gap:6,
+                                        boxShadow:'0 3px 10px rgba(192,57,43,0.30)',
+                                        transition:'all 0.18s cubic-bezier(.34,1.56,.64,1)',
+                                    }}
+                                    onMouseEnter={e=>{
+                                        e.currentTarget.style.transform='translateY(-2px) scale(1.01)'
+                                        e.currentTarget.style.boxShadow='0 6px 20px rgba(192,57,43,0.45)'
+                                        e.currentTarget.style.background='linear-gradient(135deg,#a93226 0%,#c0392b 100%)'
+                                    }}
+                                    onMouseLeave={e=>{
+                                        e.currentTarget.style.transform='translateY(0) scale(1)'
+                                        e.currentTarget.style.boxShadow='0 3px 10px rgba(192,57,43,0.30)'
+                                        e.currentTarget.style.background='linear-gradient(135deg,#c0392b 0%,#e74c3c 100%)'
+                                    }}
+                                >
+                                    <LogOut size={12} strokeWidth={2.5}/>
+                                    Sign Out
+                                </button>
+                            </div>
+                        ) : (
+                            /* ── Collapsed: icon-only button with tooltip ── */
+                            <button
+                                id="web-sign-out"
+                                onClick={webSignOut}
+                                title={`Sign Out — ${webEmail}`}
+                                style={{
+                                    width:'100%', padding:'7px 0',
+                                    background:'rgba(192,57,43,0.08)',
+                                    border:'1px solid rgba(192,57,43,0.15)',
+                                    borderRadius:7, cursor:'pointer',
+                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                    transition:'all 0.15s',
+                                }}
+                                onMouseEnter={e=>{ e.currentTarget.style.background='rgba(192,57,43,0.18)'; e.currentTarget.style.transform='scale(1.05)' }}
+                                onMouseLeave={e=>{ e.currentTarget.style.background='rgba(192,57,43,0.08)'; e.currentTarget.style.transform='scale(1)' }}
+                            >
+                                <LogOut size={14} color="#c0392b" strokeWidth={2.2}/>
+                            </button>
+                        )}
+                        </>
+                    )
+                })()}
+
             </div>
         </aside>
 
