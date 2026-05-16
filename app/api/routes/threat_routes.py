@@ -7,7 +7,7 @@ from app.database.models import Finding
 from app.modules.remediation.planner import RemediationPlanner
 from app.core.monitor_service import MonitorService
 from app.modules.threat_monitor.threat_monitor import ThreatMonitor
-from app.core.aws_session import AWSSession
+from app.core.crypto import build_aws_session
 from app.database.models import Account
 from app.api.schemas import MonitorRequest
 from app.api.websocket_manager import ws_manager
@@ -100,13 +100,7 @@ def start_monitor(request: MonitorRequest, db: Session = Depends(get_db)):
     if not account:
         return {"error": "Account not found"}
 
-    aws = AWSSession(
-        profile_name=account.profile_name,
-        access_key=account.access_key,
-        secret_key=account.secret_key,
-        region_name=account.region
-    )
-    aws.initialize()
+    aws = build_aws_session(account)
     print("🔥 MONITOR USING ACCOUNT:", aws.get_account_id())
 
     monitor = ThreatMonitor(aws_session=aws)

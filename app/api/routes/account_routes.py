@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.database.models import Account, IamUser
 from app.api.schemas import AccountCreateRequest, IamUserCreateRequest
+from app.core.crypto import encrypt
 
 router = APIRouter(
     prefix="/api/accounts",
@@ -24,8 +25,8 @@ def create_account(request: AccountCreateRequest, db: Session = Depends(get_db))
         aws_account_id=request.aws_account_id,
         profile_name=request.profile_name,
         region=request.region,
-        access_key=request.access_key,
-        secret_key=request.secret_key,
+        access_key=encrypt(request.access_key),   # encrypted in web mode, plain in desktop
+        secret_key=encrypt(request.secret_key),
     )
 
     db.add(account)
@@ -81,8 +82,8 @@ def create_iam_user(request: IamUserCreateRequest, db: Session = Depends(get_db)
     iam_user = IamUser(
         account_id=request.account_id,
         username=request.username,
-        access_key=request.access_key,
-        secret_key=request.secret_key,
+        access_key=encrypt(request.access_key),   # encrypted in web mode, plain in desktop
+        secret_key=encrypt(request.secret_key),
         region=request.region,
     )
 

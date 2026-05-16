@@ -309,7 +309,7 @@ def evaluate_policies(
 
 @router.post("/enforce-policies")
 def enforce_policies(account_id: int, db: Session = Depends(get_db)):
-    from app.core.aws_session import AWSSession
+    from app.core.crypto import build_aws_session
     from app.modules.remediation.executor import RemediationExecutor
     from app.modules.protection_history.history import ProtectionHistory
     from app.database.models import Account
@@ -334,10 +334,10 @@ def enforce_policies(account_id: int, db: Session = Depends(get_db)):
         return format_response(module="policy_enforcement", mode="AUTO",
                                data={"message": "Invalid account_id"})
 
-    aws_session = AWSSession(profile_name=account.profile_name, region_name=account.region)
-    aws_session.initialize()
+    aws_session = build_aws_session(account)
     executor = RemediationExecutor(aws_session=aws_session,
                                    history=ProtectionHistory(), execution_mode="DRY_RUN")
+
 
     violated_ids = {v["resource_id"] for v in violations}
     results = []

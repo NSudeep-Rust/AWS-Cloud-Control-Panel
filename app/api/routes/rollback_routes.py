@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.response_formatter import format_response
 from app.api.logger import logger
-from app.core.aws_session import AWSSession
+from app.core.crypto import build_aws_session
 from app.modules.remediation.rollback import RollbackEngine
 from app.api.schemas import RollbackRequest
 
@@ -57,14 +57,7 @@ def rollback(request: RollbackRequest, db: Session = Depends(get_db)):
 
         print("🔥 USING AWS PROFILE (ROLLBACK):", account.profile_name)
 
-        aws_session = AWSSession(
-            profile_name=account.profile_name,
-            role_arn=account.role_arn,
-            access_key=getattr(account, "access_key", None),
-            secret_key=getattr(account, "secret_key", None),
-            region_name=account.region
-        )
-        aws_session.initialize()
+        aws_session = build_aws_session(account)
 
         rollback_engine = RollbackEngine(aws_session)
         result = rollback_engine.rollback(request.execution_id)

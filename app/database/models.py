@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database.base import Base
@@ -10,17 +10,55 @@ from sqlalchemy import Enum
 
 
 
+# ── Web User (only used in web/hosted mode) ──────────────────────────────────
+class WebUser(Base):
+    """
+    Represents a CloudShield web account (email + password login).
+    Only populated in web mode.  EXE/desktop mode never creates rows here.
+    """
+    __tablename__ = "web_users"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    email           = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    is_active       = Column(Boolean, default=True)
+    created_at      = Column(DateTime, default=datetime.utcnow)
+
+    accounts = relationship("Account", back_populates="web_user")
+    reset_tokens = relationship("PasswordResetToken", back_populates="user")
+
+
+class PasswordResetToken(Base):
+    """One-time password reset token — expires after 1 hour."""
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("web_users.id"), nullable=False, index=True)
+    token      = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("WebUser", back_populates="reset_tokens")
+
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id             = Column(Integer, primary_key=True, index=True)
     aws_account_id = Column(String, nullable=False)   # real AWS account ID
-    profile_name = Column(String, nullable=True)      # for local profiles
-    role_arn = Column(String, nullable=True)          # for cross-account access
-    access_key = Column(String, nullable=True)
-    secret_key = Column(String, nullable=True)
-    region = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    profile_name   = Column(String, nullable=True)    # for local profiles
+    role_arn       = Column(String, nullable=True)    # for cross-account access
+    access_key     = Column(String, nullable=True)
+    secret_key     = Column(String, nullable=True)
+    region         = Column(String, nullable=False)
+    created_at     = Column(DateTime, default=datetime.utcnow)
+
+    # Web mode: link to the CloudShield web user who owns this AWS account
+    # Desktop/EXE mode: always NULL — ignored completely
+    web_user_id = Column(Integer, ForeignKey("web_users.id"), nullable=True, index=True)
+    web_user    = relationship("WebUser", back_populates="accounts")
 
     iam_users = relationship("IamUser", back_populates="account")
 
@@ -128,7 +166,7 @@ class ScheduleConfig(Base):
     updated_at     = Column(DateTime, default=datetime.utcnow)
 
 
-from sqlalchemy import Boolean
+# Boolean already imported at top of file
 
 class EmailConfig(Base):
     """

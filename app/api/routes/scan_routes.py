@@ -3,7 +3,7 @@ from app.api.schemas import ScanRequest
 from app.config import security_config
 from app.api.response_formatter import format_response
 from app.api.logger import logger
-from app.core.aws_session import AWSSession
+from app.core.crypto import build_aws_session
 from app.modules.scanner.scanner import run_full_scan
 from app.core.email_service import EmailService
 from app.database.db import SessionLocal, get_db
@@ -41,14 +41,7 @@ def test_aws_connection(account_id: int, db: Session = Depends(get_db)):
         if not account:
             _log(f'TEST-AWS: account {account_id} not found in DB')
             return {"ok": False, "error": f"Account {account_id} not in DB"}
-        aws_session = AWSSession(
-            profile_name=account.profile_name,
-            role_arn=getattr(account, "role_arn", None),
-            access_key=getattr(account, "access_key", None),
-            secret_key=getattr(account, "secret_key", None),
-            region_name=account.region
-        )
-        aws_session.initialize()
+        aws_session = build_aws_session(account)
         sts = aws_session.session.client("sts")
         identity = sts.get_caller_identity()
         _log(f'TEST-AWS OK: {identity["Account"]}')
@@ -88,14 +81,7 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
                 mode=effective_mode,
                 errors=["Invalid account_id"]
             )
-        aws_session = AWSSession(
-            profile_name=account.profile_name,
-            role_arn=account.role_arn,
-            access_key=getattr(account, "access_key", None),
-            secret_key=getattr(account, "secret_key", None),
-            region_name=account.region
-        )
-        aws_session.initialize()
+        aws_session = build_aws_session(account)
         _log(f'session initialized for account_id={request.account_id} profile={account.profile_name}')
         findings = run_full_scan(aws_session, source="API")
         _log(f'scan complete - {len(findings)} findings')

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Query
 from app.api.schemas import ExecuteRequest
 from app.api.response_formatter import format_response
-from app.core.aws_session import AWSSession
+from app.core.crypto import build_aws_session
 from app.modules.remediation.executor import RemediationExecutor
 from app.modules.remediation.planner import RemediationPlanner
 from app.modules.protection_history.history import ProtectionHistory
@@ -80,14 +80,7 @@ def process_execution(request: ExecuteRequest, db: Session):
 
         print("USING AWS PROFILE (EXECUTE):", account.profile_name)
 
-        aws_session = AWSSession(
-            profile_name=account.profile_name,
-            role_arn=account.role_arn,
-            access_key=getattr(account, "access_key", None),
-            secret_key=getattr(account, "secret_key", None),
-            region_name=account.region
-        )
-        aws_session.initialize()
+        aws_session = build_aws_session(account)
 
         history = ProtectionHistory()
         executor = RemediationExecutor(

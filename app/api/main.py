@@ -16,6 +16,8 @@ from app.api.routes import schedule_routes
 from app.api.routes import email_routes
 from app.api.routes import attack_surface_routes
 from app.api.routes import iam_view_routes
+from app.api.routes import auth_routes          # web auth (register / login / me)
+from app.api.routes import oauth_routes         # Google + GitHub OAuth
 from app.core.scheduler_service import scheduler_service
 from app.api.websocket_manager import ws_manager
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,23 +41,36 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def on_startup():
-    """Auto-create SQLite tables on first run, start background scheduler."""
+    """Create DB tables, run safe migrations, start background scheduler."""
     import asyncio
     import logging
     _log = logging.getLogger("cloudshield.startup")
 
-    # Capture event loop NOW (async context) so ws_manager.broadcast_sync()
-    # works from the scheduler thread (asyncio.get_event_loop() is broken in threads on Py3.10+)
     ws_manager._loop = asyncio.get_running_loop()
 
     try:
         from app.database.base import Base
-        from app.database.db import engine
+        from app.database.db import engine, APP_MODE
         from app.database import models  # noqa: F401
         Base.metadata.create_all(bind=engine)
-        _log.info("Database tables ready")
+        _log.info("Database tables ready (mode=%s)", APP_MODE)
     except Exception as e:
         _log.error("Database init failed: %s", e)
+
+    # ── Safe migration: add web_user_id to accounts if missing ───────────────
+    # Needed for existing EXE users whose SQLite DB was created before this
+    # column existed.  Runs silently — if column already exists, it's a no-op.
+    try:
+        from sqlalchemy import text
+        from app.database.db import engine
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE accounts ADD COLUMN web_user_id INTEGER REFERENCES web_users(id)"
+            ))
+            conn.commit()
+        _log.info("Migration: web_user_id column added to accounts")
+    except Exception:
+        pass  # column already exists — that's fine
 
     try:
         scheduler_service.start()
@@ -64,10 +79,16 @@ async def on_startup():
         _log.error("Scheduler failed to start (non-fatal): %s", e)
 
 
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Desktop/EXE: allow localhost only
+# Web mode   : also allow the production domain (set WEB_ORIGIN env var on server)
+import os as _os
+_extra_origins = [o.strip() for o in _os.getenv("WEB_ORIGIN", "").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"http://localhost:\d+",
-    allow_origins=["http://127.0.0.1:8000"],
+    allow_origins=["http://127.0.0.1:8000"] + _extra_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,6 +125,8 @@ async def get_version():
 
 
 
+app.include_router(auth_routes.router)           # web auth
+app.include_router(oauth_routes.router)          # Google + GitHub OAuth
 app.include_router(scan_routes.router)
 app.include_router(threat_routes.router)
 app.include_router(execute_routes.router)

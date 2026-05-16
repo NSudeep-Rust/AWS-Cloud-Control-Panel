@@ -8,7 +8,7 @@ import traceback
 
 from app.database.db       import get_db
 from app.database.models   import Account
-from app.core.aws_session  import AWSSession
+from app.core.crypto import build_aws_session
 from app.api.response_formatter import format_response
 from app.modules.iam_view.iam_scanner import scan_iam_identities
 
@@ -30,13 +30,8 @@ async def iam_view_scan(
         if not account:
             return format_response("iam-view", "scan", errors=["Account not found"])
 
-        # Build AWS session — MUST call initialize() to create the boto3.Session
-        aws = AWSSession(
-            access_key=account.access_key,
-            secret_key=account.secret_key,
-            region_name=account.region or "us-east-1",
-        )
-        aws.initialize()
+        # Build AWS session with decrypted keys
+        aws = build_aws_session(account)
 
         result = scan_iam_identities(aws)
         return format_response("iam-view", "scan", data=result)
