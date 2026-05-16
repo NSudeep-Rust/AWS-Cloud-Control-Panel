@@ -52,21 +52,28 @@ jobs:
           VITE_API_URL: https://cloudshield.me
           VITE_WEB_MODE: true
 
-      # ── 4. Upload frontend dist via SCP ─────────────────────────────────────
+      # ── 4. Pre-create temp dirs on EC2 ──────────────────────────────────────
+      - name: 📁 Create temp dirs on EC2
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
+            ubuntu@${{ secrets.EC2_HOST }} \
+            'rm -rf /tmp/cs-dist /tmp/cs-backend && mkdir -p /tmp/cs-dist /tmp/cs-backend'
+
+      # ── 5. Upload frontend dist via SCP ─────────────────────────────────────
       - name: 📤 Upload frontend dist to EC2
         run: |
           scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
-            app/ui/dist \
-            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-dist
+            app/ui/dist/. \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-dist/
 
-      # ── 5. Upload backend via SCP ────────────────────────────────────────────
+      # ── 6. Upload backend via SCP ────────────────────────────────────────────
       - name: 📤 Upload backend to EC2
         run: |
           scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no -r \
-            app/api app/modules app/config app/core app/database \
-            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-backend
+            app/api/. app/modules/. app/config/. app/core/. app/database/. \
+            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cs-backend/
 
-      # ── 6. Apply + restart on EC2 ────────────────────────────────────────────
+      # ── 7. Apply + restart on EC2 ────────────────────────────────────────────
       - name: 🔄 Apply changes & restart service
         run: |
           ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
