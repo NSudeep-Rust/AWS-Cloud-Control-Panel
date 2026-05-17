@@ -64,7 +64,8 @@ jobs:
             app/modules \
             app/config \
             app/core \
-            app/database
+            app/database \
+            docs
           echo "Package size: $(du -sh /tmp/cloudshield-deploy.tar.gz)"
 
       # ── 5. Upload single tar file via SCP ────────────────────────────────────
@@ -96,6 +97,7 @@ jobs:
           sudo cp -rf /tmp/app/config    /root/cloudshield/app/
           sudo cp -rf /tmp/app/core      /root/cloudshield/app/
           sudo cp -rf /tmp/app/database  /root/cloudshield/app/
+          sudo cp -rf /tmp/docs          /root/cloudshield/
           echo "✅ Backend deployed"
 
           echo "🧹 Cleaning up..."

@@ -161,6 +161,14 @@ if _dist.exists():
             return FileResponse(str(ico), media_type="image/x-icon")
         return FileResponse(str(_dist / "favicon.png"), media_type="image/png")
 
+    @app.get("/landing", include_in_schema=False)
+    async def serve_landing():
+        """Serve the CloudShield marketing landing page."""
+        landing = Path(__file__).parent.parent.parent / "docs" / "index.html"
+        if landing.exists():
+            return FileResponse(str(landing), media_type="text/html")
+        return FileResponse(str(_dist / "index.html"))
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         """Serve React SPA for all non-API routes (production + Electron)."""
