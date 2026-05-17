@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CloudShield — AWS Security Scanner & Remediation</title>
+  <meta name="description" content="Scan, detect, and remediate AWS misconfigurations in seconds. 52+ checks across 9 regions. Free forever."/>
+  <link rel="icon" href="https://cloudshield.me/favicon.png?v=4" type="image/png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#F7F6F2;
+      --dark:#0d1b2a;
+      --orange:#FF9900;
+      --cyan:#00d4ff;
+      --text:#1a1a2e;
+      --muted:#666;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+    /* ── HEADER ── */
+    header{
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:18px 48px;
+      background:rgba(247,246,242,0.85);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(0,0,0,0.06);
+    }
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;color:var(--dark);text-decoration:none}
+    .logo img{width:32px;height:32px;border-radius:6px}
+    nav{display:flex;align-items:center;gap:32px}
+    nav a{color:var(--muted);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+    nav a:hover{color:var(--dark)}
+    .btn-header{
+      background:var(--dark);color:#fff;
+      padding:10px 22px;border-radius:50px;
+      font-size:.85rem;font-weight:600;text-decoration:none;
+      transition:transform .2s,box-shadow .2s;
+    }
+    .btn-header:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(13,27,42,.25)}
+
+    /* ── HERO ── */
+    .hero{
+      min-height:100vh;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      position:relative;overflow:hidden;
+      padding:120px 24px 80px;
+    }
+    #orbitCanvas{
+      position:absolute;top:0;left:0;width:100%;height:100%;
+      pointer-events:none;opacity:.6;
+    }
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:8px;
+      background:#fff;border:1px solid rgba(0,0,0,.1);
+      border-radius:50px;padding:6px 16px;
+      font-size:.8rem;font-weight:600;color:var(--muted);
+      margin-bottom:28px;animation:fadeUp .6s ease both;
+    }
+    .badge-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .hero h1{
+      font-size:clamp(3rem,8vw,6.5rem);font-weight:900;
+      line-height:1.05;letter-spacing:-0.03em;
+      text-align:center;max-width:900px;
+      animation:fadeUp .7s .1s ease both;
+    }
+    .hero h1 span{color:var(--orange)}
+    .hero p{
+      font-size:1.2rem;color:var(--muted);
+      max-width:560px;text-align:center;line-height:1.7;
+      margin:24px 0 40px;
+      animation:fadeUp .7s .2s ease both;
+    }
+    .hero-btns{
+      display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+      animation:fadeUp .7s .3s ease both;
+    }
+    .btn-primary{
+      display:inline-flex;align-items:center;gap:10px;
+      background:var(--dark);color:#fff;
+      padding:16px 32px;border-radius:50px;
+      font-size:1rem;font-weight:700;text-decoration:none;
+      transition:transform .2s,box-shadow .2s;
+    }
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(13,27,42,.3)}
+    .btn-secondary{
+      display:inline-flex;align-items:center;gap:8px;
+      background:transparent;color:var(--dark);
+      border:2px solid rgba(0,0,0,.15);
+      padding:16px 32px;border-radius:50px;
+      font-size:1rem;font-weight:600;text-decoration:none;
+      transition:all .2s;
+    }
+    .btn-secondary:hover{border-color:var(--dark);transform:translateY(-2px)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── STATS BAR ── */
+    .stats{
+      background:#fff;border-top:1px solid rgba(0,0,0,.06);
+      padding:32px 48px;
+      display:flex;justify-content:center;gap:64px;flex-wrap:wrap;
+    }
+    .stat{text-align:center}
+    .stat-num{font-size:2.2rem;font-weight:900;color:var(--orange)}
+    .stat-label{font-size:.85rem;color:var(--muted);margin-top:4px;font-weight:500}
+
+    /* ── FEATURES ── */
+    .section{padding:100px 48px;max-width:1200px;margin:0 auto}
+    .section-label{font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:16px}
+    .section-title{font-size:clamp(2rem,4vw,3.2rem);font-weight:900;letter-spacing:-0.02em;line-height:1.1;max-width:700px}
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;margin-top:60px}
+    .feature-card{
+      background:#fff;border-radius:20px;overflow:hidden;
+      border:1px solid rgba(0,0,0,.07);
+      transition:transform .3s,box-shadow .3s;
+      cursor:default;
+    }
+    .feature-card:hover{transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,.1)}
+    .feature-card img{width:100%;height:220px;object-fit:cover;object-position:top}
+    .feature-card-body{padding:24px}
+    .feature-icon{font-size:1.4rem;margin-bottom:12px}
+    .feature-card-body h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+    .feature-card-body p{font-size:.9rem;color:var(--muted);line-height:1.6}
+
+    /* ── HERO SCREENSHOT ── */
+    .dashboard-preview{
+      max-width:1100px;margin:0 auto;padding:0 24px 80px;
+      position:relative;
+    }
+    .dashboard-preview img{
+      width:100%;border-radius:20px;
+      box-shadow:0 40px 120px rgba(0,0,0,.18);
+      border:1px solid rgba(0,0,0,.1);
+    }
+    .preview-glow{
+      position:absolute;inset:40px;
+      background:radial-gradient(ellipse,rgba(255,153,0,.12),transparent 70%);
+      pointer-events:none;z-index:-1;border-radius:20px;
+    }
+
+    /* ── DOWNLOAD CTA ── */
+    .download-section{
+      background:var(--dark);
+      position:relative;overflow:hidden;
+      padding:120px 48px;text-align:center;
+    }
+    #starsCanvas{position:absolute;inset:0;width:100%;height:100%}
+    .download-content{position:relative;z-index:2}
+    .download-section h2{
+      font-size:clamp(2.5rem,6vw,5rem);font-weight:900;
+      letter-spacing:-0.03em;color:#fff;margin-bottom:16px;
+    }
+    .download-section h2 span{color:var(--orange)}
+    .download-section p{color:rgba(255,255,255,.55);font-size:1.1rem;margin-bottom:48px}
+    .download-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+    .btn-download{
+      display:inline-flex;align-items:center;gap:12px;
+      background:var(--orange);color:#000;
+      padding:18px 36px;border-radius:50px;
+      font-size:1rem;font-weight:800;text-decoration:none;
+      transition:transform .2s,box-shadow .2s;
+    }
+    .btn-download:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,153,0,.4)}
+    .btn-web{
+      display:inline-flex;align-items:center;gap:10px;
+      background:rgba(255,255,255,.1);color:#fff;
+      border:1px solid rgba(255,255,255,.2);
+      padding:18px 36px;border-radius:50px;
+      font-size:1rem;font-weight:600;text-decoration:none;
+      transition:all .2s;backdrop-filter:blur(8px);
+    }
+    .btn-web:hover{background:rgba(255,255,255,.18);transform:translateY(-2px)}
+    .platform-note{
+      margin-top:24px;color:rgba(255,255,255,.3);
+      font-size:.8rem;
+    }
+
+    /* ── FOOTER ── */
+    footer{
+      background:var(--dark);
+      border-top:1px solid rgba(255,255,255,.07);
+      padding:32px 48px;
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:16px;
+    }
+    .footer-logo{color:rgba(255,255,255,.6);font-size:.9rem;font-weight:600}
+    .footer-links{display:flex;gap:24px}
+    .footer-links a{color:rgba(255,255,255,.35);text-decoration:none;font-size:.85rem;transition:color .2s}
+    .footer-links a:hover{color:rgba(255,255,255,.7)}
+
+    /* ── SCROLL REVEAL ── */
+    .reveal{opacity:0;transform:translateY(32px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">
+    <img src="https://cloudshield.me/favicon.png?v=4" alt="CloudShield"/>
+    CloudShield
+  </a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#download">Download</a>
+    <a href="https://cloudshield.me" target="_blank">Web App</a>
+    <a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel" target="_blank">GitHub</a>
+  </nav>
+  <a class="btn-header" href="#download">Get Started →</a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <canvas id="orbitCanvas"></canvas>
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    v1.0.1 — Now Live at cloudshield.me
+  </div>
+  <h1>AWS Security,<br/><span>Supercharged.</span></h1>
+  <p>Scan, detect, and remediate misconfigurations across your entire AWS account in seconds. 52+ checks, 9 regions, zero guesswork.</p>
+  <div class="hero-btns">
+    <a class="btn-primary" id="exeBtn" href="#">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download for Windows
+    </a>
+    <a class="btn-secondary" href="https://cloudshield.me" target="_blank">
+      Open in Browser →
+    </a>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<div class="dashboard-preview reveal">
+  <div class="preview-glow"></div>
+  <img src="screenshots/dashboard_overview.png" alt="CloudShield Dashboard Overview"/>
+</div>
+
+<!-- STATS -->
+<div class="stats reveal">
+  <div class="stat"><div class="stat-num">52+</div><div class="stat-label">Security Checks</div></div>
+  <div class="stat"><div class="stat-num">9</div><div class="stat-label">AWS Regions</div></div>
+  <div class="stat"><div class="stat-num">32</div><div class="stat-label">Availability Zones</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Free & Open Source</div></div>
+</div>
+
+<!-- FEATURES -->
+<div id="features" class="section">
+  <div class="reveal">
+    <div class="section-label">Everything you need</div>
+    <div class="section-title">One tool. Every AWS security check.</div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <img src="screenshots/scanner_page.png" alt="Scanner"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">🔍</div>
+        <h3>Multi-Region Scanner</h3>
+        <p>Parallel scanning across S3, EC2, IAM, RDS, VPC, CloudTrail, KMS and more — across all 9 regions simultaneously.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/remediation_page.png" alt="Remediation"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">⚡</div>
+        <h3>One-Click Remediation</h3>
+        <p>Apply fixes instantly with AI-planned remediation actions. Every action is reversible with full rollback support.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/threats_page.png" alt="Threats"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">🛡️</div>
+        <h3>Live Threat Monitor</h3>
+        <p>Real-time WebSocket-powered threat detection. Get alerted the moment something changes in your AWS environment.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/attack_surface_page.png" alt="Attack Surface"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">🗺️</div>
+        <h3>Attack Surface Map</h3>
+        <p>Visualize your entire exposed attack surface — public IPs, open ports, unencrypted resources, and public buckets.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/iam_view_page.png" alt="IAM"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">🔑</div>
+        <h3>IAM Audit View</h3>
+        <p>Deep-dive into IAM users, roles, policies and access keys. Identify overpermissioned principals instantly.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/analytics_page.png" alt="Analytics"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">📊</div>
+        <h3>Security Analytics</h3>
+        <p>Track your security posture over time with trend charts, severity breakdowns, and compliance framework coverage.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROLLBACK + HISTORY -->
+<div class="section" style="padding-top:0">
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <img src="screenshots/rollback_page.png" alt="Rollback"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">↩️</div>
+        <h3>Full Rollback</h3>
+        <p>Made a mistake? Every remediation action is logged and reversible. Restore your previous configuration in one click.</p>
+      </div>
+    </div>
+    <div class="feature-card reveal">
+      <img src="screenshots/history_page.png" alt="History"/>
+      <div class="feature-card-body">
+        <div class="feature-icon">📋</div>
+        <h3>Scan History</h3>
+        <p>Complete audit trail of every scan, finding, and remediation. Filter by service, severity, region, or time range.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOWNLOAD CTA -->
+<section id="download" class="download-section">
+  <canvas id="starsCanvas"></canvas>
+  <div class="download-content">
+    <h2>Ready to secure<br/><span>your AWS?</span></h2>
+    <p>Choose how you want to get started — desktop app or instant web access.</p>
+    <div class="download-btns">
+      <a class="btn-download" id="exeBtn2" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows (.exe)
+      </a>
+      <a class="btn-web" href="https://cloudshield.me" target="_blank">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Continue in Browser
+      </a>
+    </div>
+    <div class="platform-note">Linux (.deb) coming soon · macOS coming soon</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">CloudShield · AWS Security Scanner</div>
+  <div class="footer-links">
+    <a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel" target="_blank">GitHub</a>
+    <a href="https://cloudshield.me" target="_blank">Web App</a>
+    <a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases" target="_blank">Releases</a>
+  </div>
+</footer>
+
+<script>
+// ── Fetch latest release EXE URL ──────────────────────────────────────────────
+(async()=>{
+  try{
+    const r=await fetch('https://api.github.com/repos/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest');
+    const d=await r.json();
+    const asset=d.assets?.find(a=>a.name.endsWith('.exe'));
+    const url=asset?.browser_download_url||'https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest';
+    document.getElementById('exeBtn').href=url;
+    document.getElementById('exeBtn2').href=url;
+  }catch(e){
+    const fb='https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/latest';
+    document.getElementById('exeBtn').href=fb;
+    document.getElementById('exeBtn2').href=fb;
+  }
+})();
+
+// ── Orbital Particle Animation (Hero) ─────────────────────────────────────────
+const canvas=document.getElementById('orbitCanvas');
+const ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){W=canvas.width=canvas.offsetWidth;H=canvas.height=canvas.offsetHeight}
+resize();window.addEventListener('resize',resize);
+
+class Particle{
+  constructor(){this.reset()}
+  reset(){
+    this.angle=Math.random()*Math.PI*2;
+    this.radius=120+Math.random()*Math.min(W,H)*.35;
+    this.speed=(Math.random()*.0003+.0001)*(Math.random()<.5?1:-1);
+    this.size=Math.random()*3+1;
+    this.opacity=Math.random()*.5+.1;
+    this.cx=W/2;this.cy=H/2;
+  }
+  update(){
+    this.angle+=this.speed;
+    this.x=this.cx+Math.cos(this.angle)*this.radius;
+    this.y=this.cy+Math.sin(this.angle)*this.radius;
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,153,0,${this.opacity})`;
+    ctx.fill();
+  }
+}
+
+for(let i=0;i<80;i++) particles.push(new Particle());
+
+function animOrbit(){
+  ctx.clearRect(0,0,W,H);
+  // Draw orbit rings
+  [.22,.38,.54].forEach(r=>{
+    ctx.beginPath();
+    ctx.arc(W/2,H/2,Math.min(W,H)*r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,153,0,0.05)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+  });
+  particles.forEach(p=>{p.update();p.draw()});
+  requestAnimationFrame(animOrbit);
+}
+animOrbit();
+
+// ── Star field Animation (Download section) ────────────────────────────────────
+const sc=document.getElementById('starsCanvas');
+const sctx=sc.getContext('2d');
+let stars=[];
+function resizeStar(){sc.width=sc.offsetWidth;sc.height=sc.offsetHeight;stars=[];for(let i=0;i<200;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.5+.3,o:Math.random()*.7+.1,s:Math.random()*.0005+.0002})}
+resizeStar();window.addEventListener('resize',resizeStar);
+function animStars(){
+  sctx.clearRect(0,0,sc.width,sc.height);
+  stars.forEach(s=>{
+    s.o+=s.s*(Math.random()>.5?1:-1);
+    s.o=Math.max(.05,Math.min(.9,s.o));
+    sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    sctx.fillStyle=`rgba(255,255,255,${s.o})`;sctx.fill();
+  });
+  requestAnimationFrame(animStars);
+}
+animStars();
+
+// ── Scroll Reveal ─────────────────────────────────────────────────────────────
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})
+},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+</body>
+</html>
