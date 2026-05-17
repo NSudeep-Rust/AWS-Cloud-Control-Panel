@@ -1,265 +1,425 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>CloudShield — AWS Security Scanner & Auto-Remediation</title>
-<meta name="description" content="CloudShield scans your AWS account for misconfigurations, detects threats in real-time, and auto-remediates issues across S3, EC2, IAM, RDS, VPC, KMS and more. Free forever."/>
-<meta name="keywords" content="AWS CloudShield, AWS security scanner, cloud security tool, IAM audit, S3 security, EC2 scanner, AWS misconfiguration"/>
-<meta property="og:title" content="CloudShield — AWS Security Scanner"/><meta property="og:url" content="https://cloudshield.me/landing"/>
+<meta name="description" content="CloudShield automatically scans your AWS account for misconfigurations, detects threats in real-time, and auto-remediates issues. 52+ checks, 9 regions. Free."/>
+<meta name="keywords" content="AWS CloudShield, AWS security scanner, cloud security, IAM audit, S3 security, EC2 scanner, AWS misconfiguration tool"/>
 <link rel="canonical" href="https://cloudshield.me/landing"/>
-<link rel="icon" href="https://cloudshield.me/favicon.png?v=4" type="image/png"/>
+<link rel="icon" href="https://cloudshield.me/favicon.png?v=4"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#F7F6F2;--dark:#0d1b2a;--orange:#FF9900;--muted:#6b7280}
+:root{--bg:#04080f;--surface:#0d1b2a;--border:rgba(255,255,255,.08);--orange:#FF9900;--orange2:#ffb84d;--text:#f0f4f8;--muted:rgba(240,244,248,.5)}
 html{scroll-behavior:smooth}
-body{font-family:Inter,sans-serif;background:var(--bg);color:var(--dark);overflow-x:hidden}
-header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:rgba(247,246,242,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.07)}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;color:var(--dark);text-decoration:none}
-.logo img{width:30px;height:30px;border-radius:6px}
-nav a{color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;margin-left:28px;transition:color .2s}
-nav a:hover{color:var(--dark)}
-.bnav{background:var(--dark);color:#fff;padding:10px 22px;border-radius:50px;font-size:.85rem;font-weight:600;text-decoration:none}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* NAV */
+header{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 48px;height:68px;display:flex;align-items:center;justify-content:space-between;background:rgba(4,8,15,.7);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;color:var(--text);text-decoration:none}
+.logo img{width:30px;height:30px;border-radius:7px}
+nav{display:flex;align-items:center;gap:6px}
+nav a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;padding:7px 14px;border-radius:8px;transition:all .2s}
+nav a:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.btn-nav{background:var(--orange);color:#000;padding:9px 20px;border-radius:8px;font-size:.85rem;font-weight:700;text-decoration:none;margin-left:8px;transition:all .2s}
+.btn-nav:hover{background:var(--orange2);transform:translateY(-1px)}
+
+/* HERO */
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:130px 24px 80px;text-align:center}
-.orb{position:absolute;border-radius:50%;filter:blur(90px);animation:drift linear infinite;pointer-events:none}
-.o1{width:700px;height:700px;background:radial-gradient(circle,rgba(255,153,0,.2),transparent 70%);top:-250px;left:-250px;animation-duration:28s}
-.o2{width:600px;height:600px;background:radial-gradient(circle,rgba(99,102,241,.15),transparent 70%);bottom:-200px;right:-200px;animation-duration:35s;animation-direction:reverse}
-.o3{width:400px;height:400px;background:radial-gradient(circle,rgba(6,182,212,.12),transparent 70%);top:50%;left:65%;animation-duration:22s}
-@keyframes drift{0%{transform:translate(0,0)}33%{transform:translate(70px,-50px)}66%{transform:translate(-50px,70px)}100%{transform:translate(0,0)}}
-.gbg{position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,.07) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);pointer-events:none}
-.badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:50px;padding:6px 16px;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:24px;position:relative;z-index:1;animation:fu .6s ease both}
-.dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-h1{font-size:clamp(3.2rem,8vw,7rem);font-weight:900;line-height:1.02;letter-spacing:-0.035em;max-width:950px;position:relative;z-index:1;animation:fu .7s .1s ease both}
-h1 span{color:var(--orange)}
-.sub{font-size:1.15rem;color:var(--muted);max-width:560px;line-height:1.75;margin:22px 0 38px;position:relative;z-index:1;animation:fu .7s .2s ease both}
-.btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;animation:fu .7s .3s ease both}
-.bdl{display:inline-flex;align-items:center;gap:10px;background:var(--dark);color:#fff;padding:17px 34px;border-radius:50px;font-size:1rem;font-weight:700;text-decoration:none;transition:transform .2s,box-shadow .2s}
-.bdl:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(13,27,42,.35)}
-.bweb{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--dark);border:2px solid rgba(0,0,0,.18);padding:17px 34px;border-radius:50px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .2s}
-.bweb:hover{border-color:var(--dark);transform:translateY(-2px)}
-@keyframes fu{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
-.note{margin-top:14px;font-size:.78rem;color:var(--muted);position:relative;z-index:1;animation:fu .7s .4s ease both}
-.stats{background:#fff;border-top:1px solid rgba(0,0,0,.07);border-bottom:1px solid rgba(0,0,0,.07);padding:36px;display:flex;justify-content:center;gap:72px;flex-wrap:wrap}
-.sn{font-size:2.5rem;font-weight:900;color:var(--orange);line-height:1}
-.sl{font-size:.82rem;color:var(--muted);margin-top:6px;font-weight:500}
-.sec{padding:90px 24px;max-width:1180px;margin:0 auto}
-.tag{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);margin-bottom:14px}
-.stitle{font-size:clamp(2rem,4vw,3.2rem);font-weight:900;letter-spacing:-0.025em;line-height:1.08}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;margin-top:52px}
-.card{background:#fff;border-radius:20px;padding:32px;border:1px solid rgba(0,0,0,.07);transition:transform .3s,box-shadow .3s;position:relative;overflow:hidden}
-.card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,153,0,.03),transparent);border-radius:20px}
-.card:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(0,0,0,.1)}
-.cico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:20px}
-.ico-orange{background:rgba(255,153,0,.12)}
-.ico-blue{background:rgba(59,130,246,.1)}
-.ico-green{background:rgba(34,197,94,.1)}
-.ico-purple{background:rgba(139,92,246,.1)}
-.ico-red{background:rgba(239,68,68,.1)}
-.ico-cyan{background:rgba(6,182,212,.1)}
-.ico-yellow{background:rgba(234,179,8,.1)}
-.ico-pink{background:rgba(236,72,153,.1)}
-.card h3{font-size:1.1rem;font-weight:700;margin-bottom:10px}
-.card p{font-size:.9rem;color:var(--muted);line-height:1.7}
-.card ul{font-size:.88rem;color:var(--muted);line-height:1.8;padding-left:16px;margin-top:10px}
-.card ul li::marker{color:var(--orange)}
-.hiw{background:var(--dark);padding:90px 24px;margin-top:0}
-.hiw-inner{max-width:1000px;margin:0 auto;text-align:center}
-.hiw h2{font-size:clamp(2rem,4vw,3rem);font-weight:900;color:#fff;letter-spacing:-0.025em;margin-bottom:14px}
-.hiw p{color:rgba(255,255,255,.5);font-size:1rem;margin-bottom:60px}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;position:relative}
-.steps::before{content:"";position:absolute;top:36px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,153,0,.4),transparent)}
-.step{text-align:center;padding:0 20px}
-.snum{width:72px;height:72px;border-radius:50%;background:rgba(255,153,0,.15);border:2px solid rgba(255,153,0,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:1.4rem;font-weight:900;color:var(--orange)}
-.step h4{color:#fff;font-size:1rem;font-weight:700;margin-bottom:8px}
-.step p{color:rgba(255,255,255,.45);font-size:.85rem;line-height:1.6}
-.scans{background:#fff;padding:60px 24px}
-.scans-inner{max-width:1000px;margin:0 auto}
-.scans h2{font-size:2rem;font-weight:900;text-align:center;margin-bottom:10px;letter-spacing:-0.02em}
-.scans .sub2{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:40px}
-.scan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
-.scard{background:var(--bg);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 16px;text-align:center;transition:all .2s}
-.scard:hover{border-color:var(--orange);background:#fff;transform:translateY(-2px)}
-.scard .si{font-size:1.8rem;margin-bottom:10px}
-.scard h4{font-size:.88rem;font-weight:700;margin-bottom:4px}
-.scard p{font-size:.78rem;color:var(--muted)}
-.dl-sec{position:relative;overflow:hidden;padding:120px 24px;text-align:center;background:#0d1b2a}
-#stC{position:absolute;inset:0;width:100%;height:100%}
-.dl-in{position:relative;z-index:2}
-.dl-sec h2{font-size:clamp(2.4rem,6vw,5rem);font-weight:900;letter-spacing:-0.03em;color:#fff;margin-bottom:14px}
-.dl-sec h2 span{color:var(--orange)}
-.dl-sec .dsub{color:rgba(255,255,255,.5);font-size:1.05rem;margin-bottom:44px}
-.dlbtns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.borange{display:inline-flex;align-items:center;gap:12px;background:var(--orange);color:#000;padding:18px 36px;border-radius:50px;font-size:1rem;font-weight:800;text-decoration:none;transition:transform .2s,box-shadow .2s}
-.borange:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,153,0,.45)}
-.bghost{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.09);color:#fff;border:1px solid rgba(255,255,255,.2);padding:18px 36px;border-radius:50px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .2s}
-.bghost:hover{background:rgba(255,255,255,.17);transform:translateY(-2px)}
-.plat{margin-top:22px;color:rgba(255,255,255,.25);font-size:.78rem}
-footer{background:#0d1b2a;border-top:1px solid rgba(255,255,255,.07);padding:28px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
-.fl{color:rgba(255,255,255,.5);font-size:.88rem;font-weight:600}
-.flinks a{color:rgba(255,255,255,.3);text-decoration:none;font-size:.82rem;margin-left:22px;transition:color .2s}
-.flinks a:hover{color:rgba(255,255,255,.7)}
-.rv{opacity:0;transform:translateY(30px);transition:opacity .75s,transform .75s}
+#heroC{position:absolute;inset:0;width:100%;height:100%}
+.hero-glow{position:absolute;width:900px;height:900px;border-radius:50%;background:radial-gradient(circle,rgba(255,153,0,.12) 0%,rgba(255,153,0,.04) 40%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:pulse-glow 4s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+.hero-inner{position:relative;z-index:2}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,153,0,.1);border:1px solid rgba(255,153,0,.3);border-radius:50px;padding:6px 16px;font-size:.78rem;font-weight:600;color:var(--orange2);margin-bottom:28px;animation:fadeup .6s ease both}
+.dot-live{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1{font-size:clamp(3rem,7.5vw,7rem);font-weight:900;line-height:1.01;letter-spacing:-.04em;max-width:1000px;animation:fadeup .7s .1s ease both}
+h1 .hl{background:linear-gradient(135deg,var(--orange),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:1.15rem;color:var(--muted);max-width:580px;line-height:1.75;margin:24px auto 42px;animation:fadeup .7s .2s ease both}
+.btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeup .7s .3s ease both}
+.btn-dl{display:inline-flex;align-items:center;gap:10px;background:var(--orange);color:#000;padding:16px 32px;border-radius:12px;font-size:1rem;font-weight:800;text-decoration:none;transition:all .2s;box-shadow:0 0 32px rgba(255,153,0,.3)}
+.btn-dl:hover{background:var(--orange2);transform:translateY(-2px);box-shadow:0 0 48px rgba(255,153,0,.5)}
+.btn-web{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);padding:16px 32px;border-radius:12px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .2s;backdrop-filter:blur(8px)}
+.btn-web:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.hero-note{margin-top:16px;font-size:.78rem;color:var(--muted);animation:fadeup .7s .4s ease both}
+@keyframes fadeup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* STATS */
+.stats{background:rgba(13,27,42,.8);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:36px;display:flex;justify-content:center;gap:80px;flex-wrap:wrap}
+.stat-n{font-size:2.6rem;font-weight:900;color:var(--orange);line-height:1}
+.stat-l{font-size:.82rem;color:var(--muted);margin-top:6px}
+
+/* FEATURE ROWS */
+.feat-row{max-width:1160px;margin:0 auto;padding:90px 40px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.feat-row.rev{direction:rtl}
+.feat-row.rev>*{direction:ltr}
+.feat-tag{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:12px}
+.feat-title{font-size:clamp(1.8rem,3vw,2.6rem);font-weight:900;letter-spacing:-.025em;line-height:1.1;margin-bottom:16px}
+.feat-body{font-size:.95rem;color:var(--muted);line-height:1.75;margin-bottom:24px}
+.feat-list{list-style:none;display:flex;flex-direction:column;gap:12px}
+.feat-list li{display:flex;align-items:flex-start;gap:12px;font-size:.9rem;color:rgba(240,244,248,.75)}
+.feat-list li::before{content:"✓";width:20px;height:20px;border-radius:6px;background:rgba(255,153,0,.15);color:var(--orange);font-weight:800;font-size:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+
+/* CSS MOCKUP CARDS */
+.mockup{border-radius:20px;background:linear-gradient(135deg,#0d1b2a,#111827);border:1px solid rgba(255,153,0,.2);padding:20px;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(255,153,0,.08),0 40px 80px rgba(0,0,0,.5)}
+.mockup::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--orange2),transparent)}
+.mock-bar{display:flex;align-items:center;gap:6px;margin-bottom:16px}
+.mock-dot{width:10px;height:10px;border-radius:50%}
+.mock-dot.r{background:#ff5f57}.mock-dot.y{background:#febc2e}.mock-dot.g{background:#28c840}
+.mock-title{font-size:.75rem;color:var(--muted);margin-left:8px;font-weight:600}
+
+/* SCANNER MOCKUP */
+.scan-regions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.region-tag{background:rgba(255,153,0,.08);border:1px solid rgba(255,153,0,.15);border-radius:8px;padding:8px 10px;font-size:.7rem;color:var(--orange2);display:flex;align-items:center;gap:6px}
+.region-tag .scanning{width:6px;height:6px;border-radius:50%;background:var(--orange);animation:region-scan 1.5s ease-in-out infinite}
+.region-tag.done .scanning{background:#22c55e;animation:none}
+@keyframes region-scan{0%,100%{opacity:.3}50%{opacity:1;box-shadow:0 0 6px var(--orange)}}
+.region-tag:nth-child(1) .scanning{animation-delay:0s}
+.region-tag:nth-child(2) .scanning{animation-delay:.2s}
+.region-tag:nth-child(3) .scanning{animation-delay:.4s}
+.region-tag:nth-child(4) .scanning{animation-delay:.6s}
+.region-tag:nth-child(5) .scanning{animation-delay:.8s}
+.region-tag:nth-child(6) .scanning{animation-delay:1s}
+.finding-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.03);margin-bottom:6px;font-size:.72rem;border:1px solid rgba(255,255,255,.05)}
+.sev{padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700}
+.sev.c{background:rgba(239,68,68,.2);color:#f87171}
+.sev.h{background:rgba(249,115,22,.2);color:#fb923c}
+.sev.m{background:rgba(234,179,8,.2);color:#fbbf24}
+.sev.l{background:rgba(34,197,94,.2);color:#4ade80}
+
+/* THREAT MOCKUP */
+.radar-wrap{display:flex;justify-content:center;margin:8px 0 16px}
+.radar{width:140px;height:140px;border-radius:50%;border:2px solid rgba(255,153,0,.2);position:relative;display:flex;align-items:center;justify-content:center}
+.radar::after{content:"";position:absolute;width:100%;height:100%;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,153,0,.3) 0deg,transparent 60deg);animation:spin 2.5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.radar-ring{position:absolute;border-radius:50%;border:1px solid rgba(255,153,0,.12)}
+.radar-ring:nth-child(1){width:45%;height:45%}
+.radar-ring:nth-child(2){width:70%;height:70%}
+.radar-ring:nth-child(3){width:95%;height:95%}
+.radar-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.alert-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.03);margin-bottom:6px;font-size:.72rem;border-left:3px solid}
+.alert-item.crit{border-color:#f87171}.alert-item.high{border-color:#fb923c}
+.alert-pulse{width:8px;height:8px;border-radius:50%;animation:alert-blink 1s infinite}
+.alert-item.crit .alert-pulse{background:#f87171;box-shadow:0 0 6px #f87171}
+.alert-item.high .alert-pulse{background:#fb923c;box-shadow:0 0 6px #fb923c}
+@keyframes alert-blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* REMEDIATION MOCKUP */
+.plan-step{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,.06);font-size:.75rem}
+.plan-step.done{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.05)}
+.plan-step.active{border-color:rgba(255,153,0,.3);background:rgba(255,153,0,.05)}
+.plan-step.pending{opacity:.45}
+.step-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.step-ico.done{background:rgba(34,197,94,.15)}.step-ico.active{background:rgba(255,153,0,.15)}.step-ico.pending{background:rgba(255,255,255,.05)}
+.spin-ico{animation:spin 1s linear infinite;display:inline-block}
+.progress-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:16px;overflow:hidden}
+.progress-fill{height:100%;width:65%;background:linear-gradient(90deg,var(--orange),var(--orange2));border-radius:2px;animation:progress-anim 3s ease-in-out infinite}
+@keyframes progress-anim{0%{width:10%}50%{width:80%}100%{width:10%}}
+
+/* HOW IT WORKS */
+.hiw{padding:90px 24px;background:rgba(13,27,42,.5);border-top:1px solid var(--border)}
+.hiw-inner{max-width:1100px;margin:0 auto}
+.sec-header{text-align:center;margin-bottom:70px}
+.sec-header .tag{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:12px}
+.sec-header h2{font-size:clamp(2rem,4vw,3.2rem);font-weight:900;letter-spacing:-.025em}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative}
+.steps-grid::before{content:"";position:absolute;top:48px;left:12.5%;right:12.5%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,153,0,.3),transparent)}
+.step-card{background:rgba(13,27,42,.8);border:1px solid var(--border);border-radius:20px;padding:28px 24px;text-align:center;transition:border-color .3s}
+.step-card:hover{border-color:rgba(255,153,0,.3)}
+.step-num{width:72px;height:72px;border-radius:50%;background:rgba(255,153,0,.1);border:2px solid rgba(255,153,0,.25);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 20px;position:relative;z-index:1}
+.step-card h4{font-size:.95rem;font-weight:700;margin-bottom:10px}
+.step-card p{font-size:.83rem;color:var(--muted);line-height:1.65}
+
+/* AWS SERVICES */
+.services{padding:70px 24px;max-width:1100px;margin:0 auto}
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:50px}
+.svc-card{background:rgba(13,27,42,.8);border:1px solid var(--border);border-radius:16px;padding:24px 20px;transition:all .25s;cursor:default}
+.svc-card:hover{border-color:rgba(255,153,0,.35);background:rgba(255,153,0,.04);transform:translateY(-3px)}
+.svc-ico{font-size:2rem;margin-bottom:12px}
+.svc-card h4{font-size:.9rem;font-weight:700;margin-bottom:6px}
+.svc-card p{font-size:.78rem;color:var(--muted);line-height:1.55}
+.svc-count{display:inline-block;margin-top:10px;font-size:.7rem;font-weight:700;color:var(--orange);background:rgba(255,153,0,.1);border-radius:4px;padding:2px 8px}
+
+/* DOWNLOAD */
+.dl-sec{padding:120px 24px;text-align:center;position:relative;overflow:hidden;background:var(--bg)}
+#dlStars{position:absolute;inset:0;width:100%;height:100%}
+.dl-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(255,153,0,.1),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.dl-inner{position:relative;z-index:2;max-width:700px;margin:0 auto}
+.dl-sec h2{font-size:clamp(2.5rem,6vw,5rem);font-weight:900;letter-spacing:-.035em;margin-bottom:16px}
+.dl-sec h2 span{background:linear-gradient(135deg,var(--orange),var(--orange2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.dl-sec p{color:var(--muted);font-size:1.05rem;margin-bottom:44px}
+.dl-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-orange-lg{display:inline-flex;align-items:center;gap:12px;background:var(--orange);color:#000;padding:18px 40px;border-radius:14px;font-size:1.05rem;font-weight:800;text-decoration:none;transition:all .2s;box-shadow:0 0 40px rgba(255,153,0,.35)}
+.btn-orange-lg:hover{background:var(--orange2);transform:translateY(-2px);box-shadow:0 0 60px rgba(255,153,0,.5)}
+.btn-ghost-lg{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);padding:18px 40px;border-radius:14px;font-size:1.05rem;font-weight:600;text-decoration:none;transition:all .2s;backdrop-filter:blur(10px)}
+.btn-ghost-lg:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.plat-note{margin-top:22px;font-size:.78rem;color:rgba(240,244,248,.2)}
+
+/* FOOTER */
+footer{background:rgba(13,27,42,.9);border-top:1px solid var(--border);padding:28px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.foot-l{color:var(--muted);font-size:.85rem;font-weight:600}
+.foot-links a{color:rgba(240,244,248,.25);text-decoration:none;font-size:.82rem;margin-left:22px;transition:color .2s}
+.foot-links a:hover{color:var(--text)}
+
+/* SCROLL REVEAL */
+.rv{opacity:0;transform:translateY(32px);transition:opacity .8s ease,transform .8s ease}
 .rv.in{opacity:1;transform:none}
-@media(max-width:768px){header{padding:14px 20px}nav{display:none}h1{font-size:2.8rem}.stats{gap:36px}.steps::before{display:none}.sec{padding:60px 16px}footer{padding:22px 20px;flex-direction:column;align-items:flex-start}}
+@media(max-width:900px){.feat-row{grid-template-columns:1fr;gap:40px}.feat-row.rev{direction:ltr}.steps-grid{grid-template-columns:1fr 1fr}.svc-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){header{padding:0 20px}nav{display:none}.stats{gap:40px}.steps-grid{grid-template-columns:1fr}.svc-grid{grid-template-columns:1fr 1fr}footer{padding:22px 20px}}
 </style>
 </head>
 <body>
+
 <header>
-<a class="logo" href="#"><img src="https://cloudshield.me/favicon.png?v=4" alt="CS"/>CloudShield</a>
-<nav>
-<a href="#features">Features</a><a href="#how">How It Works</a><a href="#scan">What We Scan</a><a href="#download">Download</a>
-<a href="https://cloudshield.me" target="_blank">Web App</a>
-</nav>
-<a class="bnav" href="#download">Get Started &#8594;</a>
+  <a class="logo" href="#"><img src="https://cloudshield.me/favicon.png?v=4" alt="CloudShield"/>CloudShield</a>
+  <nav>
+    <a href="#features">Features</a><a href="#how">How It Works</a>
+    <a href="#services">Coverage</a><a href="#download">Download</a>
+    <a href="https://cloudshield.me" target="_blank">Web App</a>
+  </nav>
+  <a class="btn-nav" href="#download">Get Started</a>
 </header>
 
 <section class="hero">
-<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
-<div class="gbg"></div>
-<div class="badge"><span class="dot"></span>v1.0.1 &mdash; Live at cloudshield.me</div>
-<h1>AWS Security,<br/><span>Supercharged.</span></h1>
-<p class="sub">Automatically scan, detect threats, and remediate misconfigurations across your entire AWS infrastructure. No manual effort. No missed vulnerabilities.</p>
-<div class="btns">
-<a class="bdl" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-Download for Windows
-</a>
-<a class="bweb" href="https://cloudshield.me" target="_blank">Open in Browser &#8594;</a>
-</div>
-<p class="note">CloudShield-Setup-v1.0.1.exe &bull; 128 MB &bull; Windows 10/11 &bull; Free forever</p>
+  <canvas id="heroC"></canvas>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="badge"><span class="dot-live"></span>v1.0.1 Live &mdash; cloudshield.me</div>
+    <h1>AWS Security,<br/><span class="hl">Supercharged.</span></h1>
+    <p class="hero-sub">Scan your entire AWS account for misconfigurations in under 30 seconds. AI-planned fixes. Real-time threat monitoring. Full rollback support.</p>
+    <div class="btns">
+      <a class="btn-dl" id="dlBtn" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows
+      </a>
+      <a class="btn-web" href="https://cloudshield.me" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+        Open in Browser
+      </a>
+    </div>
+    <p class="hero-note">CloudShield-Setup-v1.0.1.exe &bull; 128 MB &bull; Windows 10/11 &bull; Free forever</p>
+  </div>
 </section>
 
 <div class="stats rv">
-<div class="stat"><div class="sn">52+</div><div class="sl">Security Checks</div></div>
-<div class="stat"><div class="sn">9</div><div class="sl">AWS Regions</div></div>
-<div class="stat"><div class="sn">32</div><div class="sl">Availability Zones</div></div>
-<div class="stat"><div class="sn">8</div><div class="sl">AWS Services Covered</div></div>
-<div class="stat"><div class="sn">100%</div><div class="sl">Free &amp; Open Source</div></div>
+  <div class="stat"><div class="stat-n">52+</div><div class="stat-l">Security Checks</div></div>
+  <div class="stat"><div class="stat-n">9</div><div class="stat-l">AWS Regions</div></div>
+  <div class="stat"><div class="stat-n">8</div><div class="stat-l">AWS Services</div></div>
+  <div class="stat"><div class="stat-n">&lt;30s</div><div class="stat-l">Full Scan Time</div></div>
+  <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Free & Open Source</div></div>
 </div>
 
-<div id="features" class="sec">
-<div class="rv">
-<div class="tag">Full Feature Suite</div>
-<div class="stitle">Everything your AWS security needs.</div>
-</div>
-<div class="grid">
-<div class="card rv">
-<div class="cico ico-orange">&#128269;</div>
-<h3>Multi-Region Scanner</h3>
-<p>Parallel scanning across all 9 AWS regions simultaneously. Detects misconfigurations across:</p>
-<ul><li>S3 buckets &mdash; public access, versioning, encryption</li><li>EC2 instances &mdash; security groups, public exposure</li><li>IAM users, roles, policies, and access keys</li><li>RDS databases &mdash; encryption and public access</li><li>VPC flow logs, NACLs, and route tables</li><li>KMS key rotation and compliance</li><li>CloudTrail logging and trail integrity</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-blue">&#9889;</div>
-<h3>AI-Planned Remediation</h3>
-<p>One-click fixes for every finding. CloudShield generates a remediation plan using AI, shows you exactly what will change, and applies it only after your approval.</p>
-<ul><li>Preview every change before execution</li><li>Approval-gated &mdash; never changes without consent</li><li>Supports batch remediation of multiple findings</li><li>Tracks every action with full audit trail</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-green">&#128737;</div>
-<h3>Live Threat Monitor</h3>
-<p>Real-time WebSocket-powered monitoring that alerts you the moment a new misconfiguration or security drift is detected in your AWS environment.</p>
-<ul><li>Zero-delay real-time alerts via WebSocket</li><li>Severity-based prioritization (Critical/High/Medium/Low)</li><li>Email notifications for critical threats</li><li>Continuous drift detection between scans</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-red">&#8617;&#65039;</div>
-<h3>Full Rollback Engine</h3>
-<p>Made a mistake? Every remediation CloudShield applies is fully reversible. Restore your exact previous AWS configuration with a single click.</p>
-<ul><li>Immutable log of every change made</li><li>One-click restore to pre-remediation state</li><li>Rollback history preserved indefinitely</li><li>Works across all supported AWS services</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-purple">&#128506;&#65039;</div>
-<h3>Attack Surface Mapping</h3>
-<p>Visualize your entire exposed attack surface in one dashboard. See every public-facing resource, open port, and unencrypted asset at a glance.</p>
-<ul><li>Public IPs and internet-exposed EC2 instances</li><li>Publicly accessible S3 buckets</li><li>Unencrypted RDS instances</li><li>Overprivileged IAM roles and policies</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-cyan">&#128273;</div>
-<h3>IAM Deep Audit</h3>
-<p>Complete visibility into your IAM posture. Inspect every user, role, and policy for overpermissions, stale credentials, and MFA gaps.</p>
-<ul><li>Unused access keys and stale credentials</li><li>Users without MFA enabled</li><li>Overly permissive policies (Admin wildcards)</li><li>Cross-account role trust analysis</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-yellow">&#128202;</div>
-<h3>Security Analytics</h3>
-<p>Track your security posture over time with detailed trend charts, severity breakdowns, and compliance framework coverage reports.</p>
-<ul><li>Historical posture score trending</li><li>Severity distribution charts</li><li>Per-service finding breakdown</li><li>Downloadable HTML compliance reports</li></ul>
-</div>
-<div class="card rv">
-<div class="cico ico-pink">&#128203;</div>
-<h3>Scan History &amp; Audit Trail</h3>
-<p>Every scan, finding, and remediation is permanently logged. Filter by service, severity, region, or date to investigate any past event.</p>
-<ul><li>Full scan result history</li><li>Per-finding lifecycle tracking</li><li>Remediation &amp; rollback timeline</li><li>Export to CSV or HTML</li></ul>
-</div>
-</div>
+<div id="features">
+
+<!-- FEATURE 1: SCANNER -->
+<div class="feat-row rv">
+  <div class="feat-text">
+    <div class="feat-tag">Multi-Region Coverage</div>
+    <h2 class="feat-title">Scan All 9 AWS Regions in Under 30 Seconds</h2>
+    <p class="feat-body">CloudShield fires parallel scan threads across every AWS region simultaneously. No sequential waiting — every region, every service, all at once.</p>
+    <ul class="feat-list">
+      <li>Parallel execution across us-east-1, eu-west-1, ap-southeast-1 and 6 more</li>
+      <li>S3 bucket public access, versioning, server-side encryption</li>
+      <li>EC2 security groups, public IPs, EBS encryption</li>
+      <li>IAM users, roles, policies, access keys, MFA status</li>
+      <li>RDS public access, encryption, backup retention</li>
+      <li>VPC flow logs, CloudTrail, KMS key rotation</li>
+    </ul>
+  </div>
+  <div class="mockup rv">
+    <div class="mock-bar">
+      <span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span>
+      <span class="mock-title">CloudShield Scanner</span>
+    </div>
+    <div class="scan-regions">
+      <div class="region-tag"><span class="scanning"></span>us-east-1</div>
+      <div class="region-tag"><span class="scanning"></span>us-west-2</div>
+      <div class="region-tag done"><span class="scanning"></span>eu-west-1</div>
+      <div class="region-tag done"><span class="scanning"></span>ap-south-1</div>
+      <div class="region-tag"><span class="scanning"></span>ap-southeast-1</div>
+      <div class="region-tag"><span class="scanning"></span>eu-central-1</div>
+    </div>
+    <div class="finding-row"><span>S3_BLOCK_PUBLIC_ACCESS_DISABLED</span><span class="sev c">CRITICAL</span></div>
+    <div class="finding-row"><span>SECURITY_GROUP_UNRESTRICTED_SSH</span><span class="sev c">CRITICAL</span></div>
+    <div class="finding-row"><span>IAM_USER_WITHOUT_MFA</span><span class="sev h">HIGH</span></div>
+    <div class="finding-row"><span>S3_VERSIONING_DISABLED</span><span class="sev m">MEDIUM</span></div>
+    <div class="finding-row"><span>KMS_KEY_ROTATION_DISABLED</span><span class="sev m">MEDIUM</span></div>
+    <div class="finding-row"><span>CLOUDTRAIL_NOT_LOGGING</span><span class="sev l">LOW</span></div>
+  </div>
 </div>
 
-<section id="how" class="hiw">
-<div class="hiw-inner rv">
-<div class="tag" style="color:rgba(255,153,0,.8)">Simple &amp; Powerful</div>
-<h2>How CloudShield Works</h2>
-<p>From zero to fully secured AWS environment in under 5 minutes.</p>
-<div class="steps">
-<div class="step"><div class="snum">1</div><h4>Connect Your AWS</h4><p>Enter your AWS Access Key &amp; Secret. CloudShield reads-only &mdash; never stores credentials.</p></div>
-<div class="step"><div class="snum">2</div><h4>Run Full Scan</h4><p>CloudShield scans all 9 regions in parallel across 8 AWS services &mdash; results in &lt;30 seconds.</p></div>
-<div class="step"><div class="snum">3</div><h4>Review Findings</h4><p>Every finding is categorized by severity with a plain-English explanation of the risk.</p></div>
-<div class="step"><div class="snum">4</div><h4>Remediate &amp; Monitor</h4><p>Apply AI-planned fixes with one click. Monitor in real-time for new threats going forward.</p></div>
+<!-- FEATURE 2: THREAT MONITOR -->
+<div class="feat-row rev rv">
+  <div class="feat-text">
+    <div class="feat-tag">Real-Time Protection</div>
+    <h2 class="feat-title">Live Threat Monitor That Never Sleeps</h2>
+    <p class="feat-body">CloudShield's threat engine polls your AWS environment every 3 seconds via WebSocket. The moment something changes — a new admin user, an open security group, a public bucket — you're alerted instantly.</p>
+    <ul class="feat-list">
+      <li>Zero-latency WebSocket alerts pushed to your UI</li>
+      <li>Severity-based triage: Critical / High / Medium / Low</li>
+      <li>Detects: new admin IAM users, open SSH/RDP ports, public S3, public RDS</li>
+      <li>Windows desktop toast notifications for critical threats</li>
+      <li>Email alerts via AWS SES for off-screen monitoring</li>
+    </ul>
+  </div>
+  <div class="mockup rv">
+    <div class="mock-bar">
+      <span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span>
+      <span class="mock-title">Threat Monitor — LIVE</span>
+    </div>
+    <div class="radar-wrap">
+      <div class="radar">
+        <div class="radar-ring"></div><div class="radar-ring"></div><div class="radar-ring"></div>
+        <div class="radar-dot" style="top:30%;left:65%"></div>
+        <div class="radar-dot" style="top:60%;left:25%;background:#f87171;box-shadow:0 0 8px #f87171"></div>
+        <span style="font-size:.7rem;color:var(--orange);font-weight:700;position:relative;z-index:2">LIVE</span>
+      </div>
+    </div>
+    <div class="alert-item crit"><div class="alert-pulse"></div><div><div style="font-weight:700;font-size:.72rem">IAM_ADMIN_USER DETECTED</div><div style="font-size:.68rem;color:var(--muted)">user: john-dev &bull; policy: AdministratorAccess</div></div></div>
+    <div class="alert-item high"><div class="alert-pulse"></div><div><div style="font-weight:700;font-size:.72rem">S3_BLOCK_PUBLIC_ACCESS_DISABLED</div><div style="font-size:.68rem;color:var(--muted)">bucket: prod-data-lake-2024</div></div></div>
+    <div class="alert-item crit"><div class="alert-pulse"></div><div><div style="font-weight:700;font-size:.72rem">SECURITY_GROUP_UNRESTRICTED_SSH</div><div style="font-size:.68rem;color:var(--muted)">sg-0a4f3b1c &bull; 0.0.0.0/0:22</div></div></div>
+  </div>
 </div>
+
+<!-- FEATURE 3: REMEDIATION -->
+<div class="feat-row rv">
+  <div class="feat-text">
+    <div class="feat-tag">AI-Powered Fixes</div>
+    <h2 class="feat-title">One-Click Remediation With Full Rollback</h2>
+    <p class="feat-body">Every finding gets an AI-generated remediation plan. Review exactly what will change before applying. Every action is logged, reversible, and backed by a full rollback engine.</p>
+    <ul class="feat-list">
+      <li>AI plans the exact AWS API calls needed to fix each finding</li>
+      <li>Full preview before any change is applied to your account</li>
+      <li>Approval-gated — never auto-changes without your consent</li>
+      <li>Batch remediate dozens of findings at once</li>
+      <li>Every action stored with before/after state for instant rollback</li>
+    </ul>
+  </div>
+  <div class="mockup rv">
+    <div class="mock-bar">
+      <span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span>
+      <span class="mock-title">Remediation Plan</span>
+    </div>
+    <div class="plan-step done">
+      <div class="step-ico done">✅</div>
+      <div><div style="font-weight:700;font-size:.75rem">Enable S3 Block Public Access</div><div style="font-size:.68rem;color:var(--muted)">s3.put_public_access_block() &bull; Applied</div></div>
+    </div>
+    <div class="plan-step active">
+      <div class="step-ico active"><span class="spin-ico">⚙️</span></div>
+      <div><div style="font-weight:700;font-size:.75rem">Restrict SSH Security Group</div><div style="font-size:.68rem;color:var(--muted)">ec2.revoke_security_group_ingress() &bull; Running...</div></div>
+    </div>
+    <div class="plan-step pending">
+      <div class="step-ico pending">🔲</div>
+      <div><div style="font-weight:700;font-size:.75rem">Enable IAM MFA Enforcement</div><div style="font-size:.68rem;color:var(--muted)">iam.attach_user_policy() &bull; Pending</div></div>
+    </div>
+    <div class="plan-step pending">
+      <div class="step-ico pending">🔲</div>
+      <div><div style="font-weight:700;font-size:.75rem">Enable KMS Key Rotation</div><div style="font-size:.68rem;color:var(--muted)">kms.enable_key_rotation() &bull; Pending</div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:right">2 of 4 actions complete</div>
+  </div>
 </div>
+
+</div><!-- /features -->
+
+<!-- HOW IT WORKS -->
+<section id="how" class="hiw rv">
+  <div class="hiw-inner">
+    <div class="sec-header">
+      <div class="tag">Simple &amp; Powerful</div>
+      <h2>From Zero to Secured in 5 Minutes</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card rv">
+        <div class="step-num">🔐</div>
+        <h4>1. Connect Your AWS</h4>
+        <p>Enter your AWS Access Key &amp; Secret Key. CloudShield is read-only — credentials are encrypted with AES-128 and never leave your machine.</p>
+      </div>
+      <div class="step-card rv">
+        <div class="step-num">⚡</div>
+        <h4>2. Run Full Scan</h4>
+        <p>CloudShield launches parallel threads across all 9 regions, scanning 52+ checks across S3, EC2, IAM, RDS, VPC, KMS, CloudTrail simultaneously.</p>
+      </div>
+      <div class="step-card rv">
+        <div class="step-num">🎯</div>
+        <h4>3. Review Findings</h4>
+        <p>Every finding is categorized by severity with a plain-English explanation, impacted resource, region, and a detailed remediation plan.</p>
+      </div>
+      <div class="step-card rv">
+        <div class="step-num">🛡️</div>
+        <h4>4. Fix &amp; Monitor</h4>
+        <p>Apply AI-planned fixes with one click. Enable real-time monitoring for instant alerts. Roll back any action if something goes wrong.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
-<div id="scan" class="scans rv">
-<div class="scans-inner">
-<h2>What CloudShield Scans</h2>
-<p class="sub2">52+ security checks across every critical AWS service</p>
-<div class="scan-grid">
-<div class="scard"><div class="si">&#128230;</div><h4>Amazon S3</h4><p>Public access, versioning, encryption, logging</p></div>
-<div class="scard"><div class="si">&#128421;&#65039;</div><h4>Amazon EC2</h4><p>Security groups, open ports, public IPs, EBS</p></div>
-<div class="scard"><div class="si">&#128273;</div><h4>AWS IAM</h4><p>Users, roles, policies, MFA, access keys</p></div>
-<div class="scard"><div class="si">&#128202;</div><h4>Amazon RDS</h4><p>Encryption, public access, backup retention</p></div>
-<div class="scard"><div class="si">&#127760;</div><h4>Amazon VPC</h4><p>Flow logs, NACLs, route tables, subnets</p></div>
-<div class="scard"><div class="si">&#128220;</div><h4>AWS CloudTrail</h4><p>Logging enabled, trail integrity, encryption</p></div>
-<div class="scard"><div class="si">&#128272;</div><h4>AWS KMS</h4><p>Key rotation, compliance, policy checks</p></div>
-<div class="scard"><div class="si">&#9928;&#65039;</div><h4>CloudWatch</h4><p>Alarms, log groups, metric filters</p></div>
-</div>
-</div>
-</div>
+<!-- AWS SERVICES -->
+<section id="services" class="services rv">
+  <div class="sec-header">
+    <div class="tag">Full Coverage</div>
+    <h2>Every Critical AWS Service</h2>
+  </div>
+  <div class="svc-grid">
+    <div class="svc-card rv"><div class="svc-ico">📦</div><h4>Amazon S3</h4><p>Public access blocks, versioning, server-side encryption, access logging</p><span class="svc-count">14 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">🖥️</div><h4>Amazon EC2</h4><p>Security groups, open ports, public IPs, EBS encryption, public snapshots</p><span class="svc-count">12 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">🔐</div><h4>AWS IAM</h4><p>Admin users, MFA enforcement, stale keys, wildcard policies, role trusts</p><span class="svc-count">10 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">🗄️</div><h4>Amazon RDS</h4><p>Public accessibility, encryption at rest, automated backups, deletion protection</p><span class="svc-count">6 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">🌐</div><h4>Amazon VPC</h4><p>Flow logs enabled, default VPC usage, NACL rules, route table analysis</p><span class="svc-count">5 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">📋</div><h4>AWS CloudTrail</h4><p>Trail logging status, multi-region trails, log file validation, encryption</p><span class="svc-count">4 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">🔑</div><h4>AWS KMS</h4><p>Key rotation enabled, key policies, CMK management, compliance checks</p><span class="svc-count">3 checks</span></div>
+    <div class="svc-card rv"><div class="svc-ico">📊</div><h4>CloudWatch</h4><p>Alarm configurations, log group retention, metric filters for security events</p><span class="svc-count">3 checks</span></div>
+  </div>
+</section>
 
+<!-- DOWNLOAD -->
 <section id="download" class="dl-sec">
-<canvas id="stC"></canvas>
-<div class="dl-in rv">
-<div class="tag" style="color:rgba(255,153,0,.7);margin-bottom:14px">Start for Free</div>
-<h2>Ready to secure<br/><span>your AWS?</span></h2>
-<p class="dsub">Choose your preferred way to run CloudShield &mdash; desktop app or instant browser access.</p>
-<div class="dlbtns">
-<a class="borange" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-Download for Windows (.exe)
-</a>
-<a class="bghost" href="https://cloudshield.me" target="_blank">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-Continue in Browser
-</a>
-</div>
-<p class="plat">Install size ~350 MB &bull; Requires Windows 10/11 &bull; Linux &amp; macOS coming soon</p>
-</div>
+  <canvas id="dlStars"></canvas>
+  <div class="dl-glow"></div>
+  <div class="dl-inner rv">
+    <p class="feat-tag" style="margin-bottom:14px">Start for Free</p>
+    <h2>Secure Your AWS<br/><span>Right Now.</span></h2>
+    <p>Two ways to run CloudShield. Choose what works for you.</p>
+    <div class="dl-btns">
+      <a class="btn-orange-lg" id="dlBtn2" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows (.exe)
+      </a>
+      <a class="btn-ghost-lg" href="https://cloudshield.me" target="_blank">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+        Continue in Browser
+      </a>
+    </div>
+    <p class="plat-note">~350 MB install &bull; Windows 10/11 &bull; Linux &amp; macOS coming soon</p>
+  </div>
 </section>
 
 <footer>
-<div class="fl">&#9729;&#65039; CloudShield &mdash; AWS Security Scanner &amp; Remediation Tool</div>
-<div class="flinks">
-<a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel" target="_blank">GitHub</a>
-<a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases" target="_blank">Releases</a>
-<a href="https://cloudshield.me" target="_blank">Web App</a>
-</div>
+  <div class="foot-l">☁️ CloudShield &mdash; AWS Security Scanner &amp; Remediation</div>
+  <div class="foot-links">
+    <a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel" target="_blank">GitHub</a>
+    <a href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases" target="_blank">Releases</a>
+    <a href="https://cloudshield.me" target="_blank">Web App</a>
+  </div>
 </footer>
-
 <script>
-var sc=document.getElementById("stC"),sx=sc.getContext("2d"),stars=[];
-function rs(){sc.width=sc.offsetWidth;sc.height=sc.offsetHeight;stars=[];for(var i=0;i<200;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.4+.2,o:Math.random()*.8+.1,s:Math.random()*.0008+.0002})}
-rs();window.addEventListener("resize",rs);
-(function a(){sx.clearRect(0,0,sc.width,sc.height);stars.forEach(function(s){s.o+=s.s*(Math.random()>.5?1:-1);s.o=Math.max(.05,Math.min(.9,s.o));sx.beginPath();sx.arc(s.x,s.y,s.r,0,Math.PI*2);sx.fillStyle="rgba(255,255,255,"+s.o+")";sx.fill()});requestAnimationFrame(a)})();
+// Hero particles
+var hC=document.getElementById("heroC"),hX=hC.getContext("2d"),hP=[];
+function hRS(){hC.width=hC.offsetWidth;hC.height=hC.offsetHeight;hP=[];for(var i=0;i<120;i++)hP.push({x:Math.random()*hC.width,y:Math.random()*hC.height,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.5+.3,o:Math.random()*.5+.1})}
+hRS();window.addEventListener("resize",hRS);
+(function hA(){hX.clearRect(0,0,hC.width,hC.height);hP.forEach(function(p){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=hC.width;if(p.x>hC.width)p.x=0;if(p.y<0)p.y=hC.height;if(p.y>hC.height)p.y=0;hX.beginPath();hX.arc(p.x,p.y,p.r,0,Math.PI*2);hX.fillStyle="rgba(255,153,0,"+p.o+")";hX.fill()});
+// Draw connecting lines between close particles
+for(var i=0;i<hP.length;i++)for(var j=i+1;j<hP.length;j++){var d=Math.hypot(hP[i].x-hP[j].x,hP[i].y-hP[j].y);if(d<100){hX.beginPath();hX.moveTo(hP[i].x,hP[i].y);hX.lineTo(hP[j].x,hP[j].y);hX.strokeStyle="rgba(255,153,0,"+(0.06*(1-d/100))+")";hX.lineWidth=.5;hX.stroke()}}
+requestAnimationFrame(hA)})();
+
+// Download stars
+var dC=document.getElementById("dlStars"),dX=dC.getContext("2d"),dP=[];
+function dRS(){dC.width=dC.offsetWidth;dC.height=dC.offsetHeight;dP=[];for(var i=0;i<200;i++)dP.push({x:Math.random()*dC.width,y:Math.random()*dC.height,r:Math.random()*1.4+.2,o:Math.random()*.8+.1,s:Math.random()*.001+.0003})}
+dRS();window.addEventListener("resize",dRS);
+(function dA(){dX.clearRect(0,0,dC.width,dC.height);dP.forEach(function(s){s.o+=s.s*(Math.random()>.5?1:-1);s.o=Math.max(.05,Math.min(.9,s.o));dX.beginPath();dX.arc(s.x,s.y,s.r,0,Math.PI*2);dX.fillStyle="rgba(255,255,255,"+s.o+")";dX.fill()});requestAnimationFrame(dA)})();
+
+// Scroll reveal
 var ob=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add("in")})},{threshold:.08});
 document.querySelectorAll(".rv").forEach(function(el){ob.observe(el)});
 </script>
