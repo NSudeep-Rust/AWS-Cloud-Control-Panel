@@ -169,6 +169,20 @@ if _dist.exists():
             return FileResponse(str(landing), media_type="text/html")
         return FileResponse(str(_dist / "index.html"))
 
+    @app.get("/sitemap.xml", include_in_schema=False)
+    async def serve_sitemap():
+        """Serve sitemap for Google indexing."""
+        sm = Path(__file__).parent.parent.parent / "docs" / "sitemap.xml"
+        if sm.exists():
+            return FileResponse(str(sm), media_type="application/xml")
+
+    @app.get("/robots.txt", include_in_schema=False)
+    async def serve_robots():
+        """Serve robots.txt for crawlers."""
+        rb = Path(__file__).parent.parent.parent / "docs" / "robots.txt"
+        if rb.exists():
+            return FileResponse(str(rb), media_type="text/plain")
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         """Serve React SPA for all non-API routes (production + Electron)."""
