@@ -15,6 +15,7 @@ on:
       - 'app/config/**'
       - 'app/core/**'
       - 'app/database/**'
+      - 'docs/**'
   workflow_dispatch:
 
 jobs:
