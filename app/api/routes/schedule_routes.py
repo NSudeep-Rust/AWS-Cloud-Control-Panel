@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import, missing-attribute]
 """
 schedule_routes.py
 

@@ -335,6 +335,12 @@ class FastWatcher:
             body=message,
         )
 
+        # Broadcast to WebSocket clients (e.g. Threat Monitor UI)
+        if callable(self.broadcast_fn):
+            try:
+                self.broadcast_fn(payload)
+            except Exception as e:
+                print(f"[FastWatcher] broadcast error: {e}")
 
     def _diff(self, current):
         prev = self._prev

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import, missing-attribute]
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
