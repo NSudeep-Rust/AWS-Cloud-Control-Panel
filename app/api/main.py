@@ -178,3 +178,4 @@ else:
     @app.get("/", include_in_schema=False)
     def root():
         return {"status": "API active — run: cd app/ui && npm run build"}
+
