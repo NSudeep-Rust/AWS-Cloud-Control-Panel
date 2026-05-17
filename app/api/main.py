@@ -148,6 +148,19 @@ if _dist.exists():
     if _assets.exists():
         app.mount("/assets", StaticFiles(directory=str(_assets)), name="vite-assets")
 
+    @app.get("/favicon.png", include_in_schema=False)
+    async def favicon_png():
+        """Serve favicon PNG directly (bypasses SPA catch-all)."""
+        return FileResponse(str(_dist / "favicon.png"), media_type="image/png")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon_ico():
+        """Serve favicon ICO directly."""
+        ico = _dist / "favicon.ico"
+        if ico.exists():
+            return FileResponse(str(ico), media_type="image/x-icon")
+        return FileResponse(str(_dist / "favicon.png"), media_type="image/png")
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         """Serve React SPA for all non-API routes (production + Electron)."""
