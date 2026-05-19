@@ -87,68 +87,64 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
         findings = run_full_scan(aws_session, source="API")
         _log(f'scan complete - {len(findings)} findings')
 
-        scan_id = str(uuid.uuid4())
+        scan_id    = str(uuid.uuid4())
+        account_id_str = str(account.id)   # Finding.account_id is String column
 
-        scan = Scan(
-            id=scan_id,
-            account_id=account.id
-        )
-        db.add(scan)
+        db.add(Scan(id=scan_id, account_id=account.id))
         db.commit()
 
-        # IDs returned by the current scan
+        # IDs returned by this scan
         new_ids = {f.get("id") for f in findings if f.get("id")}
 
         # ── Mark previously-OPEN findings that no longer appear as RESOLVED ──
-        # This keeps risk score / counts in sync with the real current state.
-        stale = (
-            db.query(Finding)
-            .filter(
-                Finding.account_id == account.id,
-                Finding.status == "OPEN",
+        # Single bulk UPDATE — no N+1 queries, no PK conflicts.
+        # Finding PK is composite (scan_id, id), so we NEVER update scan_id.
+        if new_ids:
+            (
+                db.query(Finding)
+                .filter(
+                    Finding.account_id == account_id_str,
+                    Finding.status == "OPEN",
+                    Finding.id.notin_(list(new_ids)),
+                )
+                .update({"status": "RESOLVED"}, synchronize_session=False)
             )
-            .all()
-        )
-        resolved_count = 0
-        for old_f in stale:
-            if old_f.id not in new_ids:
-                old_f.status = "RESOLVED"
-                resolved_count += 1
-        if resolved_count:
-            db.commit()
-            _log(f'{resolved_count} stale findings marked RESOLVED')
+        else:
+            # Scan found nothing — resolve ALL previously open findings
+            resolved = (
+                db.query(Finding)
+                .filter(
+                    Finding.account_id == account_id_str,
+                    Finding.status == "OPEN",
+                )
+                .update({"status": "RESOLVED"}, synchronize_session=False)
+            )
+            _log(f'{resolved} stale findings resolved (scan found 0 results)')
+        db.commit()
 
-        # ── Upsert new findings — bulk fetch first to avoid N+1 queries ──
-        existing_ids = {
-            row.id for row in
-            db.query(Finding.id).filter(Finding.id.in_(list(new_ids))).all()
-        }
+        # ── INSERT new findings for this scan ──────────────────────────────────
+        # Composite PK (scan_id, id) means each scan gets its OWN rows —
+        # we always INSERT, never UPDATE scan_id (that would violate the PK).
         for f in findings:
             fid = f.get("id")
             if not fid:
                 continue
-            if fid in existing_ids:
-                # Update existing row directly without SELECT
-                db.query(Finding).filter(Finding.id == fid).update(
-                    {"scan_id": scan_id, "severity": f.get("severity"), "status": "OPEN"},
-                    synchronize_session=False,
-                )
-            else:
-                db.add(Finding(
-                    id            = fid,
-                    scan_id       = scan_id,
-                    account_id    = account.id,
-                    type          = f.get("type"),
-                    severity      = f.get("severity"),
-                    resource_id   = f.get("resource_id"),
-                    region        = f.get("region"),
-                    status        = "OPEN",
-                    access_key_id = f.get("access_key_id"),
-                    policy_name   = f.get("policy_name"),
-                    bucket_name   = f.get("bucket_name"),
-                ))
+            db.add(Finding(
+                id            = fid,
+                scan_id       = scan_id,
+                account_id    = account_id_str,
+                type          = f.get("type"),
+                severity      = f.get("severity"),
+                resource_id   = f.get("resource_id"),
+                region        = f.get("region"),
+                status        = "OPEN",
+                access_key_id = f.get("access_key_id"),
+                policy_name   = f.get("policy_name"),
+                bucket_name   = f.get("bucket_name"),
+            ))
 
         db.commit()
+        _log(f'{len(findings)} findings saved to scan {scan_id[:8]}')
 
         def _notify(acct_id, acct_name, scan_findings, sid):
             """Runs in a daemon thread - won't block the HTTP response."""
