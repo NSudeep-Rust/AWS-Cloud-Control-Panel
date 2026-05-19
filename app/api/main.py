@@ -161,12 +161,23 @@ if _dist.exists():
             return FileResponse(str(ico), media_type="image/x-icon")
         return FileResponse(str(_dist / "favicon.png"), media_type="image/png")
 
+    @app.get("/", include_in_schema=False)
+    async def redirect_root():
+        """Redirect root to landing page so cloudshield.me shows marketing page."""
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/landing", status_code=301)
+
     @app.get("/landing", include_in_schema=False)
     async def serve_landing():
         """Serve the CloudShield marketing landing page."""
         landing = Path(__file__).parent.parent.parent / "docs" / "index.html"
         if landing.exists():
             return FileResponse(str(landing), media_type="text/html")
+        return FileResponse(str(_dist / "index.html"))
+
+    @app.get("/app", include_in_schema=False)
+    async def serve_app_root():
+        """Serve the React SPA login page (entry for 'Open in Browser' from landing)."""
         return FileResponse(str(_dist / "index.html"))
 
     @app.get("/sitemap.xml", include_in_schema=False)
