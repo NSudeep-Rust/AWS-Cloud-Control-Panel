@@ -18,11 +18,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 
 # Worker counts are tuned per-environment via env vars.
-# Server (1GB RAM t3.micro) → low values to prevent OOM kills.
-# Local dev / EXE (developer machine with 8GB+) → high values for speed.
+# Server (1GB RAM t3.micro) → low defaults to prevent OOM kills.
+# Local dev / EXE (developer machine with 8GB+) → set higher via env.
 # Set SCAN_MAX_WORKERS / SCAN_INNER_MAX_WORKERS in .env to override.
-MAX_WORKERS       = int(os.getenv("SCAN_MAX_WORKERS",       "24"))  # outer pool
-INNER_MAX_WORKERS = int(os.getenv("SCAN_INNER_MAX_WORKERS", "12"))  # per-region inner pool
+MAX_WORKERS       = int(os.getenv("SCAN_MAX_WORKERS",       "8"))   # safe for t3.micro
+INNER_MAX_WORKERS = int(os.getenv("SCAN_INNER_MAX_WORKERS", "4"))   # per-region inner pool
 
 
 class Scanner:
@@ -164,7 +164,7 @@ class Scanner:
         with ThreadPoolExecutor(max_workers=max_w) as outer:
             futures = {outer.submit(fn): name for name, fn in tasks.items()}
             try:
-                for fut in as_completed(futures, timeout=90):
+                for fut in as_completed(futures, timeout=150):
                     name = futures[fut]
                     try:
                         result = fut.result()

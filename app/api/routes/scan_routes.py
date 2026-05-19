@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import, missing-attribute]
 from fastapi import APIRouter, Depends
 from app.api.schemas import ScanRequest
 from app.config import security_config
@@ -117,17 +118,21 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             db.commit()
             _log(f'{resolved_count} stale findings marked RESOLVED')
 
-        # ── Upsert new findings (insert new ones, re-open if they came back) ──
+        # ── Upsert new findings — bulk fetch first to avoid N+1 queries ──
+        existing_ids = {
+            row.id for row in
+            db.query(Finding.id).filter(Finding.id.in_(list(new_ids))).all()
+        }
         for f in findings:
             fid = f.get("id")
             if not fid:
                 continue
-            existing = db.query(Finding).filter(Finding.id == fid).first()
-            if existing:
-                # Finding already exists — update to latest scan and re-open
-                existing.scan_id   = scan_id
-                existing.severity  = f.get("severity", existing.severity)
-                existing.status    = "OPEN"
+            if fid in existing_ids:
+                # Update existing row directly without SELECT
+                db.query(Finding).filter(Finding.id == fid).update(
+                    {"scan_id": scan_id, "severity": f.get("severity"), "status": "OPEN"},
+                    synchronize_session=False,
+                )
             else:
                 db.add(Finding(
                     id            = fid,
