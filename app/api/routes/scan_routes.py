@@ -92,25 +92,56 @@ def run_scan(request: ScanRequest, db: Session = Depends(get_db)):
             id=scan_id,
             account_id=account.id
         )
-
         db.add(scan)
         db.commit()
 
-        for f in findings:
-            finding = Finding(
-                id=f.get("id"),
-                scan_id=scan_id,
-                account_id=account.id, 
-                type=f.get("type"),
-                severity=f.get("severity"),
-                resource_id=f.get("resource_id"),
-                region=f.get("region"),
-                status="OPEN",
-                access_key_id=f.get("access_key_id"),
-                policy_name=f.get("policy_name"),
-                bucket_name=f.get("bucket_name"),
+        # IDs returned by the current scan
+        new_ids = {f.get("id") for f in findings if f.get("id")}
+
+        # ── Mark previously-OPEN findings that no longer appear as RESOLVED ──
+        # This keeps risk score / counts in sync with the real current state.
+        stale = (
+            db.query(Finding)
+            .filter(
+                Finding.account_id == account.id,
+                Finding.status == "OPEN",
             )
-            db.add(finding)
+            .all()
+        )
+        resolved_count = 0
+        for old_f in stale:
+            if old_f.id not in new_ids:
+                old_f.status = "RESOLVED"
+                resolved_count += 1
+        if resolved_count:
+            db.commit()
+            _log(f'{resolved_count} stale findings marked RESOLVED')
+
+        # ── Upsert new findings (insert new ones, re-open if they came back) ──
+        for f in findings:
+            fid = f.get("id")
+            if not fid:
+                continue
+            existing = db.query(Finding).filter(Finding.id == fid).first()
+            if existing:
+                # Finding already exists — update to latest scan and re-open
+                existing.scan_id   = scan_id
+                existing.severity  = f.get("severity", existing.severity)
+                existing.status    = "OPEN"
+            else:
+                db.add(Finding(
+                    id            = fid,
+                    scan_id       = scan_id,
+                    account_id    = account.id,
+                    type          = f.get("type"),
+                    severity      = f.get("severity"),
+                    resource_id   = f.get("resource_id"),
+                    region        = f.get("region"),
+                    status        = "OPEN",
+                    access_key_id = f.get("access_key_id"),
+                    policy_name   = f.get("policy_name"),
+                    bucket_name   = f.get("bucket_name"),
+                ))
 
         db.commit()
 
