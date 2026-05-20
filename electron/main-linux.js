@@ -184,7 +184,7 @@ overflow:auto;color:#aef;white-space:pre-wrap;max-height:400px}
 </div></body></html>`;
     mainWindow.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
   } else {
-    mainWindow.loadURL(`http://127.0.0.1:${BACKEND_PORT}`);
+    mainWindow.loadURL(`http://127.0.0.1:${BACKEND_PORT}/panel`);
   }
 
   mainWindow.once("ready-to-show", () => {

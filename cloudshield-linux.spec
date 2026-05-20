@@ -49,6 +49,8 @@ hidden = [
     'app.api.routes.session_routes',
     'app.api.routes.schedule_routes','app.api.routes.drift_routes','app.api.routes.email_routes',
     'app.api.routes.attack_surface_routes','app.api.routes.iam_view_routes',
+    'app.api.routes.auth_routes','app.api.routes.oauth_routes',  # web auth (lazy deps — safe in desktop)
+    'app.core.auth','app.core.crypto',                           # auth helpers + encryption
     # Scanner modules
     'app.modules.scanner.scanner','app.modules.scanner.s3_scanner',
     'app.modules.scanner.ec2_scanner','app.modules.scanner.rds_scanner',

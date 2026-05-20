@@ -7,7 +7,7 @@ on:
       version:
         description: 'Version (must match VERSION file, e.g. 1.0.1)'
         required: true
-        default: '1.0.1'
+        default: '1.0.2'
       upload_release:
         description: 'Upload to existing GitHub Release?'
         required: true
@@ -123,6 +123,12 @@ jobs:
           name: CloudShield v${{ github.event.inputs.version }}
           body: |
             ## CloudShield v${{ github.event.inputs.version }}
+
+            ### What's new in v${{ github.event.inputs.version }}
+            - **Scanner fixed**: Findings now save correctly (composite PK + account_id type fixes)
+            - **Stale findings resolved**: Previous open findings correctly resolved on rescan
+            - **Performance**: Worker pool tuned for t3.micro (8 outer / 4 inner threads)
+            - **Desktop fix**: App now opens directly to panel (no more landing page redirect)
 
             ### Linux (Debian / Ubuntu)
             **Install:**
