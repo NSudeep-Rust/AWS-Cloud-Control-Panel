@@ -72,14 +72,18 @@ jobs:
       # ── 5. Upload single tar file via SCP ────────────────────────────────────
       - name: 📤 Upload to EC2
         run: |
-          scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
+          scp -q -i ~/.ssh/deploy_key.pem \
+            -o StrictHostKeyChecking=no \
+            -o LogLevel=ERROR \
             /tmp/cloudshield-deploy.tar.gz \
             root@${{ secrets.EC2_HOST }}:/tmp/cloudshield-deploy.tar.gz
 
       # ── 6. Extract + apply + restart on EC2 ─────────────────────────────────
       - name: 🔄 Apply changes & restart service
         run: |
-          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
+          ssh -q -i ~/.ssh/deploy_key.pem \
+            -o StrictHostKeyChecking=no \
+            -o LogLevel=ERROR \
             root@${{ secrets.EC2_HOST }} << 'EOF'
           set -e
 
