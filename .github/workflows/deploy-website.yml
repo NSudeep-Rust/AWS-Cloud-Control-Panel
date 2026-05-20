@@ -31,15 +31,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # ── 2. Setup SSH key ────────────────────────────────────────────────────
-      - name: 🔑 Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
-          chmod 600 ~/.ssh/deploy_key.pem
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      # ── 3. Build React frontend ──────────────────────────────────────────────
+      # ── 2. Build React frontend ──────────────────────────────────────────────
       - name: 🟢 Set up Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -56,10 +48,10 @@ jobs:
           VITE_API_URL: https://cloudshield.me
           VITE_WEB_MODE: true
 
-      # ── 4. Package everything into one tar file ──────────────────────────────
+      # ── 3. Package into tar (in workspace, NOT /tmp) ─────────────────────────
       - name: 📦 Package files for deployment
         run: |
-          tar -czf /tmp/cloudshield-deploy.tar.gz \
+          tar -czf cloudshield-deploy.tar.gz \
             app/ui/dist \
             app/api \
             app/modules \
@@ -67,55 +59,56 @@ jobs:
             app/core \
             app/database \
             docs
-          echo "Package size: $(du -sh /tmp/cloudshield-deploy.tar.gz)"
+          echo "Package size: $(du -sh cloudshield-deploy.tar.gz)"
 
-      # ── 5. Upload single tar file via SCP ────────────────────────────────────
+      # ── 4. Upload via appleboy/scp-action (handles MOTD/banner correctly) ────
       - name: 📤 Upload to EC2
-        run: |
-          scp -q -i ~/.ssh/deploy_key.pem \
-            -o StrictHostKeyChecking=no \
-            -o LogLevel=ERROR \
-            /tmp/cloudshield-deploy.tar.gz \
-            root@${{ secrets.EC2_HOST }}:/tmp/cloudshield-deploy.tar.gz
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: root
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "cloudshield-deploy.tar.gz"
+          target: "/tmp/"
 
-      # ── 6. Extract + apply + restart on EC2 ─────────────────────────────────
+      # ── 5. Extract + apply + restart via appleboy/ssh-action ─────────────────
       - name: 🔄 Apply changes & restart service
-        run: |
-          ssh -q -i ~/.ssh/deploy_key.pem \
-            -o StrictHostKeyChecking=no \
-            -o LogLevel=ERROR \
-            root@${{ secrets.EC2_HOST }} << 'EOF'
-          set -e
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: root
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
 
-          echo "📦 Extracting deployment package..."
-          cd /tmp
-          tar -xzf cloudshield-deploy.tar.gz
-          rm cloudshield-deploy.tar.gz
+            echo "📦 Extracting deployment package..."
+            cd /tmp
+            tar -xzf cloudshield-deploy.tar.gz
+            rm cloudshield-deploy.tar.gz
 
-          echo "📁 Deploying frontend..."
-          cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
-          echo "✅ Frontend deployed"
+            echo "📁 Deploying frontend..."
+            cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
+            echo "✅ Frontend deployed"
 
-          echo "📁 Deploying backend..."
-          cp -rf /tmp/app/api       /root/cloudshield/app/
-          cp -rf /tmp/app/modules   /root/cloudshield/app/
-          cp -rf /tmp/app/config    /root/cloudshield/app/
-          cp -rf /tmp/app/core      /root/cloudshield/app/
-          cp -rf /tmp/app/database  /root/cloudshield/app/
-          cp -rf /tmp/docs          /root/cloudshield/
-          echo "✅ Backend deployed"
+            echo "📁 Deploying backend..."
+            cp -rf /tmp/app/api       /root/cloudshield/app/
+            cp -rf /tmp/app/modules   /root/cloudshield/app/
+            cp -rf /tmp/app/config    /root/cloudshield/app/
+            cp -rf /tmp/app/core      /root/cloudshield/app/
+            cp -rf /tmp/app/database  /root/cloudshield/app/
+            cp -rf /tmp/docs          /root/cloudshield/
+            echo "✅ Backend deployed"
 
-          echo "🧹 Cleaning up..."
-          rm -rf /tmp/app
+            echo "🧹 Cleaning up..."
+            rm -rf /tmp/app /tmp/docs
 
-          echo "🔄 Restarting CloudShield service..."
-          systemctl restart cloudshield
-          sleep 5
+            echo "🔄 Restarting CloudShield service..."
+            systemctl restart cloudshield
+            sleep 5
 
-          systemctl is-active cloudshield \
-            && echo "🎉 CloudShield.me is live!" \
-            || (echo "❌ Service failed!" && journalctl -u cloudshield -n 20 --no-pager && exit 1)
-          EOF
+            systemctl is-active cloudshield \
+              && echo "🎉 CloudShield.me is live!" \
+              || (echo "❌ Service failed!" && journalctl -u cloudshield -n 20 --no-pager && exit 1)
 
       - name: ✅ Done
         run: echo "🚀 CloudShield.me deployed successfully!"
