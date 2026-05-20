@@ -74,13 +74,13 @@ jobs:
         run: |
           scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
             /tmp/cloudshield-deploy.tar.gz \
-            ubuntu@${{ secrets.EC2_HOST }}:/tmp/cloudshield-deploy.tar.gz
+            root@${{ secrets.EC2_HOST }}:/tmp/cloudshield-deploy.tar.gz
 
       # ── 6. Extract + apply + restart on EC2 ─────────────────────────────────
       - name: 🔄 Apply changes & restart service
         run: |
           ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=no \
-            ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            root@${{ secrets.EC2_HOST }} << 'EOF'
           set -e
 
           echo "📦 Extracting deployment package..."
@@ -89,28 +89,28 @@ jobs:
           rm cloudshield-deploy.tar.gz
 
           echo "📁 Deploying frontend..."
-          sudo cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
+          cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
           echo "✅ Frontend deployed"
 
           echo "📁 Deploying backend..."
-          sudo cp -rf /tmp/app/api       /root/cloudshield/app/
-          sudo cp -rf /tmp/app/modules   /root/cloudshield/app/
-          sudo cp -rf /tmp/app/config    /root/cloudshield/app/
-          sudo cp -rf /tmp/app/core      /root/cloudshield/app/
-          sudo cp -rf /tmp/app/database  /root/cloudshield/app/
-          sudo cp -rf /tmp/docs          /root/cloudshield/
+          cp -rf /tmp/app/api       /root/cloudshield/app/
+          cp -rf /tmp/app/modules   /root/cloudshield/app/
+          cp -rf /tmp/app/config    /root/cloudshield/app/
+          cp -rf /tmp/app/core      /root/cloudshield/app/
+          cp -rf /tmp/app/database  /root/cloudshield/app/
+          cp -rf /tmp/docs          /root/cloudshield/
           echo "✅ Backend deployed"
 
           echo "🧹 Cleaning up..."
           rm -rf /tmp/app
 
           echo "🔄 Restarting CloudShield service..."
-          sudo systemctl restart cloudshield
+          systemctl restart cloudshield
           sleep 5
 
-          sudo systemctl is-active cloudshield \
+          systemctl is-active cloudshield \
             && echo "🎉 CloudShield.me is live!" \
-            || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
+            || (echo "❌ Service failed!" && journalctl -u cloudshield -n 20 --no-pager && exit 1)
           EOF
 
       - name: ✅ Done
