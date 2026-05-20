@@ -69,14 +69,14 @@ jobs:
             docs
           echo "Package size: $(du -sh cloudshield-deploy.tar.gz)"
 
-      # ── 5. Upload via SSH stdin pipe (avoids SCP MOTD issue entirely) ─────────
+      # ── 5. Upload via SSH stdin pipe (ubuntu user — avoids SCP MOTD issue) ───
       - name: 📤 Upload to EC2
         run: |
           ssh -i ~/.ssh/deploy_key.pem \
             -o StrictHostKeyChecking=no \
             -o LogLevel=ERROR \
             -o ConnectTimeout=30 \
-            root@${{ secrets.EC2_HOST }} \
+            ubuntu@${{ secrets.EC2_HOST }} \
             'cat > /tmp/cloudshield-deploy.tar.gz' \
             < cloudshield-deploy.tar.gz
           echo "✅ Upload complete"
@@ -88,7 +88,7 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o LogLevel=ERROR \
             -o ConnectTimeout=30 \
-            root@${{ secrets.EC2_HOST }} 'bash -s' << 'SCRIPT'
+            ubuntu@${{ secrets.EC2_HOST }} 'bash -s' << 'SCRIPT'
           set -e
 
           echo "📦 Extracting deployment package..."
@@ -97,28 +97,28 @@ jobs:
           rm cloudshield-deploy.tar.gz
 
           echo "📁 Deploying frontend..."
-          cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
+          sudo cp -rf /tmp/app/ui/dist/* /root/cloudshield/app/ui/dist/
           echo "✅ Frontend deployed"
 
           echo "📁 Deploying backend..."
-          cp -rf /tmp/app/api       /root/cloudshield/app/
-          cp -rf /tmp/app/modules   /root/cloudshield/app/
-          cp -rf /tmp/app/config    /root/cloudshield/app/
-          cp -rf /tmp/app/core      /root/cloudshield/app/
-          cp -rf /tmp/app/database  /root/cloudshield/app/
-          cp -rf /tmp/docs          /root/cloudshield/
+          sudo cp -rf /tmp/app/api       /root/cloudshield/app/
+          sudo cp -rf /tmp/app/modules   /root/cloudshield/app/
+          sudo cp -rf /tmp/app/config    /root/cloudshield/app/
+          sudo cp -rf /tmp/app/core      /root/cloudshield/app/
+          sudo cp -rf /tmp/app/database  /root/cloudshield/app/
+          sudo cp -rf /tmp/docs          /root/cloudshield/
           echo "✅ Backend deployed"
 
           echo "🧹 Cleaning up..."
-          rm -rf /tmp/app /tmp/docs
+          sudo rm -rf /tmp/app /tmp/docs
 
           echo "🔄 Restarting CloudShield service..."
-          systemctl restart cloudshield
+          sudo systemctl restart cloudshield
           sleep 5
 
-          systemctl is-active cloudshield \
+          sudo systemctl is-active cloudshield \
             && echo "🎉 CloudShield.me is live!" \
-            || (echo "❌ Service failed!" && journalctl -u cloudshield -n 20 --no-pager && exit 1)
+            || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
           SCRIPT
 
       - name: ✅ Done
