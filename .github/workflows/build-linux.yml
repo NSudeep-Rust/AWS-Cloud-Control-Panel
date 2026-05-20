@@ -16,7 +16,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'app/**'
+      - 'app/api/**'
+      - 'app/modules/**'
+      - 'app/database/**'
+      - 'app/core/**'
+      - 'app/config/**'
       - 'electron/main-linux.js'
       - 'cloudshield-linux.spec'
       - 'requirements-linux.txt'
