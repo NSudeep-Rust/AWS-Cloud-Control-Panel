@@ -393,7 +393,7 @@ export default function WebAuthPage() {
           <div style={{ padding:'8px 10px', borderRadius:7, background:'rgba(6,115,64,0.06)',
             border:'1px solid rgba(6,115,64,0.2)', textAlign:'center' }}>
             <div style={{ fontSize:10, color:'#067340', fontWeight:700 }}>🌐 cloudshield.me</div>
-            <div style={{ fontSize:9, color:'#687078', marginTop:3 }}>Secured with HTTPS · DigitalOcean hosting</div>
+            <div style={{ fontSize:9, color:'#687078', marginTop:3 }}>Secured with HTTPS · AWS EC2 hosting</div>
           </div>
         </div>
       </div>
