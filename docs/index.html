@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -166,6 +166,19 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
 .rv.in{opacity:1;transform:none}
 @media(max-width:900px){.feat-row{grid-template-columns:1fr;gap:40px}.feat-row.rev{direction:ltr}.steps-grid{grid-template-columns:1fr 1fr}.svc-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){header{padding:0 20px}nav{display:none}.stats{gap:40px}.steps-grid{grid-template-columns:1fr}.svc-grid{grid-template-columns:1fr 1fr}footer{padding:22px 20px}}
+
+/* OS DOWNLOAD GRID */
+.os-grid{display:grid;grid-template-columns:repeat(3,1fr);max-width:740px;margin:0 auto 20px;border:1px solid rgba(0,0,0,.1);border-radius:16px;overflow:hidden;animation:fadeup .7s .3s ease both;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.06);text-align:left}
+.os-col{padding:26px 22px;border-right:1px solid rgba(0,0,0,.08)}
+.os-col:last-child{border-right:none}
+.os-col-icon{font-size:1.3rem;margin-bottom:8px}
+.os-col-name{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,.06)}
+.os-dl-link{display:flex;align-items:center;gap:7px;font-size:.84rem;font-weight:600;color:var(--text);text-decoration:none;padding:5px 0;transition:color .2s;white-space:nowrap}
+.os-dl-link:hover{color:var(--orange)}
+.os-dl-link svg{flex-shrink:0;opacity:.4;transition:opacity .2s}
+.os-dl-link:hover svg{opacity:1}
+.os-meta{font-size:.66rem;color:var(--muted);margin-top:10px;line-height:1.65}
+@media(max-width:640px){.os-grid{grid-template-columns:1fr}.os-col{border-right:none;border-bottom:1px solid rgba(0,0,0,.08)}.os-col:last-child{border-bottom:none}}
 </style>
 <meta name="robots" content="index, follow"/>
 <meta name="author" content="CloudShield"/>
@@ -184,11 +197,11 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
   "description": "CloudShield is a free AWS security scanner that detects misconfigurations across S3, EC2, IAM, RDS, VPC, CloudTrail and KMS. Auto-remediation with full rollback support.",
   "url": "https://cloudshield.me/landing",
   "downloadUrl": "https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe",
-  "operatingSystem": "Windows 10, Windows 11",
+  "operatingSystem": "Windows 10, Windows 11, Ubuntu 20.04+, Debian 11+",
   "applicationCategory": "SecurityApplication",
   "offers": {"@type":"Offer","price":"0","priceCurrency":"USD"},
   "featureList": "AWS Security Scanner, IAM Audit, S3 Security, EC2 Scanner, RDS Check, VPC Analysis, CloudTrail Monitor, KMS Rotation, Auto-Remediation, Real-time Threat Monitor",
-  "softwareVersion": "1.0.1",
+  "softwareVersion": "1.0.2",
   "screenshot": "https://cloudshield.me/favicon.png",
   "author": {"@type":"Person","name":"NSudeep-Rust"},
   "sameAs": ["https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel","https://cloudshield.me"]
@@ -214,17 +227,36 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
     <div class="badge"><span class="dot-live"></span>v1.0.1 Live &mdash; cloudshield.me</div>
     <h1>AWS Security,<br/><span class="hl">Supercharged.</span></h1>
     <p class="hero-sub">Scan your entire AWS account for misconfigurations in under 30 seconds. AI-planned fixes. Real-time threat monitoring. Full rollback support.</p>
-    <div class="btns">
-      <a class="btn-dl" id="dlBtn" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download for Windows
-      </a>
-      <a class="btn-web" href="https://cloudshield.me/panel" target="_blank">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-        Open in Browser
-      </a>
+    <div class="os-grid">
+      <div class="os-col">
+        <div class="os-col-icon">🌐</div>
+        <div class="os-col-name">Web App</div>
+        <a class="os-dl-link" href="https://cloudshield.me/panel" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          Open in Browser
+        </a>
+        <div class="os-meta">cloudshield.me<br/>Always latest &bull; Free</div>
+      </div>
+      <div class="os-col">
+        <div class="os-col-icon">⊞</div>
+        <div class="os-col-name">Windows</div>
+        <a class="os-dl-link" id="dlBtn" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Windows
+        </a>
+        <div class="os-meta">v1.0.1 &bull; .exe &bull; 128 MB<br/>Windows 10/11 &bull; x64</div>
+      </div>
+      <div class="os-col">
+        <div class="os-col-icon">🐧</div>
+        <div class="os-col-name">Linux</div>
+        <a class="os-dl-link" id="dlBtnLinux" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/v1.0.2/CloudShield-Setup-v1.0.2-linux-amd64.deb" download="CloudShield-Setup-v1.0.2-linux-amd64.deb">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Linux
+        </a>
+        <div class="os-meta">v1.0.2 &bull; .deb &bull; ~120 MB<br/>Ubuntu 20.04+ / Debian 11+ &bull; AMD64</div>
+      </div>
     </div>
-    <p class="hero-note">CloudShield-Setup-v1.0.1.exe &bull; 128 MB &bull; Windows 10/11 &bull; Free forever</p>
+    <p class="hero-note">Windows v1.0.1 &bull; Linux v1.0.2 &bull; Free forever &bull; Open source</p>
   </div>
 </section>
 
@@ -407,18 +439,37 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
   <div class="dl-inner rv">
     <p class="feat-tag" style="margin-bottom:14px">Start for Free</p>
     <h2>Secure Your AWS<br/><span>Right Now.</span></h2>
-    <p>Two ways to run CloudShield. Choose what works for you.</p>
-    <div class="dl-btns">
-      <a class="btn-orange-lg" id="dlBtn2" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download for Windows (.exe)
-      </a>
-      <a class="btn-ghost-lg" href="https://cloudshield.me/panel" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-        Continue in Browser
-      </a>
+    <p>Three ways to use CloudShield. Choose what works for you.</p>
+    <div class="os-grid" style="margin-top:32px;animation:none">
+      <div class="os-col">
+        <div class="os-col-icon">🌐</div>
+        <div class="os-col-name">Web App</div>
+        <a class="os-dl-link" href="https://cloudshield.me/panel" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          Open in Browser
+        </a>
+        <div class="os-meta">cloudshield.me<br/>Always latest &bull; No install</div>
+      </div>
+      <div class="os-col">
+        <div class="os-col-icon">⊞</div>
+        <div class="os-col-name">Windows</div>
+        <a class="os-dl-link" id="dlBtn2" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe" download="CloudShield-Setup-v1.0.1.exe">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Windows
+        </a>
+        <div class="os-meta">v1.0.1 &bull; .exe &bull; 128 MB<br/>Windows 10/11 &bull; x64</div>
+      </div>
+      <div class="os-col">
+        <div class="os-col-icon">🐧</div>
+        <div class="os-col-name">Linux</div>
+        <a class="os-dl-link" id="dlBtn2Linux" href="https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/v1.0.2/CloudShield-Setup-v1.0.2-linux-amd64.deb" download="CloudShield-Setup-v1.0.2-linux-amd64.deb">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Linux
+        </a>
+        <div class="os-meta">v1.0.2 &bull; .deb &bull; ~120 MB<br/>Ubuntu / Debian &bull; AMD64</div>
+      </div>
     </div>
-    <p class="plat-note">~350 MB install &bull; Windows 10/11 &bull; Linux &amp; macOS coming soon</p>
+    <p class="plat-note">All free &bull; Open source &bull; No license key required</p>
   </div>
 </section>
 
