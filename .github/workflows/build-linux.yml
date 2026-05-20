@@ -1,11 +1,11 @@
 name: Build Linux .deb (Debian/Ubuntu)
 
-# Trigger manually from GitHub Actions UI
+# Trigger manually OR auto on push to relevant files
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (must match VERSION file, e.g. 1.0.1)'
+        description: 'Version (must match VERSION file, e.g. 1.0.2)'
         required: true
         default: '1.0.2'
       upload_release:
@@ -13,6 +13,15 @@ on:
         required: true
         default: 'true'
         type: string
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'electron/main-linux.js'
+      - 'cloudshield-linux.spec'
+      - 'requirements-linux.txt'
+      - 'backend_entry.py'
+      - 'VERSION'
 
 jobs:
   build-linux-deb:
@@ -23,9 +32,22 @@ jobs:
 
     steps:
 
-      # ── 1. Checkout ───────────────────────────────────────────────────────────
+      # ── 0. Resolve version (input OR VERSION file) ────────────────────────────
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Resolve build version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "upload_release=${{ github.event.inputs.upload_release }}" >> $GITHUB_OUTPUT
+          else
+            VER=$(cat VERSION | tr -d '[:space:]')
+            echo "version=$VER" >> $GITHUB_OUTPUT
+            echo "upload_release=true" >> $GITHUB_OUTPUT
+          fi
+          echo "Resolved version: $(cat VERSION | tr -d '[:space:]')"
 
       # ── 2. Python 3.11 ───────────────────────────────────────────────────────
       - name: Set up Python 3.11
@@ -90,41 +112,41 @@ jobs:
       - name: Create update zip (for updater compatibility)
         run: |
           cd dist
-          zip -r ../cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip \
+          zip -r ../cloudshield-update-v${{ steps.ver.outputs.version }}-linux-amd64.zip \
             cloudshield-backend/ \
             ../VERSION
           cd ..
-          ls -lh cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+          ls -lh cloudshield-update-v${{ steps.ver.outputs.version }}-linux-amd64.zip
 
       # ── 8. Rename .deb to release name ────────────────────────────────────────
       - name: Rename .deb to release filename
         run: |
           DEB=$(find electron/dist -name "*.deb" | head -1)
           echo "Found deb: $DEB"
-          cp "$DEB" "CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb"
-          ls -lh "CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb"
+          cp "$DEB" "CloudShield-Setup-v${{ steps.ver.outputs.version }}-linux-amd64.deb"
+          ls -lh "CloudShield-Setup-v${{ steps.ver.outputs.version }}-linux-amd64.deb"
 
       # ── 9. Upload artifacts ───────────────────────────────────────────────────
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CloudShield-Linux-${{ github.event.inputs.version }}
+          name: CloudShield-Linux-${{ steps.ver.outputs.version }}
           path: |
-            CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
-            cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+            CloudShield-Setup-v${{ steps.ver.outputs.version }}-linux-amd64.deb
+            cloudshield-update-v${{ steps.ver.outputs.version }}-linux-amd64.zip
           retention-days: 30
 
       # ── 10. Upload to GitHub Release ─────────────────────────────────────────
       - name: Upload to GitHub Release
-        if: ${{ github.event.inputs.upload_release == 'true' }}
+        if: ${{ steps.ver.outputs.upload_release == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: CloudShield v${{ github.event.inputs.version }}
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: CloudShield v${{ steps.ver.outputs.version }}
           body: |
-            ## CloudShield v${{ github.event.inputs.version }}
+            ## CloudShield v${{ steps.ver.outputs.version }}
 
-            ### What's new in v${{ github.event.inputs.version }}
+            ### What's new in v${{ steps.ver.outputs.version }}
             - **Scanner fixed**: Findings now save correctly (composite PK + account_id type fixes)
             - **Stale findings resolved**: Previous open findings correctly resolved on rescan
             - **Performance**: Worker pool tuned for t3.micro (8 outer / 4 inner threads)
@@ -133,7 +155,7 @@ jobs:
             ### Linux (Debian / Ubuntu)
             **Install:**
             ```bash
-            sudo dpkg -i CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
+            sudo dpkg -i CloudShield-Setup-v${{ steps.ver.outputs.version }}-linux-amd64.deb
             sudo apt-get install -f   # resolve any missing dependencies
             cloudshield               # launch
             ```
@@ -142,8 +164,8 @@ jobs:
             sudo apt-get remove cloudshield
             ```
           files: |
-            CloudShield-Setup-v${{ github.event.inputs.version }}-linux-amd64.deb
-            cloudshield-update-v${{ github.event.inputs.version }}-linux-amd64.zip
+            CloudShield-Setup-v${{ steps.ver.outputs.version }}-linux-amd64.deb
+            cloudshield-update-v${{ steps.ver.outputs.version }}-linux-amd64.zip
           draft: false
           prerelease: false
         env:
