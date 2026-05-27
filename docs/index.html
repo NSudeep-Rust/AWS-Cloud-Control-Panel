@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>CloudShield — AWS Security Scanner & Auto-Remediation</title>
-<meta name="description" content="CloudShield automatically scans your AWS account for misconfigurations, detects threats in real-time, and auto-remediates issues. 52+ checks, 9 regions. Free."/>
-<meta name="keywords" content="AWS CloudShield, AWS security scanner, cloud security, IAM audit, S3 security, EC2 scanner, AWS misconfiguration tool"/>
+<title>CloudShield | Free AWS Security Scanner &amp; Auto-Remediation Tool</title>
+<meta name="description" content="CloudShield is a free AWS security scanner that detects misconfigurations across S3, EC2, IAM, RDS, VPC, KMS &amp; CloudTrail in 9 regions. Real-time threat monitoring &amp; one-click auto-remediation. 100% free and open source."/>
+<meta name="keywords" content="CloudShield, CloudShield AWS, AWS security scanner, cloud security scanner, IAM audit tool, S3 security checker, EC2 misconfiguration detector, AWS auto-remediation, free AWS security tool, AWS Security Hub alternative, cloud misconfiguration, AWS compliance checker, AWS security monitoring, CloudShield security scanner"/>
 <link rel="canonical" href="https://cloudshield.me/landing"/>
 <link rel="icon" href="https://cloudshield.me/favicon.png?v=4"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -180,32 +180,61 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
 .os-meta{font-size:.66rem;color:var(--muted);margin-top:10px;line-height:1.65}
 @media(max-width:640px){.os-grid{grid-template-columns:1fr}.os-col{border-right:none;border-bottom:1px solid rgba(0,0,0,.08)}.os-col:last-child{border-bottom:none}}
 </style>
-<meta name="robots" content="index, follow"/>
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1"/>
 <meta name="author" content="CloudShield"/>
 <meta name="application-name" content="CloudShield"/>
+<!-- Open Graph -->
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://cloudshield.me/landing"/>
+<meta property="og:title" content="CloudShield | Free AWS Security Scanner &amp; Auto-Remediation"/>
+<meta property="og:description" content="Scan your AWS account for misconfigurations in under 30 seconds. 52+ checks across S3, EC2, IAM, RDS, VPC, KMS &amp; CloudTrail. One-click fixes. 100% free."/>
 <meta property="og:site_name" content="CloudShield"/>
 <meta property="og:image" content="https://cloudshield.me/favicon.png"/>
+<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="CloudShield - AWS Security Scanner"/>
-<meta name="twitter:description" content="Scan, detect and remediate AWS misconfigurations in under 30 seconds. Free. 52+ checks, 9 regions."/>
+<meta name="twitter:title" content="CloudShield | Free AWS Security Scanner"/>
+<meta name="twitter:description" content="52+ AWS security checks. Real-time threat monitoring. One-click auto-remediation. Free forever."/>
+<meta name="twitter:image" content="https://cloudshield.me/favicon.png"/>
+<!-- JSON-LD: SoftwareApplication -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "CloudShield",
-  "alternateName": "AWS CloudShield",
-  "description": "CloudShield is a free AWS security scanner that detects misconfigurations across S3, EC2, IAM, RDS, VPC, CloudTrail and KMS. Auto-remediation with full rollback support.",
-  "url": "https://cloudshield.me/landing",
-  "downloadUrl": "https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel/releases/download/1.0.1/CloudShield-Setup-v1.0.1.exe",
-  "operatingSystem": "Windows 10, Windows 11, Ubuntu 20.04+, Debian 11+",
+  "alternateName": ["CloudShield AWS", "AWS CloudShield Security Scanner"],
+  "description": "CloudShield is a free AWS security scanner and auto-remediation tool. 52+ checks across S3, EC2, IAM, RDS, VPC, KMS, CloudTrail and CloudWatch across 9 AWS regions in under 30 seconds.",
+  "url": "https://cloudshield.me",
+  "downloadUrl": "https://cloudshield.me/landing",
+  "operatingSystem": "Windows 10, Windows 11, Ubuntu 20.04+, Debian 11+, Web Browser",
   "applicationCategory": "SecurityApplication",
-  "offers": {"@type":"Offer","price":"0","priceCurrency":"USD"},
-  "featureList": "AWS Security Scanner, IAM Audit, S3 Security, EC2 Scanner, RDS Check, VPC Analysis, CloudTrail Monitor, KMS Rotation, Auto-Remediation, Real-time Threat Monitor",
+  "applicationSubCategory": "AWS Security Scanner",
+  "offers": {"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"},
+  "featureList": ["AWS security scanning","IAM audit","S3 bucket security","EC2 security group analysis","Auto-remediation","Real-time threat monitoring","Full rollback support","CIS compliance","PCI-DSS compliance","NIST compliance"],
   "softwareVersion": "1.0.2",
   "screenshot": "https://cloudshield.me/favicon.png",
-  "author": {"@type":"Person","name":"NSudeep-Rust"},
+  "author": {"@type":"Organization","name":"CloudShield","url":"https://cloudshield.me"},
+  "publisher": {"@type":"Organization","name":"CloudShield","url":"https://cloudshield.me"},
   "sameAs": ["https://github.com/NSudeep-Rust/AWS-Cloud-Control-Panel","https://cloudshield.me"]
 }
+</script>
+<!-- JSON-LD: FAQPage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is CloudShield?","acceptedAnswer":{"@type":"Answer","text":"CloudShield is a free, open-source AWS security scanner that automatically detects misconfigurations, monitors threats in real-time, and auto-remediates security issues. It performs 52+ checks across S3, EC2, IAM, RDS, VPC, KMS, CloudTrail and CloudWatch in 9 AWS regions simultaneously in under 30 seconds."}},
+    {"@type":"Question","name":"Is CloudShield free?","acceptedAnswer":{"@type":"Answer","text":"Yes. CloudShield is 100% free and open-source. No license key, no subscription, no hidden costs. Available as a web app at cloudshield.me and as a desktop app for Windows (.exe) and Linux (.deb)."}},
+    {"@type":"Question","name":"What AWS services does CloudShield scan?","acceptedAnswer":{"@type":"Answer","text":"CloudShield scans Amazon S3 (14 checks), Amazon EC2 and Security Groups (12 checks), AWS IAM (10 checks), Amazon RDS (6 checks), Amazon VPC (5 checks), AWS CloudTrail (4 checks), AWS KMS (3 checks), and Amazon CloudWatch (3 checks) — 52+ security checks in total across 9 AWS regions."}},
+    {"@type":"Question","name":"How does CloudShield auto-remediation work?","acceptedAnswer":{"@type":"Answer","text":"CloudShield generates a step-by-step remediation plan for each finding showing the exact AWS API calls that will be made. You approve before anything changes. It then executes the fix and stores before/after state for instant one-click rollback. Nothing ever changes in your account without your explicit approval."}},
+    {"@type":"Question","name":"Is CloudShield an alternative to AWS Security Hub?","acceptedAnswer":{"@type":"Answer","text":"CloudShield covers CIS, PCI-DSS, and NIST compliance similar to AWS Security Hub but adds one-click auto-remediation and a full rollback engine that Security Hub lacks. CloudShield is also completely free, unlike Security Hub which is a paid AWS service."}},
+    {"@type":"Question","name":"Does CloudShield store my AWS credentials securely?","acceptedAnswer":{"@type":"Answer","text":"Yes. AWS credentials are encrypted with AES-128 Fernet encryption before storage. In desktop mode they stay only on your local machine. In web mode they are stored encrypted in a private database and never shared or transmitted to third parties."}}
+  ]
+}
+</script>
+<!-- JSON-LD: WebSite -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"CloudShield","url":"https://cloudshield.me","description":"Free AWS Security Scanner and Auto-Remediation Tool"}
 </script>
 </head>
 <body>
@@ -225,7 +254,7 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
   <div class="hero-glow"></div>
   <div class="hero-inner">
     <div class="badge"><span class="dot-live"></span>v1.0.1 Live &mdash; cloudshield.me</div>
-    <h1>AWS Security,<br/><span class="hl">Supercharged.</span></h1>
+    <h1>CloudShield —<br/><span class="hl">AWS Security.</span></h1>
     <p class="hero-sub">Scan your entire AWS account for misconfigurations in under 30 seconds. AI-planned fixes. Real-time threat monitoring. Full rollback support.</p>
     <div class="os-grid">
       <div class="os-col">
@@ -470,6 +499,46 @@ footer{background:#232F3E;border-top:1px solid var(--border);padding:28px 48px;d
       </div>
     </div>
     <p class="plat-note">All free &bull; Open source &bull; No license key required</p>
+  </div>
+</section>
+
+<!-- FAQ SECTION -->
+<section id="faq" style="padding:80px 24px;background:#fff;border-top:1px solid rgba(0,0,0,.08)">
+  <div style="max-width:860px;margin:0 auto">
+    <div class="sec-header rv" style="margin-bottom:48px">
+      <div class="tag">Got Questions?</div>
+      <h2>Frequently Asked Questions</h2>
+      <p style="color:var(--muted);font-size:.95rem;margin-top:12px">Everything you need to know about CloudShield — the free AWS security scanner.</p>
+    </div>
+    <div style="display:grid;gap:12px">
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">What is CloudShield?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">CloudShield is a free, open-source AWS security scanner that automatically detects misconfigurations, monitors threats in real-time, and auto-remediates security issues. It performs 52+ checks across S3, EC2, IAM, RDS, VPC, KMS, CloudTrail and CloudWatch — in all 9 major AWS regions simultaneously — in under 30 seconds.</p>
+      </details>
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">Is CloudShield free?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">Yes — 100% free and open-source. No license key, no subscription, no feature gates. Use CloudShield as a web app at cloudshield.me, or download the desktop app for Windows (.exe) or Linux (.deb). Free forever.</p>
+      </details>
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">What AWS services does CloudShield scan?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">CloudShield covers 8 AWS services: <strong>Amazon S3</strong> (14 checks — public access, encryption, versioning, logging), <strong>Amazon EC2 &amp; Security Groups</strong> (12 checks — open ports, public IPs, EBS encryption), <strong>AWS IAM</strong> (10 checks — MFA, admin users, stale access keys, wildcard policies), <strong>Amazon RDS</strong> (6 checks — public access, encryption, backup retention), <strong>Amazon VPC</strong> (5 checks — flow logs, default VPC, NACLs), <strong>AWS CloudTrail</strong> (4 checks), <strong>AWS KMS</strong> (3 checks — key rotation, policies), and <strong>Amazon CloudWatch</strong> (3 checks). 52+ checks total.</p>
+      </details>
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">How does CloudShield auto-remediation work?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">For each finding, CloudShield generates a plan showing the exact AWS API calls needed to fix the issue. You review and approve it — nothing changes without your consent. CloudShield then executes the fix, stores the full before/after state, and lets you roll back any action instantly with one click.</p>
+      </details>
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">Is CloudShield an alternative to AWS Security Hub?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">Yes. CloudShield covers CIS, PCI-DSS, and NIST compliance similar to AWS Security Hub, but also adds one-click auto-remediation and a full rollback engine — features Security Hub does not offer. CloudShield is also completely free. AWS Security Hub is a paid service charged per finding per region.</p>
+      </details>
+      <details class="rv" style="background:#f7f6f2;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px 24px;cursor:pointer">
+        <summary style="font-weight:700;font-size:.95rem;cursor:pointer">Are my AWS credentials safe with CloudShield?</summary>
+        <p style="margin-top:12px;font-size:.88rem;color:#555;line-height:1.75">Yes. CloudShield encrypts AWS credentials using AES-128 Fernet encryption before storing them. In desktop mode, keys are stored only on your local machine and never transmitted anywhere. In web mode, keys are stored encrypted in a private database and never shared with third parties.</p>
+      </details>
+    </div>
+    <div style="text-align:center;margin-top:48px">
+      <a href="https://cloudshield.me/panel" target="_blank" class="btn-dl">Start Your Free AWS Security Scan &#x2192;</a>
+    </div>
   </div>
 </section>
 
