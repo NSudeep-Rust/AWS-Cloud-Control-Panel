@@ -122,5 +122,67 @@ jobs:
             || (echo "❌ Service failed!" && sudo journalctl -u cloudshield -n 20 --no-pager && exit 1)
           SCRIPT
 
+      # ── 7. Fix Nginx: /landing → / (fixes GSC "Page with redirect") ─────────
+      - name: 🔧 Fix Nginx SEO redirect (/landing → /)
+        run: |
+          ssh -i ~/.ssh/deploy_key.pem \
+            -o StrictHostKeyChecking=no \
+            -o LogLevel=ERROR \
+            -o ConnectTimeout=30 \
+            ubuntu@${{ secrets.EC2_HOST }} 'bash -s' << 'NGINX_SCRIPT'
+          set -e
+          NGINX_CONF="/etc/nginx/sites-enabled/cloudshield"
+
+          echo "📋 Checking Nginx config..."
+
+          # Use Python to safely inject /landing redirect if not already present
+          sudo python3 << 'PYEOF'
+import sys
+
+conf_path = "/etc/nginx/sites-enabled/cloudshield"
+with open(conf_path, "r") as f:
+    config = f.read()
+
+REDIRECT_BLOCK = """
+    # SEO fix: redirect /landing → / to prevent GSC "Page with redirect"
+    # Canonical URL is https://cloudshield.me (root), not /landing
+    location = /landing {
+        return 301 https://cloudshield.me;
+    }
+
+    # Do not index /panel (React app behind auth - causes redirect in GSC)
+    location = /panel {
+        add_header X-Robots-Tag "noindex, nofollow" always;
+    }
+"""
+
+if "location = /landing" in config:
+    print("✅ /landing redirect already exists — no changes needed")
+    sys.exit(0)
+
+# Find the last closing brace and insert before it
+last_brace = config.rfind("}")
+if last_brace == -1:
+    print("❌ Could not find closing brace in Nginx config!")
+    sys.exit(1)
+
+new_config = config[:last_brace] + REDIRECT_BLOCK + "\n" + config[last_brace:]
+
+with open(conf_path, "w") as f:
+    f.write(new_config)
+
+print("✅ Injected /landing → / redirect into Nginx config")
+PYEOF
+
+          echo "🔍 Testing Nginx config validity..."
+          sudo nginx -t
+
+          echo "🔄 Reloading Nginx..."
+          sudo systemctl reload nginx
+
+          echo "✅ Nginx SEO fix applied!"
+          NGINX_SCRIPT
+
       - name: ✅ Done
-        run: echo "🚀 CloudShield.me deployed successfully!"
+        run: echo "🚀 CloudShield.me deployed + SEO redirect fixed!"
+
