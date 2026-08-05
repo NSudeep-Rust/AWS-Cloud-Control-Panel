@@ -1,7 +1,8 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import axios from 'axios'
 import { RotateCcw, CheckCircle, AlertTriangle, Clock, Ban, Trash2 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
@@ -321,6 +322,7 @@ function ExecutionCard({ execution, exiting, rollingId, onRequestRollback, selec
 
 export default function RollbackSection({ onNav }) {
   const HIDDEN_KEY = 'rb_hidden_v1'
+  const { account } = useAuth()
 
   const [executions, setExecutions]         = useState([])
   const [loading, setLoading]               = useState(true)
@@ -340,9 +342,9 @@ export default function RollbackSection({ onNav }) {
 
   const loadExecutions = useCallback(async () => {
     try {
-      // Fetch ALL executions across ALL scans — no scan_id filter.
-      // This ensures remediations from previous scans are never lost after a re-scan.
-      const r = await axios.get(`${API}/api/execute/executions`)
+      // Fetch executions scoped to the current account only.
+      const params = account?.id ? { account_id: account.id } : {}
+      const r = await axios.get(`${API}/api/execute/executions`, { params })
       const all = r.data?.data?.executions || []
 
       const latestMap = {}
@@ -358,7 +360,7 @@ export default function RollbackSection({ onNav }) {
       setExecutions([...Object.values(latestMap), ...others])
     } catch { /* ignore */ }
     setLoading(false)
-  }, [])  // no ctxScanId dependency — fetches all executions regardless
+  }, [account])
 
   useEffect(() => {
     setLoading(true)

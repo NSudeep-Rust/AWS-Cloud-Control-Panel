@@ -244,9 +244,25 @@ def get_executable_findings(scan_id: str = Query(...), db: Session = Depends(get
 def list_executions(
     scan_id: str = Query(None),
     include_rolled_back: bool = Query(False),
+    account_id: int = Query(None),
     db: Session = Depends(get_db)
 ):
     query = db.query(Execution)
+
+    # ── Account isolation: only return executions for this account's scans ──
+    if account_id is not None:
+        from app.database.models import Scan, Account
+        account_scan_ids = [
+            s.id for s in db.query(Scan.id)
+            .filter(Scan.account_id == account_id)
+            .all()
+        ]
+        if account_scan_ids:
+            query = query.filter(Execution.scan_id.in_(account_scan_ids))
+        else:
+            # Account exists but has no scans — return empty
+            return format_response(module="execute", mode="INFO", data={"executions": []})
+
     if scan_id:
         query = query.filter(Execution.scan_id == scan_id)
     if not include_rolled_back:
