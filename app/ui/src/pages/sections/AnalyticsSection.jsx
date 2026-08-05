@@ -270,7 +270,7 @@ function EmptyAnalytics({ onNav }) {
 }
 
 export function AnalyticsSection({ onNav }) {
-  const { accountId } = useAuth()
+  const { account } = useAuth()
   const [rs,   setRs]   = useState(null)
   const [tr,   setTr]   = useState([])
   const [ar,   setAr]   = useState(null)
@@ -285,7 +285,7 @@ export function AnalyticsSection({ onNav }) {
   const doFetch = useCallback(async () => {
     setLoad(true); setErr(null)
     try {
-      const aid = accountId || null  // pass null — backend supports no account_id
+      const aid = account?.id || null  // integer PK — backend filters scans by this
       const [a, b, c, d, e, f] = await Promise.all([
         analyticsAPI.riskScore(aid),
         analyticsAPI.riskTrend(aid),
@@ -307,7 +307,7 @@ export function AnalyticsSection({ onNav }) {
     } finally {
       setLoad(false)
     }
-  }, [accountId])
+  }, [account])
 
   useEffect(() => { doFetch() }, [doFetch])
 
