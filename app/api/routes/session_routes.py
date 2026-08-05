@@ -32,15 +32,18 @@ def wipe_session(
             deleted["finding_changes"] = n
 
         if scan_ids:
-            exec_ids = [
-                str(e.id) for e in db.query(Execution.id)
+            # ── FIX: Rollback.execution_id stores Execution.execution_id (string UUID)
+            # NOT Execution.id (integer PK) — so we must query the right field
+            exec_uuid_ids = [
+                e.execution_id for e in db.query(Execution.execution_id)
                 .filter(Execution.scan_id.in_(scan_ids))
                 .all()
+                if e.execution_id
             ]
 
-            if exec_ids:
+            if exec_uuid_ids:
                 n = db.query(Rollback).filter(
-                    Rollback.execution_id.in_(exec_ids)
+                    Rollback.execution_id.in_(exec_uuid_ids)
                 ).delete(synchronize_session=False)
                 deleted["rollbacks"] = n
             else:
@@ -55,6 +58,14 @@ def wipe_session(
 
         n = db.query(Scan).filter(Scan.account_id == db_id).delete(synchronize_session=False)
         deleted["scans"] = n
+
+        # ── Also wipe IAM snapshot data for this account ─────────────────────────
+        try:
+            from app.database.models import IamUser
+            n = db.query(IamUser).filter(IamUser.account_id == db_id).delete(synchronize_session=False)
+            deleted["iam_users"] = n
+        except Exception:
+            deleted["iam_users"] = 0
 
         db.commit()
         print(f"🗑️  Wiped session for {account_id}: {deleted}")
